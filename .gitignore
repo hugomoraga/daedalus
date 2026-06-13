@@ -1,0 +1,7 @@
+# Runtime tenant data — append-only event logs and draft work-areas.
+# Never committed: no real tenant data / PII in version control (Technical Principles).
+.data/
+
+# Node
+node_modules/
+npm-debug.log*

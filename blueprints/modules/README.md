@@ -10,8 +10,8 @@ Ordered by **founder value to Tenant 0**, not architectural completeness. Priori
 
 | # | Module | Solves (Tenant 0 pain) | Earliest buildable | Spec |
 |---|---|---|---|---|
-| 1 | **Proposal Generation** | customer acquisition (closing) | Phase 1 (v0: structured assembly) | **[Spec 002 — Draft](../../specs/002-proposal-generation/spec.md)** |
-| 2 | **Revenue Visibility** | basic accounting / solvency | Phase 1 (projection-only) | **[Spec 001 — Draft](../../specs/001-revenue-visibility/spec.md)** |
+| 1 | **Proposal Generation** | customer acquisition (closing) | Phase 1 (v0 built) | [Spec 002](../../specs/002-proposal-generation/spec.md) · [plan](../../specs/002-proposal-generation/plan.md) |
+| 2 | **Revenue Visibility** | basic accounting / solvency | Phase 1 (v0 composition slice built) | [Spec 001](../../specs/001-revenue-visibility/spec.md) · [plan](../../specs/001-revenue-visibility/plan.md) |
 | 3 | **Opportunity Discovery** | customer acquisition (top of funnel) | Phase 2 | — |
 | 4 | **Tax & Compliance Guard** | tax & compliance | Phase 3 (policy-shaped; blocked on jurisdiction) | — |
 | 5 | **Administrative Shield** | the administrative tail | Phase 4 (needs agent runtime) | — |

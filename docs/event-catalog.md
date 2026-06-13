@@ -73,7 +73,7 @@ These events arise from the initial **modules**. They are born from Tenant 0's p
 |---|---|---|---|
 | `OpportunitySurfaced` `[deferred]` | Opportunity Discovery | A potential client/opportunity is detected or captured, *before* it becomes a qualified Lead. | Makes "finding clients" auditable so nothing is dropped silently. Precedes `LeadCreated`. |
 | `OpportunityDismissed` `[deferred]` | Opportunity Discovery | A surfaced opportunity is judged not worth pursuing. | Records the *decision not to pursue* — protects the founder's focus and lets discovery quality be reviewed. |
-| `RevenueEstimateCreated` `[deferred]` | Revenue Visibility | A founder records an estimated/expected revenue item. | A deliberate human input; the origin of an expectation. See [Spec 001](../specs/001-revenue-visibility/spec.md). |
+| `RevenueEstimateCreated` **(implemented, v0)** | Revenue Visibility | An expected-revenue item is recorded. **v0:** derived from a `ProposalGenerated` via `followFrom()` (carries `sourceProposalId`, shares the proposal's `correlationId`). Manual entry deferred. | The origin of an expectation; first cross-module derived event. See [Spec 001 plan](../specs/001-revenue-visibility/plan.md). |
 | `RevenueEstimateUpdated` `[deferred]` | Revenue Visibility | An estimate changes. | The change of a forecast must be traceable. |
 | `RevenueConfirmed` `[deferred]` | Revenue Visibility | Revenue moves to `confirmed` (manually or via Core `ProposalApproved`). | A commitment decision that materially changes the picture. |
 | `RevenueReceived` `[deferred]` | Revenue Visibility | Revenue moves to `received` (manually or via Core `PaymentReceived`). | Money-in is a hard fact. |

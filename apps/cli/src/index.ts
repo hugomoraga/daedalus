@@ -14,6 +14,7 @@ import {
 } from "@daedalus/proposal-generation";
 import type { ProposalDeps } from "@daedalus/proposal-generation";
 import { JsonFileDraftStoreAdapter } from "@daedalus/proposal-generation/adapters";
+import { ingestProposalRevenueUseCase, projectExpectedRevenue } from "@daedalus/revenue-visibility";
 import { JsonlEventStoreAdapter } from "@daedalus/jsonl-event-store";
 import { loadTenantConfig, defaultTenantId } from "../../../config/tenants/index.ts";
 
@@ -119,6 +120,18 @@ async function main(): Promise<void> {
       console.log(`ProposalDraftDiscarded  draft=${values.draft}`);
       break;
     }
+    case "revenue:ingest": {
+      const out = await ingestProposalRevenueUseCase(deps, { tenantId });
+      console.log(`revenue:ingest  ingested=${out.ingested} estimate(s) from ProposalGenerated`);
+      break;
+    }
+    case "revenue:show": {
+      const events = await deps.eventStore.readStream(tenantId);
+      const summary = projectExpectedRevenue(events);
+      const currency = summary.count === 0 ? loadTenantConfig(tenantId).currency : summary.currency;
+      console.log(`expected revenue: ${summary.expected} ${currency}  (${summary.count} estimate(s))`);
+      break;
+    }
     case "events": {
       const events = await deps.eventStore.readStream(tenantId);
       if (events.length === 0) {
@@ -145,6 +158,8 @@ async function main(): Promise<void> {
           "  proposal:show   --tenant <id> --draft <id>",
           "  proposal:finalize --tenant <id> --draft <id>",
           "  proposal:discard  --tenant <id> --draft <id>",
+          "  revenue:ingest  --tenant <id>",
+          "  revenue:show    --tenant <id>",
           "  events          --tenant <id>",
         ].join("\n"),
       );

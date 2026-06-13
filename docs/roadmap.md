@@ -1,7 +1,7 @@
 # Daedalus Roadmap
 
 **Status:** Foundational · Phase 0
-**Version:** 0.2.0
+**Version:** 0.3.0
 **Last updated:** 2026-06-13
 
 > **Framing.** This roadmap describes *capability maturity*, not a calendar. Committing to dates now would violate *Simplicity First*. Each phase has an **objective**, an **exit criterion**, the **principles it operationalizes**, and the **module milestones** that come online in it.
@@ -11,6 +11,24 @@
 > 2. **Validation** runs through **Tenant 0** (the founder's activity). Every Core capability is proven against real founder pain before it is generalized. Tenant 0 is the test harness, not the destination — the destination (Phase 5) is operating *other* tenants too.
 >
 > **What we optimize for** stays constant across all phases: freedom, creative focus, traceability, sustainability — **not growth** (see [Identity](./identity.md)).
+
+---
+
+## Module Validation Sequence
+
+Modules are prioritized by **founder value delivered to Tenant 0**, not by architectural completeness. The order below is the sequence in which we build and validate them:
+
+| # | Module | Primary pain (Tenant 0) | Spec | Earliest buildable |
+|---|---|---|---|---|
+| **1** | **Proposal Generation** | customer acquisition (the controllable, high-frequency, revenue-adjacent half) | [Spec 002](../specs/002-proposal-generation/spec.md) | Phase 1 (v0: structured assembly) |
+| **2** | **Revenue Visibility** | accounting / runway / solvency | [Spec 001](../specs/001-revenue-visibility/spec.md) | Phase 1 (projection-only) |
+| **3** | **Opportunity Discovery** | customer acquisition (top of funnel) | — | Phase 2 |
+| **4** | **Tax & Compliance Guard** | taxes & compliance | — | Phase 3 (policy-shaped; blocked on jurisdiction) |
+| **5** | **Administrative Shield** | the administrative tail | — | Phase 4 (needs agent runtime) |
+
+> **Scope of this sequence (binding clarification).** This is an **incremental validation strategy only**. It does **NOT** redefine Daedalus's mission, and it does **NOT** establish the system's root/fundamental entity. The philosophical question of the fundamental entity is deliberately left open — the team prefers to *learn by building* over continuing to model it now. The Constitution, Domain Model, and Identity are unchanged.
+>
+> **Priority ≠ phase.** A module's priority is independent of the phase that makes its full capability available. Proposal Generation is priority #1 and ships a useful v0 in Phase 1, but its orchestrated form matures in Phase 2. The phases below are capability-dependency milestones; the table above is the value-driven order.
 
 ---
 
@@ -34,9 +52,10 @@
 - Events from the catalog are emitted and persisted to an append-only Audit Log.
 - Tenant isolation enforced structurally; Tenant 0 exists as a configured tenant.
 - State reconstructable from the event stream.
-- **Module milestone:** **Revenue Visibility** in its simplest form — a read-only projection over invoice/payment events. (It needs no workflow or policy engine, so it validates the event substrate first and gives the founder value earliest.)
+- **Module milestone #1 (priority):** **Proposal Generation v0** — structured assembly of a proposal from a qualified lead (no orchestration yet). It needs only the Core aggregates and event substrate, so it ships early and validates the highest-value pain (customer acquisition) first.
+- **Module milestone #2:** **Revenue Visibility v0** — a read-only projection over the value-chain events. Needs no workflow or policy engine; validates the event substrate and gives the founder a runway/margin picture once deals exist.
 
-**Exit criterion:** Tenant 0's full value chain (Lead → Payment) can be walked end to end, every step an immutable, tenant-scoped, traceable event — even with transitions still driven manually. Revenue Visibility shows a trustworthy picture from those events.
+**Exit criterion:** Tenant 0's full value chain (Lead → Payment) can be walked end to end, every step an immutable, tenant-scoped, traceable event — even with transitions still driven manually. Proposal Generation can assemble a real proposal, and Revenue Visibility shows a trustworthy picture from those events.
 **Principles operationalized:** Everything is an Event, Auditability by Default, Tenant Isolation, Generic Core / Specific Tenants.
 
 ---
@@ -47,7 +66,7 @@
 - Workflows describe the value-chain transitions declaratively; the engine reacts to events.
 - Compensation / error-correction semantics defined (the deferred `…Cancelled` / `…Reopened` events).
 - Workflows are versioned artifacts.
-- **Module milestones:** **Opportunity Discovery** and **Proposal Generation** as workflows — capturing/qualifying opportunities and moving them toward proposals, reacting to events without manual shepherding.
+- **Module milestones:** **Proposal Generation** matures into an orchestrated flow (reacting to events, moving qualified leads toward proposals without manual shepherding); **Opportunity Discovery** (#3) captures and qualifies opportunities so none are dropped.
 
 **Exit criterion:** Tenant 0's Lead → Payment chain runs as a declared workflow reacting to events, with defined behavior for unhappy paths (rejection, overdue, cancellation).
 **Principles operationalized:** Organization as Code, Modular Evolution.
@@ -99,22 +118,25 @@
 Phase 0  Foundations          ── philosophy + identity + model + Tenant 0 profile
    │
 Phase 1  Organizational Core  ── generic domains + events + audit log + isolation
-   │                              + Tenant 0 instantiated  → Revenue Visibility (v0)
+   │                              + Tenant 0 instantiated
+   │                              → #1 Proposal Generation (v0), #2 Revenue Visibility (v0)
    │
 Phase 2  Workflow Engine      ── declarative orchestration
-   │                              → Opportunity Discovery, Proposal Generation
+   │                              → Proposal Generation (orchestrated), #3 Opportunity Discovery
    │
 Phase 3  Policy Engine        ── enforce Policy-before-Agent + escalation
-   │                              → Tax & Compliance Guard
+   │                              → #4 Tax & Compliance Guard
    │
 Phase 4  Agent Runtime        ── bounded executors under policy
-   │                              → Administrative Shield
+   │                              → #5 Administrative Shield
    │
 Phase 5  Autonomous Ops       ── coordinated autonomy + SECOND tenant on same Core
 ```
 
+(Numbers `#1…#5` are the value-driven validation priority from the Module Validation Sequence; phase placement is capability dependency.)
+
 > **Edge cases / risks flagged for human review:**
-> - **Module sequencing is a hypothesis.** Revenue Visibility is placed early because it's projection-only; Tax & Compliance Guard late because it's policy-shaped. Confirm this ordering matches the founder's *most urgent* pain — if tax risk is the sharpest pain *today*, the value of a partial Tax Guard earlier may outweigh the clean dependency order.
+> - **Module sequencing decision (v0.3.0).** Resolved to order modules by **founder value**, not architectural completeness: Proposal Generation leads because customer acquisition is the existential pain and it ships a useful v0 early; Revenue Visibility follows. This is a validation strategy, not a mission change. Remaining hypothesis: the priority assumes the founder needs pipeline more than runway visibility *today* — revisit if that changes.
 > - **"Second tenant" in Phase 5 is the real validation of the platform thesis.** Until then, we have a strong single-tenant system that *claims* to be generic. Flagging that genericity is unproven until Phase 5 — and that this is an accepted, deliberate risk.
 > - **No dates by design.** Time-bound commitments (if needed for the founder's own planning) live outside this roadmap.
 > - **"Autonomous" is bounded.** Phase 5 never removes human accountability (Article V is unamendable). Confirm stakeholders share this definition.

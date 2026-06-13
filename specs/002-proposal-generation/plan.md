@@ -1,100 +1,119 @@
 # Plan — Proposal Generation v0 (implementation)
 
 **Status:** Draft · implementation plan for [Spec 002](./spec.md)
-**Goal:** Get **real usage evidence** by building the smallest thing that works — not more conceptual modeling.
-**Version:** 0.1.0
+**Goal:** Get **real usage evidence** by building the smallest clean vertical slice — not more conceptual modeling.
+**Conforms to:** [Technical Principles](../../memory/technical-principles.md) ([ADR-002](../../governance/decisions/ADR-002-adopt-technical-framework.md))
+**Version:** 0.2.0
 **Last updated:** 2026-06-13
 
-> This is the `/plan` step: it defines *how* we build Proposal Generation v0. The spec defines *what*. Code is now in scope (the Phase 0 "no code" constraint is lifted for implementation). We build the leanest slice that produces an auditable event trail proving the Core → Module → Tenant model works end to end.
+> The `/plan` step: *how* we build Proposal Generation v0. The spec defines *what*. Code is now in scope. We build the leanest **hexagonal** slice that exercises the canonical chain and produces an auditable, replayable event trail.
 
 ---
 
-## 1. Technical context (decided)
+## 1. Technical context (per the framework)
 
-| Decision | Choice | Why |
+| Decision | Choice | Source |
 |---|---|---|
-| Language / runtime | **TypeScript on Node.js** | Fast iteration, JSON-native (fits the event log), strong typing for domain + events. |
-| Interface | **CLI** | The founder drives the real value chain and produces real events as evidence. No UI needed. |
-| Event persistence | **Append-only JSONL log, one file per tenant** | Simplest thing honoring *Everything is an Event* + *Auditability*. Inspectable by eye; state = projection of the log. |
-| Dependencies | **Minimal / zero external** for v0 | Node built-ins: `fs`, `node:test`, `node:util` (`parseArgs`). Keeps the first code clean and auditable. |
-| Testing | **`node:test`** (built-in) | Encodes the Spec 002 acceptance criteria as runnable checks. |
+| Language / runtime | TypeScript on Node.js | confirmed |
+| Architecture | **Hexagonal** — Domain / Application / Ports / Adapters | Technical Principles §2 |
+| Interface | **CLI** as first driving adapter, **no business logic** | Technical Principles · First-Phase |
+| Persistence | **JSONL append-only, one file per tenant**, behind a port | Technical Principles · First-Phase |
+| Event store | **`EventStorePort`** + **`JsonlEventStoreAdapter`** | Technical Principles · First-Phase |
+| Dependencies | Minimal / zero external (`fs`, `node:test`, `node:util`) | Simplicity First |
+| Testing | `node:test` encoding Spec 002 acceptance criteria | — |
 
 ---
 
-## 2. Architecture — three layers, event-sourced
+## 2. Architecture — hexagonal, dependencies point inward
 
-Mirrors the constitutional Core → Module → Tenant split *in code*.
+`adapters → application → domain`. The **domain depends on nothing**. The Core / Module / Tenant split lives *inside* `domain/` and `application/`; hexagonal layers are the outer axis.
 
 ```
 src/
-  core/
-    event.ts           # Event shape + lineage (id, type, tenantId, ts, actor, cause, payload)
-    event-log.ts       # append-only JSONL read/append, tenant-scoped
-    projection.ts      # generic: rebuild state by replaying a tenant's log
-    value-chain.ts     # Core event types: LeadCreated, LeadQualified, ProposalGenerated, ...
-  modules/
+  domain/
+    core/
+      event.ts               # Event + lineage (tenantId, actor, cause, ts) — value objects
+      value-chain.ts         # Core domain events: LeadCreated, LeadQualified, ProposalGenerated
+      lead.ts                # Lead aggregate (minimal: unqualified -> qualified)
     proposal-generation/
-      draft.ts         # the draft work-area (read-model, mutable) + commands
-      events.ts        # ProposalDraftCreated / Finalized / Discarded
-      finalize.ts      # handoff: finalize -> emit the single Core ProposalGenerated
-  tenants/
-    tenant-0/
-      config.ts        # currency, enabled modules (NO PII)
-      templates/        # mock proposal templates (tenant data, not module code)
-  cli/
-    index.ts           # command dispatch (parseArgs)
-data/                  # GITIGNORED — runtime event logs & draft work-areas (no real data in VC)
+      proposal-draft.ts      # Draft aggregate + invariants; emits module domain events
+      events.ts              # ProposalDraftCreated / ProposalDraftFinalized / ProposalDraftDiscarded
+      value-objects.ts       # Money, PricingLineItem, ExpectedValue
+  application/
+    ports/
+      event-store.ts         # EventStorePort  (append / readStream, tenant-scoped)
+      draft-store.ts         # DraftStorePort  (load / save / delete the mutable work-area)
+    core/
+      create-lead.ts         # seed use case  -> LeadCreated
+      qualify-lead.ts        # seed use case  -> LeadQualified
+    proposal-generation/
+      start-draft.ts         # use case: requires a qualified Lead -> ProposalDraftCreated
+      add-line-item.ts       # use case: mutate draft (NO event)
+      set-scope.ts           # use case: mutate draft (NO event)
+      finalize-draft.ts      # use case: ProposalDraftFinalized + single ProposalGenerated(expectedValue)
+      discard-draft.ts       # use case: ProposalDraftDiscarded
+  adapters/
+    persistence/
+      jsonl-event-store.ts   # JsonlEventStoreAdapter implements EventStorePort  (driven)
+      json-draft-store.ts    # JsonFileDraftStoreAdapter implements DraftStorePort (driven)
+    cli/
+      index.ts               # driving adapter: parse args -> Command -> use case -> render. NO logic.
+  config/
+    tenants/tenant-0.ts      # currency, enabled modules, template refs (Tenant layer; NO PII)
+.data/                       # gitignored
   tenants/<tenantId>/events.jsonl
   tenants/<tenantId>/drafts/<draftId>.json
 ```
 
-> **Note on repo structure.** The existing top-level `domains/`, `modules/`, `tenants/` hold *conceptual docs*. Code lives under `src/` mirroring the same layers. `docs/repository-structure.md` should be updated to record `src/` + `data/` once code lands (small follow-up; not a blocker).
+> **Two ports, both earning their place** (Technical Principles §2, "ports earn their place"):
+> - `EventStorePort` — the audit log; clearly swappable (SQLite/Postgres later).
+> - `DraftStorePort` — the **mutable work-area**. Per Spec 002 §6, draft edits emit **no events** (to avoid log noise), so the working draft is *not* event-sourced; it needs its own persistence. Isolating it behind a port keeps the domain/use cases pure and the non-event state explicitly contained. This is a deliberate, documented exception to pure event-sourcing, scoped to the draft only.
+>
+> `id` and timestamp generation are passed into use cases as **injected functions** (not full ports) for test determinism — deliberately not over-abstracted.
 
-### Key implementation nuance — draft is a read-model, not an event stream
-Per Spec 002 §6, editing a draft emits **no event**. So:
-- The **draft working content** is a mutable file under `data/.../drafts/` (a work-area), rewritten on each edit. **Not** in the audit log.
-- The **audit event log** receives only the deliberate milestones: `ProposalDraftCreated`, `ProposalDraftFinalized`, `ProposalDraftDiscarded`, and (on finalize) the Core `ProposalGenerated` carrying the finalized snapshot.
-- Intermediate revisions are intentionally **not** audited (Spec 002 Q3: finalized snapshot only for v0).
-
-### Cross-module contract (review M3 / Spec 002 Q5)
-`ProposalGenerated` carries an **optional `expectedValue { amount, currency }`** built from the draft's pricing line items. This is the minimal payload contract so Revenue Visibility (Spec 001) can later consume it. **No pricing engine, no tax** — just the sum of line items in the tenant currency.
+### The canonical chain this slice proves
+```
+Command → Use Case → Aggregate → Domain Events → Event Store Port → JSONL Adapter → CLI
+```
 
 ---
 
 ## 3. CLI commands (v0)
 
-| Command | Emits / does | Layer |
+| Command | Use case | Emits / does |
 |---|---|---|
-| `lead:create --tenant t0 --customer "<name>"` | `LeadCreated` | Core seed |
-| `lead:qualify --tenant t0 --lead <id>` | `LeadQualified` | Core seed |
-| `proposal:start --tenant t0 --lead <id> --template <name>` | `ProposalDraftCreated`; creates draft work-area | Module |
-| `proposal:add-item --tenant t0 --draft <id> --label "<l>" --amount <n>` | updates draft (**no event**) | Module |
-| `proposal:set-scope --tenant t0 --draft <id> --text "<scope>"` | updates draft (**no event**) | Module |
-| `proposal:show --tenant t0 --draft <id>` | prints the draft read-model | Module |
-| `proposal:finalize --tenant t0 --draft <id>` | `ProposalDraftFinalized` + **single** `ProposalGenerated` (with `expectedValue`) | Module → Core |
-| `proposal:discard --tenant t0 --draft <id>` | `ProposalDraftDiscarded` | Module |
-| `events --tenant t0` | dumps the append-only log (**the evidence**) | Core |
+| `lead:create --tenant t0 --customer "<name>"` | create-lead | `LeadCreated` (Core seed) |
+| `lead:qualify --tenant t0 --lead <id>` | qualify-lead | `LeadQualified` (Core seed) |
+| `proposal:start --tenant t0 --lead <id> --template <name>` | start-draft | `ProposalDraftCreated`; creates work-area |
+| `proposal:add-item --tenant t0 --draft <id> --label "<l>" --amount <n>` | add-line-item | mutate draft (**no event**) |
+| `proposal:set-scope --tenant t0 --draft <id> --text "<s>"` | set-scope | mutate draft (**no event**) |
+| `proposal:show --tenant t0 --draft <id>` | (read) | print draft work-area |
+| `proposal:finalize --tenant t0 --draft <id>` | finalize-draft | `ProposalDraftFinalized` + **one** `ProposalGenerated(expectedValue)` |
+| `proposal:discard --tenant t0 --draft <id>` | discard-draft | `ProposalDraftDiscarded` |
+| `events --tenant t0` | (read) | dump append-only log (**the evidence**) |
 
-> **Lead seed is minimal, not a CRM (review M2).** `lead:create` / `lead:qualify` exist only to satisfy the precondition that a draft starts from a *qualified* lead. No pipeline, scoring, or capture UX. This boundary is enforced by keeping them to two flat commands.
-
----
-
-## 4. Build steps (lean, in order)
-
-1. **Core event substrate** — `Event` shape with lineage; `event-log` append/read (JSONL, tenant-scoped); generic `projection` (replay). Test: append + replay reconstructs state; appends never mutate prior lines.
-2. **Core seed commands** — `lead:create`, `lead:qualify` emitting Core events. Test: a draft cannot start from an unqualified lead (AC-1 negative).
-3. **Proposal Generation module** — draft work-area + `proposal:start/add-item/set-scope/show`; milestone events. Test: edits emit no event (AC-4); start emits `ProposalDraftCreated` (AC-1).
-4. **Finalize handoff** — `proposal:finalize` emits `ProposalDraftFinalized` + exactly one `ProposalGenerated` with `expectedValue`; draft becomes non-editable. Test: exactly one `ProposalGenerated` (AC-5, R1); `expectedValue` = sum of items (AC-3).
-5. **Discard** — `proposal:discard` emits `ProposalDraftDiscarded`, no Core Proposal (AC-6).
-6. **CLI wiring + `events` dump** — command dispatch via `parseArgs`; `events` prints the log.
-7. **Evidence run + isolation test** — scripted end-to-end session (below); two-tenant isolation check (AC-9); full-log replay reconstructs state (AC-7).
-8. **`.gitignore`** — add `data/` so no runtime/tenant data enters version control (no-PII rule).
+> **Lead seed is minimal, not a CRM** (review M2): two flat commands existing only to satisfy the "draft starts from a qualified lead" precondition. No pipeline/scoring/capture.
+> **Cross-module contract** (review M3 / Spec 002 Q5): `ProposalGenerated` carries optional `expectedValue { amount, currency }` = sum of line items in tenant currency. No pricing engine, no tax.
 
 ---
 
-## 5. The evidence we capture (the whole point)
+## 4. Build steps (lean, inside-out per hexagonal)
 
-A recorded end-to-end session, committed as a transcript (synthetic data only):
+1. **Domain core** — `Event` + lineage value objects; `value-chain` event factories; minimal `Lead` aggregate. *Pure, no I/O.*
+2. **Ports** — define `EventStorePort` and `DraftStorePort` interfaces in `application/ports`.
+3. **JSONL adapter** — `JsonlEventStoreAdapter` (append + readStream, tenant-scoped file). Test: append never mutates prior lines; readStream replays in order.
+4. **Core seed use cases** — `create-lead`, `qualify-lead`. Test: a draft cannot start from an unqualified lead (AC-1 negative).
+5. **Proposal draft domain + use cases** — `proposal-draft` aggregate, value objects; `start-draft`, `add-line-item`, `set-scope`. Test: edits go through `DraftStorePort`, emit no events (AC-4); start emits `ProposalDraftCreated` (AC-1).
+6. **Finalize + discard use cases** — `finalize-draft` emits `ProposalDraftFinalized` + exactly one `ProposalGenerated` with `expectedValue` (AC-3, AC-5, R1); draft becomes non-editable. `discard-draft` emits `ProposalDraftDiscarded`, no Core Proposal (AC-6).
+7. **CLI driving adapter** — `parseArgs` dispatch; builds Command DTOs; calls use cases; renders. `events` dumps the log. *No business logic in CLI.*
+8. **Evidence run + isolation + replay** — scripted end-to-end session (below); two-tenant isolation (AC-9); full-log replay reconstructs state (AC-7).
+9. **`.gitignore`** — add `.data/` (no runtime/tenant data, no PII in VC).
+
+---
+
+## 5. The evidence we capture (the point)
+
+A recorded end-to-end session (synthetic data only), committed as a transcript:
 
 ```
 lead:create   t0 "ACME (mock)"        -> LeadCreated
@@ -106,7 +125,7 @@ proposal:finalize t0 <draftId>        -> ProposalDraftFinalized + ProposalGenera
 events t0                             -> append-only audit trail printed
 ```
 
-This session demonstrates: tenant-scoped immutable events, the read-model draft (no event noise), the clean Module→Core handoff, and the `expectedValue` contract ready for Revenue Visibility. **That is the validation evidence** — concrete, auditable, replayable.
+Demonstrates the canonical chain end to end: tenant-scoped immutable events, the read-model draft (no event noise), the clean Module→Core handoff, and the `expectedValue` contract ready for Revenue Visibility. **This is the validation evidence** — concrete, auditable, replayable, and reusable for any future module.
 
 ---
 
@@ -114,37 +133,38 @@ This session demonstrates: tenant-scoped immutable events, the read-model draft 
 
 | Spec 002 AC | Covered by |
 |---|---|
-| AC-1 (start from qualified lead; reject otherwise) | Step 2 + 3 tests |
-| AC-3 (expected value = sum of items, no tax) | Step 4 test |
-| AC-4 (edits emit no event) | Step 3 test |
-| AC-5 (finalize → single ProposalGenerated) | Step 4 test (R1) |
-| AC-6 (discard, no Core Proposal) | Step 5 test |
-| AC-7 (auditability; replay reconstructs) | Step 1 + 7 tests |
-| AC-8 (expectedValue contract for RV) | Step 4 (emits contract; consumption validated when Spec 001 is built) |
-| AC-9 (tenant isolation) | Step 7 test |
+| AC-1 (start from qualified lead; reject otherwise) | Steps 4 + 5 |
+| AC-3 (expectedValue = sum of items, no tax) | Step 6 |
+| AC-4 (edits emit no event) | Step 5 |
+| AC-5 (finalize → single ProposalGenerated) | Step 6 (R1) |
+| AC-6 (discard, no Core Proposal) | Step 6 |
+| AC-7 (auditability; replay reconstructs) | Steps 3 + 8 |
+| AC-8 (expectedValue contract for RV) | Step 6 (emits contract; consumed when Spec 001 is built) |
+| AC-9 (tenant isolation) | Step 8 |
 
 ---
 
 ## 7. Scope guardrails (do NOT build in v0)
 
-- No CRM, pipeline, scoring (lead seed is two flat commands).
-- No pricing engine, discounts, or tax (flat line items; `expectedValue` is a sum).
-- No automated sending, e-signature, or contract generation.
-- No AI drafting (future, bounded agent under policy).
-- No orchestration / workflow engine (that is Phase 2; v0 is manual commands).
-- No UI; no real client data / PII (templates are mock; `data/` is gitignored).
-- No Revenue Visibility implementation here (Spec 001 is separate; v0 only emits the `expectedValue` contract).
+- No CRM/pipeline/scoring (lead seed = two flat commands).
+- No pricing engine, discounts, or tax (`expectedValue` is a sum).
+- No sending, e-signature, or contract generation.
+- No AI drafting; no orchestration/workflow engine (Phase 2).
+- No UI; no real client data / PII (`.data/` gitignored; templates are mock).
+- No Revenue Visibility implementation here (v0 only emits the contract).
+- From the framework's "avoid" list: no CQRS, sagas, DI framework, relational DB, event bus, etc.
 
 ---
 
 ## 8. Definition of done (v0)
 
-- The evidence session above runs end to end and prints a coherent, append-only, tenant-scoped event log.
+- The canonical chain `Command → Use Case → Aggregate → Domain Events → Event Store Port → JSONL Adapter → CLI` runs cleanly for the evidence session.
 - All acceptance-criteria tests pass (`node --test`).
 - Finalize emits exactly one `ProposalGenerated` carrying `expectedValue`.
-- Two tenants show zero cross-leakage.
-- `data/` is gitignored; no PII in the repo.
+- State is reconstructable by replaying the JSONL log; two tenants show zero cross-leakage.
+- CLI contains no business logic; domain knows nothing of JSONL.
+- `.data/` gitignored; no PII in the repo.
 
 ---
 
-*Subordinate to [Spec 002](./spec.md), the [Constitution](../../memory/constitution.md), and [ADR-001](../../governance/decisions/ADR-001-defer-root-entity-selection.md). Implementation plan only — the build is the next step.*
+*Subordinate to [Spec 002](./spec.md), the [Constitution](../../memory/constitution.md), and [Technical Principles](../../memory/technical-principles.md). Implementation plan only — the build is the next step.*

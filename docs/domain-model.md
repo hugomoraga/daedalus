@@ -27,7 +27,7 @@ MODULES (reusable capabilities, born from real pain)
   Tax & Compliance Guard · Administrative Shield
         ▲ selected & configured by
 TENANTS (specific organizations)
-  Tenant 0 = the founder's activity  (tenants/tenant-0-founder-profile.md)
+  Tenant 0 = the founder's activity  (blueprints/tenants/tenant-0-founder-profile.md)
 ```
 
 - The **Core** domains below are tenant-agnostic. They describe any organization Daedalus operates.
@@ -44,7 +44,7 @@ The Core's first value chain — used by Tenant 0 and reusable by any tenant:
 Lead → Proposal → Approval → Project → Delivery → Invoice → Payment
 ```
 
-Everything modeled here exists to support *this* chain. It is generic: a "Lead" means the same thing for any tenant. Tenant 0's specifics (who its clients are, its jurisdiction) live in its [profile](../tenants/tenant-0-founder-profile.md), not here.
+Everything modeled here exists to support *this* chain. It is generic: a "Lead" means the same thing for any tenant. Tenant 0's specifics (who its clients are, its jurisdiction) live in its [profile](../blueprints/tenants/tenant-0-founder-profile.md), not here.
 
 > **Guardrail — reference workflow, not universal ontology.** The `Lead → Payment` chain is the **first reference workflow** used to validate the platform through Tenant 0. It is **not** assumed to be the universal lifecycle of every organization Daedalus may operate (a product venture, an NGO, a studio, a research project may have entirely different chains). The choice of a universal root entity is deliberately deferred — see [ADR-001](../governance/decisions/ADR-001-defer-root-entity-selection.md). Future specs must not implicitly turn this commercial chain into the system's root ontology by adding commercial-specific Core concepts without an ADR.
 
@@ -92,7 +92,7 @@ Each domain is conceptual: its responsibility, whether it is an **aggregate root
 #### Tenant `(aggregate root)`
 The top-level isolation boundary and the unit the **platform** operates. Every other entity belongs to exactly one tenant. A Tenant is an organization operating *inside* Daedalus.
 - **Owns:** all data scoped beneath it.
-- **Configured by:** a tenant profile (which modules, which parameters). **Tenant 0** is the founder's activity; its profile is [here](../tenants/tenant-0-founder-profile.md).
+- **Configured by:** a tenant profile (which modules, which parameters). **Tenant 0** is the founder's activity; its profile is [here](../blueprints/tenants/tenant-0-founder-profile.md).
 - **Invariant:** no entity may reference data across tenant boundaries; no tenant's specifics may leak into the Core.
 
 #### Customer `(aggregate root)`

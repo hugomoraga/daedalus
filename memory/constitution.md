@@ -15,7 +15,7 @@
 
 Daedalus is an **architecture for autonomous organizations governed by policies, workflows, and agents** — not a single company. It can operate many independent organizations, each as an isolated tenant. An organization that runs on code, policy, and autonomous execution needs a constitution for the same reason a state does: to bind power, to make authority legible, and to guarantee that the system serves human ends.
 
-This document governs the **generic Core** and is **tenant-agnostic**. It defines what is immutable, who decides what, and where the boundaries of automation lie — for any organization Daedalus operates. Tenant-specific behavior, data, and pain live in **tenant profiles** (see [`tenants/`](../tenants/)), never here. The first tenant is the founder's independent professional activity, **Tenant 0**; it is a validation case, not the definition of the system.
+This document governs the **generic Core** and is **tenant-agnostic**. It defines what is immutable, who decides what, and where the boundaries of automation lie — for any organization Daedalus operates. Tenant-specific behavior, data, and pain live in **tenant profiles** (see [`tenants/`](../blueprints/tenants/)), never here. The first tenant is the founder's independent professional activity, **Tenant 0**; it is a validation case, not the definition of the system.
 
 ---
 
@@ -72,7 +72,7 @@ When artifacts conflict, this order of precedence is absolute and resolves the c
 
 A lower artifact may never override a higher one. A workflow that contradicts a policy is invalid. An agent action unsupported by policy is illegitimate and must be rejected and logged. If two artifacts at the same level conflict, the system halts that path and escalates to a human.
 
-**On Tenant Profiles:** a tenant profile (e.g. [Tenant 0](../tenants/tenant-0-founder-profile.md)) configures and specializes behavior *within* Core Policy — it selects modules, sets tenant-specific parameters, and records tenant-specific context. It may **never** override the Constitution or Core Policy, and nothing in it may leak upward into the Core. If a tenant profile needs something the Core forbids, that is a signal to amend Core Policy generically (so all tenants benefit) — never to special-case one tenant.
+**On Tenant Profiles:** a tenant profile (e.g. [Tenant 0](../blueprints/tenants/tenant-0-founder-profile.md)) configures and specializes behavior *within* Core Policy — it selects modules, sets tenant-specific parameters, and records tenant-specific context. It may **never** override the Constitution or Core Policy, and nothing in it may leak upward into the Core. If a tenant profile needs something the Core forbids, that is a signal to amend Core Policy generically (so all tenants benefit) — never to special-case one tenant.
 
 ---
 

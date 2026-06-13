@@ -18,7 +18,7 @@ We call the paradigm **Organization as Code**.
 
 Daedalus is designed to operate **many** independent organizations, each as an isolated tenant. Its first tenant is the founder's independent professional activity — **Tenant 0**. Tenant 0 is the first real validation case, not the definition of the system.
 
-> **Daedalus is not "Hugo OS."** The founder's case proves the architecture against real pain. It does not get to *become* the architecture. Everything specific to the founder lives in a [Tenant 0 Profile](../tenants/tenant-0-founder-profile.md); the [Core](./identity.md) stays generic. (Constitution, Principle 10.)
+> **Daedalus is not "Hugo OS."** The founder's case proves the architecture against real pain. It does not get to *become* the architecture. Everything specific to the founder lives in a [Tenant 0 Profile](../blueprints/tenants/tenant-0-founder-profile.md); the [Core](./identity.md) stays generic. (Constitution, Principle 10.)
 
 ---
 
@@ -132,4 +132,4 @@ If those modules give the founder their attention back while keeping every actio
 
 ---
 
-*This manifesto is a living document governed by the [Constitution](../memory/constitution.md). The platform's identity is defined in [Identity](./identity.md); the founder's case in the [Tenant 0 Profile](../tenants/tenant-0-founder-profile.md). It may only be amended through governance.*
+*This manifesto is a living document governed by the [Constitution](../memory/constitution.md). The platform's identity is defined in [Identity](./identity.md); the founder's case in the [Tenant 0 Profile](../blueprints/tenants/tenant-0-founder-profile.md). It may only be amended through governance.*

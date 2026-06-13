@@ -61,26 +61,27 @@ Even if simple, state must be reconstructable by **replaying events**. This vali
 
 ## Reference Architecture (the canonical layout)
 
+A **modular monorepo** (npm workspaces) — see [ADR-003](../governance/decisions/ADR-003-modular-monorepo.md). Hexagonal layers live *inside* each package; package boundaries enforce the Core/Module/adapter separation.
+
 ```
-src/
-  domain/                      # pure: aggregates, value objects, domain events. NO I/O, NO infra.
-    core/                      #   Core (tenant-agnostic) domain
-    <module>/                  #   module domain (e.g. proposal-generation)
-  application/                 # use cases / command handlers, Commands (DTOs), Ports
-    ports/
-      event-store.ts           #   EventStorePort (interface)
-    <module>/
-      use-cases/               #   command handlers orchestrating domain + ports
-  adapters/
-    persistence/
-      jsonl-event-store.ts     #   JsonlEventStoreAdapter implements EventStorePort (driven)
-    cli/                       #   driving adapter — NO business logic
-  config/
-    tenants/                   #   tenant config/templates loaded as data (Tenant layer; no PII)
+apps/
+  cli/                         # driving adapter — NO business logic. Composition root.
+packages/
+  core/                        # @daedalus/core — the generic Core (depends on nothing)
+    src/domain/                #   pure: aggregates, value objects, domain events
+    src/application/           #   use cases, deps kernel (CoreDeps), lineage, projections
+    src/application/ports/     #   EventStorePort (interface)
+  <module>/                    # e.g. @daedalus/proposal-generation — depends on @daedalus/core
+    src/domain/                #   module domain
+    src/application/           #   module use cases + module ports (e.g. DraftStorePort) + deps
+    src/adapters/              #   module-specific adapters (e.g. JsonFileDraftStoreAdapter)
+  jsonl-event-store/           # @daedalus/jsonl-event-store — shared driven adapter (impl EventStorePort)
+config/
+  tenants/                     # tenant config loaded as data (Tenant layer; NO PII)
 .data/                         # gitignored runtime event logs + work-areas
 ```
 
-Dependency rule: **dependencies point inward.** `adapters → application → domain`. The domain depends on nothing. The Core / Module / Tenant split from the Constitution is expressed *inside* `domain/` and `application/`; the hexagonal layers are the outer structuring axis.
+Dependency rule: **dependencies point inward and across only via package APIs.** `apps → packages`; within a package `adapters → application → domain`. `@daedalus/core` depends on nothing; modules and adapters depend on `core`, never on each other's internals. Zero external runtime deps (Node 22 native type-stripping).
 
 ### The success chain (must work cleanly end to end)
 ```

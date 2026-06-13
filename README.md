@@ -28,7 +28,7 @@ Phase 0 — Foundations. No production code, schemas, APIs, or UI by design. Rea
 6. **[Event Catalog](docs/event-catalog.md)** — the vocabulary of organizational events.
 7. **[Roadmap](docs/roadmap.md)** — capability maturity, validated through Tenant 0.
 8. **[Repository Structure](docs/repository-structure.md)** — how this repo is organized and why.
-9. **[Tenant 0 — Founder Profile](tenants/tenant-0-founder-profile.md)** — the first concrete tenant. *Tenant-scoped, not Core.*
+9. **[Tenant 0 — Founder Profile](blueprints/tenants/tenant-0-founder-profile.md)** — the first concrete tenant. *Tenant-scoped, not Core.*
 
 ---
 

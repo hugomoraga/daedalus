@@ -5,8 +5,8 @@ import assert from "node:assert/strict";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { JsonlEventStoreAdapter } from "../src/adapters/persistence/jsonl-event-store.ts";
-import type { DomainEvent } from "../src/domain/core/event.ts";
+import { JsonlEventStoreAdapter } from "@daedalus/jsonl-event-store";
+import type { DomainEvent } from "@daedalus/core";
 
 function evt(tenantId: string, type: string, n: number): DomainEvent {
   return {

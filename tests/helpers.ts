@@ -1,16 +1,17 @@
 // Test helpers: deterministic deps (fixed ids/clock) over the REAL adapters in a temp dir.
+// Integration-level: composes core + proposal-generation + jsonl-event-store.
 
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { Deps } from "../src/application/shared/deps.ts";
-import { JsonlEventStoreAdapter } from "../src/adapters/persistence/jsonl-event-store.ts";
-import { JsonFileDraftStoreAdapter } from "../src/adapters/persistence/json-draft-store.ts";
+import type { ProposalDeps } from "@daedalus/proposal-generation";
+import { JsonFileDraftStoreAdapter } from "@daedalus/proposal-generation";
+import { JsonlEventStoreAdapter } from "@daedalus/jsonl-event-store";
 
-export function makeTestDeps(): { deps: Deps; baseDir: string } {
+export function makeTestDeps(): { deps: ProposalDeps; baseDir: string } {
   const baseDir = mkdtempSync(join(tmpdir(), "daedalus-"));
   let counter = 0;
-  const deps: Deps = {
+  const deps: ProposalDeps = {
     eventStore: new JsonlEventStoreAdapter(baseDir),
     draftStore: new JsonFileDraftStoreAdapter(baseDir),
     newId: () => `id-${++counter}`,

@@ -3,12 +3,16 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Daedalus — an architecture for autonomous organizations. Proposal Generation v0 vertical slice.",
+  "description": "Daedalus — an architecture for autonomous organizations. Modular monorepo.",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "engines": {
     "node": ">=22.6.0"
   },
   "scripts": {
-    "daedalus": "node src/adapters/cli/index.ts",
-    "test": "node --test"
+    "test": "node --test",
+    "cli": "node apps/cli/src/index.ts"
   }
 }

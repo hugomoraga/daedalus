@@ -78,7 +78,7 @@ The Constitution, the domain model, the event vocabulary, and the policy/workflo
 Capabilities that solve a class of pain. A module may be **born** from Tenant 0's specific pain, but it is **designed** so any tenant with that pain can adopt it unchanged. A module that only works for Tenant 0 is a defect.
 
 ### Tenants — specific
-A concrete organization Daedalus operates. A tenant supplies a **profile** (which modules it uses, its parameters, its context) and its own isolated data. **Tenant 0** is the founder's independent activity — see the [Tenant 0 Profile](../tenants/tenant-0-founder-profile.md).
+A concrete organization Daedalus operates. A tenant supplies a **profile** (which modules it uses, its parameters, its context) and its own isolated data. **Tenant 0** is the founder's independent activity — see the [Tenant 0 Profile](../blueprints/tenants/tenant-0-founder-profile.md).
 
 ---
 
@@ -103,4 +103,4 @@ Every module is justified by how much friction it removes from the human, not by
 
 ---
 
-*Canon. Subordinate to the [Constitution](../memory/constitution.md). Pairs with the [Manifesto](./manifesto.md) (why) and the [Tenant 0 Profile](../tenants/tenant-0-founder-profile.md) (the first concrete case).*
+*Canon. Subordinate to the [Constitution](../memory/constitution.md). Pairs with the [Manifesto](./manifesto.md) (why) and the [Tenant 0 Profile](../blueprints/tenants/tenant-0-founder-profile.md) (the first concrete case).*

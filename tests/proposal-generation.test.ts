@@ -3,13 +3,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { makeTestDeps } from "./helpers.ts";
-import { createLeadUseCase } from "../src/application/core/create-lead.ts";
-import { qualifyLeadUseCase } from "../src/application/core/qualify-lead.ts";
-import { projectLead } from "../src/application/core/projections.ts";
-import { startDraftUseCase } from "../src/application/proposal-generation/start-draft.ts";
-import { addLineItemUseCase } from "../src/application/proposal-generation/add-line-item.ts";
-import { finalizeDraftUseCase } from "../src/application/proposal-generation/finalize-draft.ts";
-import { discardDraftUseCase } from "../src/application/proposal-generation/discard-draft.ts";
+import { createLeadUseCase, qualifyLeadUseCase, projectLead } from "@daedalus/core";
+import {
+  startDraftUseCase,
+  addLineItemUseCase,
+  finalizeDraftUseCase,
+  discardDraftUseCase,
+} from "@daedalus/proposal-generation";
 
 const T = "tenant-0";
 

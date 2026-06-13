@@ -58,5 +58,5 @@ ProposalGenerated      {"proposalId":"6793885c…","leadId":"c9831cd7…","draft
 
 ```
 node --test                     # acceptance criteria
-node src/adapters/cli/index.ts  # prints usage; run the session above
+node apps/cli/src/index.ts      # prints usage; run the session above (after: npm install)
 ```

@@ -3,7 +3,7 @@
 **Status:** Draft · Phase 0 (specification only — no implementation)
 **Type:** Module specification (reusable capability over tenant-scoped data)
 **Owner:** Stewards
-**Tenant of origin:** [Tenant 0 — Founder Profile](../../tenants/tenant-0-founder-profile.md)
+**Tenant of origin:** [Tenant 0 — Founder Profile](../../blueprints/tenants/tenant-0-founder-profile.md)
 **Validation priority:** #1 (see [Roadmap → Module Validation Sequence](../../docs/roadmap.md))
 **Version:** 0.1.0
 **Last updated:** 2026-06-13
@@ -37,7 +37,7 @@ It lets a founder/tenant:
 |---|---|
 | **[Constitution](../../memory/constitution.md)** | Obeys all ten principles. Key: *Everything is an Event* (deliberate offer decisions are events; the live draft is a read-model — §6); *Auditability by Default* (every version/decision traceable); *Human Governance* (the founder finalizes content and the approval gate stays human — Article V); *Policy before Agent* (any future drafting agent acts within policy); *Generic Core, Specific Tenants* (this is a Module — §4); *Simplicity First* (assembly, not a quoting engine). |
 | **[Identity](../../docs/identity.md)** | Litmus test (§6 there): converting interest into offers is *a reusable solution to a class of pain* → a **Module**. Serves the human goal (return the founder's attention from proposal drudgery to judgment) and optimizes traceability/sustainability, not growth. |
-| **[Tenant 0 Profile](../../tenants/tenant-0-founder-profile.md)** | Realizes **Pain #1 — finding clients**, specifically the *closing/conversion* half. Tenant 0 supplies templates, default terms, pricing defaults, language; the module supplies the generic assembly mechanism. |
+| **[Tenant 0 Profile](../../blueprints/tenants/tenant-0-founder-profile.md)** | Realizes **Pain #1 — finding clients**, specifically the *closing/conversion* half. Tenant 0 supplies templates, default terms, pricing defaults, language; the module supplies the generic assembly mechanism. |
 | **[Domain Model](../../docs/domain-model.md)** | Operates over the Core **Commercial** context: consumes a qualified `Lead`, produces a `Proposal`. Adds no new Core bounded context. The approval gate remains a Core, human-governed decision. |
 | **[Event Catalog](../../docs/event-catalog.md)** | Consumes/produces the existing Core value-chain events (`LeadQualified`, `ProposalGenerated`, `ProposalSubmitted`, `ProposalApproved/Rejected`); adds the module draft events in §6. |
 | **[Spec 001 — Revenue Visibility](../001-revenue-visibility/spec.md)** | **Cross-module composition (key validation):** a finalized proposal's *expected value* feeds Revenue Visibility's `expected` revenue (Spec 001, US-2/AC-2). This is the first real test that two modules compose over the shared event substrate. See §4.1. |
@@ -242,4 +242,4 @@ The module owns the **draft**; the Core owns the **Proposal** from `ProposalGene
 
 ---
 
-*Subordinate to the [Constitution](../../memory/constitution.md) and [Identity](../../docs/identity.md). Module of origin: [Tenant 0](../../tenants/tenant-0-founder-profile.md). Composes with [Spec 001 — Revenue Visibility](../001-revenue-visibility/spec.md). Spec-first, conceptual only.*
+*Subordinate to the [Constitution](../../memory/constitution.md) and [Identity](../../docs/identity.md). Module of origin: [Tenant 0](../../blueprints/tenants/tenant-0-founder-profile.md). Composes with [Spec 001 — Revenue Visibility](../001-revenue-visibility/spec.md). Spec-first, conceptual only.*

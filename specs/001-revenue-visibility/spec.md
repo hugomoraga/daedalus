@@ -3,7 +3,7 @@
 **Status:** Draft · Phase 0 (specification only — no implementation)
 **Type:** Module specification (reusable capability over tenant-scoped data)
 **Owner:** Stewards
-**Tenant of origin:** [Tenant 0 — Founder Profile](../../tenants/tenant-0-founder-profile.md)
+**Tenant of origin:** [Tenant 0 — Founder Profile](../../blueprints/tenants/tenant-0-founder-profile.md)
 **Version:** 0.1.0
 **Last updated:** 2026-06-13
 
@@ -36,7 +36,7 @@ It is chosen as Spec 001 because it delivers value to Tenant 0 early, has **low 
 |---|---|
 | **[Constitution](../../memory/constitution.md)** | Obeys all ten principles. Key ones: *Everything is an Event* (financial **facts and decisions** are events; the live projection is a read-model — §6); *Auditability by Default* (every relevant change is traceable); *Policy before Agent* (alert rules are policy-shaped, not agent improvisation); *Generic Core, Specific Tenants* (this is a Module, not Core — §4); *Simplicity First* (visibility only, no accounting). |
 | **[Identity](../../docs/identity.md)** | Passes the litmus test (§6 there): financial visibility is *a reusable solution to a class of pain* → a **Module**, not Core, not a Tenant specific. Serves the founder's goal of returning attention; optimizes for **traceability and sustainability**, not growth. |
-| **[Tenant 0 Profile](../../tenants/tenant-0-founder-profile.md)** | Realizes the **"basic accounting"** pain (Pain #2). Tenant 0 supplies the data, currency, and alert thresholds; the module supplies the generic logic. |
+| **[Tenant 0 Profile](../../blueprints/tenants/tenant-0-founder-profile.md)** | Realizes the **"basic accounting"** pain (Pain #2). Tenant 0 supplies the data, currency, and alert thresholds; the module supplies the generic logic. |
 | **[Domain Model](../../docs/domain-model.md)** | Consumes Core events from Commercial and Delivery & Billing; adds no new Core bounded context (per the ratified decision to *not* create Finance & Compliance in Core yet). |
 | **[Event Catalog](../../docs/event-catalog.md)** | Replaces the placeholder `RevenueProjectionUpdated` with the concrete module event set defined in §6. |
 
@@ -228,4 +228,4 @@ Rule **logic** is generic (Module). Rule **thresholds** are tenant-configured (T
 
 ---
 
-*Subordinate to the [Constitution](../../memory/constitution.md) and [Identity](../../docs/identity.md). Module of origin: [Tenant 0](../../tenants/tenant-0-founder-profile.md). Spec-first, conceptual only.*
+*Subordinate to the [Constitution](../../memory/constitution.md) and [Identity](../../docs/identity.md). Module of origin: [Tenant 0](../../blueprints/tenants/tenant-0-founder-profile.md). Spec-first, conceptual only.*

@@ -1,12 +1,12 @@
 # Daedalus Repository Structure
 
-**Status:** Foundational · Phase 0
-**Version:** 0.2.0
+**Status:** Foundational · Phase 1
+**Version:** 0.3.0
 **Last updated:** 2026-06-13
 
-> **Design intent.** The repository layout *is* part of the architecture. For an Organization-as-Code system, the directory tree is the first place a newcomer reads the organization's shape. It must (a) follow the **GitHub Spec Kit** convention so spec-driven workflows work out of the box, and (b) give every constitutional first-class concept — Policy, Workflow, Agent, Event, Domain, Governance — a stable home so it can evolve as a module without disturbing the core.
+> **Design intent.** The repository layout *is* part of the architecture. For an Organization-as-Code system, the directory tree is the first place a newcomer reads the organization's shape. After [ADR-003](../governance/decisions/ADR-003-modular-monorepo.md) the repo is a **modular monorepo** that separates three things cleanly: **implementation** (`apps/`, `packages/`), **conceptual model** (`blueprints/`), and **canon/design** (`memory/`, `docs/`, `specs/`, `governance/`).
 >
-> **Principle applied — Simplicity First.** We scaffold the *shape* now (directories + READMEs explaining intent) but do not fill it with speculative artifacts. A directory with a clear README beats ten empty subfolders guessing at the future.
+> **Principle applied — Simplicity First.** Packages exist only where a real boundary pays for itself. No empty packages; `revenue-visibility` is created when it is built, not before.
 
 ---
 
@@ -15,101 +15,89 @@
 ```
 daedalus/
 ├── README.md                     # Entry point: what this is, how to navigate
-├── memory/
-│   ├── constitution.md           # Supreme governing doc (Spec Kit convention)
-│   └── technical-principles.md   # How we build (hexagonal, event-first); binds every /plan
 │
-├── docs/                         # Foundational, human-facing documents
-│   ├── manifesto.md
-│   ├── identity.md               #   platform/tenant boundary — Core vs Modules vs Tenants
-│   ├── domain-model.md
-│   ├── event-catalog.md
-│   ├── roadmap.md
-│   ├── repository-structure.md   # (this file)
+├── memory/                       # Canon injected into every spec & /plan (Spec Kit)
+│   ├── constitution.md           #   supreme governing doc
+│   └── technical-principles.md   #   how we build (hexagonal, event-first); binds every /plan
+│
+├── docs/                         # Human-facing documents
+│   ├── manifesto.md  identity.md  domain-model.md  event-catalog.md  roadmap.md
+│   ├── repository-structure.md   #   (this file)
 │   ├── reviews/                  #   architecture reviews
 │   └── evidence/                 #   recorded validation runs of built slices
 │
-├── specs/                        # Spec-Driven Development: one spec per capability
-│   └── README.md                 #   every capability begins here, before code
+├── specs/                        # Spec-Driven Development: spec.md + plan.md per capability
+│   ├── 001-revenue-visibility/
+│   └── 002-proposal-generation/
 │
-├── domains/                      # Bounded contexts — the generic Core (conceptual)
-│   ├── README.md
-│   ├── tenancy-identity/         #   Tenant, Customer
-│   ├── commercial/               #   Lead, Proposal
-│   └── delivery-billing/         #   Project, Invoice, Payment
+├── governance/                   # Decisions & amendments
+│   ├── decisions/                #   ADRs (ADR-001, ADR-002, ADR-003, …)
+│   └── amendments/               #   constitutional amendments
 │
-├── modules/                      # Reusable capabilities composing the Core
-│   └── README.md                 #   born from real pain, designed for any tenant
+├── apps/                         # Executables / driving adapters
+│   └── cli/                      #   the CLI (composition root) — @daedalus/cli
 │
-├── tenants/                      # Specific organizations Daedalus operates
-│   └── tenant-0-founder-profile.md  # Tenant 0 — the founder's activity (NOT Core)
+├── packages/                     # Reusable code: core + modules + shared adapters
+│   ├── core/                     #   @daedalus/core — generic Core (domain + application + ports)
+│   ├── proposal-generation/      #   @daedalus/proposal-generation — module (+ its draft adapter)
+│   └── jsonl-event-store/        #   @daedalus/jsonl-event-store — shared infra adapter
 │
-├── governance/                   # The cross-cutting governance layer
-│   ├── README.md
-│   ├── decisions/                #   Architecture Decision Records (ADRs)
-│   └── amendments/               #   Constitutional amendment proposals + history
+├── config/
+│   └── tenants/                  # runtime tenant config (tenant-0.ts) — NO PII
 │
-├── policies/                     # First-class policies (Policy before Agent)
-│   └── README.md
-│
-├── workflows/                    # Declarative process definitions
-│   └── README.md
-│
-├── agents/                       # Bounded executors and their definitions
-│   └── README.md
-│
-├── events/                       # Event definitions / catalog source of truth
-│   └── README.md
-│
-├── knowledge/                    # Organizational knowledge base / reference
-│   └── README.md
+├── blueprints/                   # CONCEPTUAL MODEL (not code) — grouped to reduce root noise
+│   ├── domains/ modules/ tenants/ events/
+│   └── policies/ workflows/ agents/ knowledge/
 │
 ├── infrastructure/               # Infrastructure as Code (reproducible, versioned)
-│   └── README.md
-│
-├── src/                          # Implementation code — hexagonal (see memory/technical-principles.md)
-│   ├── domain/                   #   pure: aggregates, value objects, domain events (Core + modules)
-│   ├── application/              #   use cases / command handlers + ports
-│   ├── adapters/                 #   driven (JSONL stores) + driving (CLI) adapters
-│   └── config/tenants/           #   tenant config (e.g. tenant-0) — no PII
 │
 └── .data/                        # GITIGNORED runtime event logs + draft work-areas (no PII)
 ```
 
 ---
 
+## The three zones
+
+| Zone | Directories | Holds |
+|---|---|---|
+| **Implementation** | `apps/`, `packages/`, `config/` | The running system: code, composition roots, runtime config. |
+| **Conceptual model** | `blueprints/` | DDD/design artifacts that describe the system but are not code. Grouped so they don't compete visually with implementation. |
+| **Canon & design** | `memory/`, `docs/`, `specs/`, `governance/` | The non-negotiable context, human docs, specs, and decisions. |
+
 ## Why each top-level directory exists
 
 | Directory | Maps to | Rationale |
 |---|---|---|
-| `memory/` | Constitution + Technical Principles | Spec Kit convention — the non-negotiable context injected into every spec and `/plan`. Named *memory* because it is what the system must never forget. |
-| `docs/` | Manifesto, Identity, Domain Model, Event Catalog, Roadmap | Human-facing foundations. The "why" and "what," separate from machine-consumed artifacts. `identity.md` fixes the platform/tenant boundary. |
-| `specs/` | Spec-Driven Development | Every capability begins as a spec here. Enforces the constitutional principle structurally. |
-| `domains/` | Bounded contexts & aggregates (generic Core) | One folder per bounded context. New contexts (People, Finance) are added as siblings — *Modular Evolution* made literal. |
-| `modules/` | Reusable capabilities | Compositions of Core domains/events/policies that solve a class of pain (Opportunity Discovery, Tax & Compliance Guard, …). Born from a tenant's pain, designed for any tenant — *Generic Core, Specific Tenants* (Principle 10). |
-| `tenants/` | Specific organizations | One profile per operated organization. **Tenant 0** is the founder's activity. Quarantines everything tenant-specific so it never leaks into the Core. |
-| `governance/` | Decision hierarchy, amendments | ADRs and constitutional amendments live here, version-controlled. Makes governance auditable. |
-| `policies/` | Policy domain | Policies as first-class, versioned artifacts — the source of organizational behavior. |
-| `workflows/` | Workflow domain | Declarative process definitions, separate from the policies that bind them and the agents that execute them. |
-| `agents/` | Agent domain | Agent definitions and their bounded capabilities. Kept distinct so "agents don't define behavior" is visible in the layout. |
-| `events/` | Event Catalog (canonical) | The vocabulary of state changes. Separated from `docs/` because events are machine-relevant artifacts, not just prose. |
-| `knowledge/` | Knowledge base | Reference material the organization relies on. The substrate for future knowledge-driven capabilities. |
-| `infrastructure/` | Infrastructure as Code | Reproducible, versioned infra. Required by the constitution's IaC mandate. |
-| `src/` | Implementation code | Hexagonal layers (domain / application / adapters / config) per [Technical Principles](../memory/technical-principles.md). The conceptual `domains/`, `modules/`, `tenants/` dirs are docs; `src/` is the code that realizes them. |
-| `.data/` | Runtime event logs + work-areas | **Gitignored.** Append-only JSONL per tenant. No real tenant data / PII in version control. |
+| `memory/` | Constitution + Technical Principles | Spec Kit convention — non-negotiable context injected into every spec and `/plan`. |
+| `docs/` | Manifesto, Identity, Domain Model, Event Catalog, Roadmap, reviews, evidence | Human-facing foundations and recorded validation runs. |
+| `specs/` | Spec-Driven Development | Every capability begins as `spec.md`, then `plan.md`, before code. |
+| `governance/` | ADRs + amendments | Decisions are version-controlled and auditable. |
+| `apps/` | Driving adapters / executables | `apps/cli` is the composition root that wires concrete adapters to ports. Future: more apps (or services) as siblings. |
+| `packages/` | Core + modules + shared adapters | Enforced boundaries via workspaces: `@daedalus/core` is the hub; modules and adapters depend on it, never on each other's internals. |
+| `config/tenants/` | Runtime tenant config | Tenant-scoped parameters (currency, enabled modules). NO PII. Distinct from the conceptual tenant *profile* in `blueprints/tenants/`. |
+| `blueprints/` | Conceptual model | DDD bounded contexts, module catalog, tenant profiles, event/policy/workflow/agent design notes. Not code. `policies/`, `workflows/`, `agents/` will graduate to packages/config when their phases arrive. |
+| `infrastructure/` | Infrastructure as Code | Reproducible, versioned infra. |
+| `.data/` | Runtime logs + work-areas | **Gitignored.** Append-only JSONL per tenant. No real data / PII in version control. |
 
 ---
+
+## Workspace mechanics
+
+- **npm workspaces**, declared in the root `package.json` (`packages/*`, `apps/*`). Each package has its own `package.json` with a `@daedalus/*` name and `exports` pointing at its `src/index.ts`.
+- **Zero external runtime dependencies.** Code runs on **Node 22 native TypeScript type-stripping** (`node apps/cli/src/index.ts`, `node --test`). `npm install` only symlinks the workspace packages; `node_modules/` is gitignored.
+- **Dependency rule:** `apps → packages`, and within packages `adapters → application → domain`. `@daedalus/core` depends on nothing.
 
 ## Conventions
 
-- **Specs precede code.** Nothing of substance enters `domains/`, `policies/`, `workflows/`, or `agents/` without a corresponding spec in `specs/`.
-- **Governance is auditable.** Significant architectural choices are recorded as ADRs in `governance/decisions/`. Constitutional changes go through `governance/amendments/` and the Article VI process.
-- **The core stays small.** New capabilities are added as modules (new folders under `domains/`, new files under `policies/` etc.), never by reshaping the top level. If the top level needs to change, that is itself an architectural decision requiring an ADR.
-- **READMEs carry intent.** Every directory explains *why it exists and what belongs in it*, so the repository is self-documenting for a multi-decade lifespan and a rotating set of stewards.
+- **Specs precede code.** Nothing of substance enters `packages/` or `apps/` without a `spec.md` (and usually a `plan.md`) in `specs/`.
+- **Governance is auditable.** Significant architectural choices are ADRs in `governance/decisions/`. Constitutional changes go through `governance/amendments/`.
+- **No empty packages.** A package is created when it is built (e.g. `revenue-visibility` arrives with its implementation, not before).
+- **The Core stays generic.** New modules are new packages depending on `@daedalus/core`; the Core never depends on a module. Changing the top-level zones requires an ADR.
 
-> **Edge case flagged for human review:**
-> - **`events/` vs. `docs/event-catalog.md` — single source of truth.** Right now the catalog lives in `docs/` (human-facing) and `events/` is scaffolded for machine-relevant event definitions. Before Phase 1, confirm which becomes canonical to avoid two drifting copies. Recommendation: `docs/event-catalog.md` stays the narrative/rationale; `events/` holds the formal definitions once they exist — with the catalog linking to them.
+> **Edge cases flagged for human review:**
+> - **`blueprints/events/` vs. `docs/event-catalog.md`.** The narrative catalog lives in `docs/`; `blueprints/events/` is scaffolded for formal definitions. Confirm the single source of truth before formal event definitions exist.
+> - **`blueprints/policies|workflows|agents` will graduate out.** When the Workflow (Phase 2), Policy (Phase 3), and Agent (Phase 4) engines arrive, these stop being conceptual and become packages or runtime config. Their place in `blueprints/` is temporary.
 
 ---
 
-*Subordinate to the [Constitution](../memory/constitution.md). The layout is architecture; changing the top level requires an ADR.*
+*Subordinate to the [Constitution](../memory/constitution.md) and [Technical Principles](../memory/technical-principles.md). The layout is architecture; changing the top-level zones requires an ADR ([ADR-003](../governance/decisions/ADR-003-modular-monorepo.md)).*

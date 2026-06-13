@@ -1,0 +1,14 @@
+{
+  "name": "@daedalus/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "daedalus": "./src/index.ts"
+  },
+  "dependencies": {
+    "@daedalus/core": "*",
+    "@daedalus/proposal-generation": "*",
+    "@daedalus/jsonl-event-store": "*"
+  }
+}

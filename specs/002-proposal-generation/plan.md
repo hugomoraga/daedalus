@@ -24,45 +24,24 @@
 
 ---
 
-## 2. Architecture — hexagonal, dependencies point inward
+## 2. Architecture — hexagonal in a modular monorepo
 
-`adapters → application → domain`. The **domain depends on nothing**. The Core / Module / Tenant split lives *inside* `domain/` and `application/`; hexagonal layers are the outer axis.
+Built as a modular monorepo per [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md). `apps → packages`; within a package `adapters → application → domain`. `@daedalus/core` depends on nothing.
 
 ```
-src/
-  domain/
-    core/
-      event.ts               # Event + lineage (tenantId, actor, cause, ts) — value objects
-      value-chain.ts         # Core domain events: LeadCreated, LeadQualified, ProposalGenerated
-      lead.ts                # Lead aggregate (minimal: unqualified -> qualified)
-    proposal-generation/
-      proposal-draft.ts      # Draft aggregate + invariants; emits module domain events
-      events.ts              # ProposalDraftCreated / ProposalDraftFinalized / ProposalDraftDiscarded
-      value-objects.ts       # Money, PricingLineItem, ExpectedValue
-  application/
-    ports/
-      event-store.ts         # EventStorePort  (append / readStream, tenant-scoped)
-      draft-store.ts         # DraftStorePort  (load / save / delete the mutable work-area)
-    core/
-      create-lead.ts         # seed use case  -> LeadCreated
-      qualify-lead.ts        # seed use case  -> LeadQualified
-    proposal-generation/
-      start-draft.ts         # use case: requires a qualified Lead -> ProposalDraftCreated
-      add-line-item.ts       # use case: mutate draft (NO event)
-      set-scope.ts           # use case: mutate draft (NO event)
-      finalize-draft.ts      # use case: ProposalDraftFinalized + single ProposalGenerated(expectedValue)
-      discard-draft.ts       # use case: ProposalDraftDiscarded
-  adapters/
-    persistence/
-      jsonl-event-store.ts   # JsonlEventStoreAdapter implements EventStorePort  (driven)
-      json-draft-store.ts    # JsonFileDraftStoreAdapter implements DraftStorePort (driven)
-    cli/
-      index.ts               # driving adapter: parse args -> Command -> use case -> render. NO logic.
-  config/
-    tenants/tenant-0.ts      # currency, enabled modules, template refs (Tenant layer; NO PII)
-.data/                       # gitignored
-  tenants/<tenantId>/events.jsonl
-  tenants/<tenantId>/drafts/<draftId>.json
+apps/cli/src/index.ts              # driving adapter: parse args -> Command -> use case -> render. NO logic.
+packages/core/                     # @daedalus/core
+  src/domain/                      #   event.ts, value-chain.ts, lead.ts (pure)
+  src/application/                 #   create-lead, qualify-lead, projections, lineage, deps (CoreDeps)
+  src/application/ports/           #   event-store.ts (EventStorePort)
+packages/proposal-generation/      # @daedalus/proposal-generation (depends on core)
+  src/domain/                      #   proposal-draft.ts, events.ts, value-objects.ts
+  src/application/                 #   start/add-item/set-scope/finalize/discard, deps (ProposalDeps)
+  src/application/ports/           #   draft-store.ts (DraftStorePort)
+  src/adapters/                    #   json-draft-store.ts (module-specific driven adapter)
+packages/jsonl-event-store/        # @daedalus/jsonl-event-store (shared driven adapter, impl EventStorePort)
+config/tenants/tenant-0.ts         # currency, enabled modules (Tenant layer; NO PII)
+.data/                             # gitignored: tenants/<id>/events.jsonl, tenants/<id>/drafts/<id>.json
 ```
 
 > **Two ports, both earning their place** (Technical Principles §2, "ports earn their place"):

@@ -9,6 +9,7 @@
   "dependencies": {
     "@daedalus/core": "*",
     "@daedalus/proposal-generation": "*",
+    "@daedalus/revenue-visibility": "*",
     "@daedalus/jsonl-event-store": "*"
   }
 }

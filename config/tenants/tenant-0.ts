@@ -10,9 +10,9 @@ export type TenantConfig = {
 
 export const tenant0: TenantConfig = {
   id: "tenant-0",
-  // Placeholder — founder to confirm (Spec 002 Q2 / Spec 001 Q4). Drives expectedValue currency.
+  // Confirmed initial currency for Tenant 0 (resolves Spec 002 Q2 / Spec 001 Q4).
   currency: "CLP",
-  enabledModules: ["proposal-generation"],
+  enabledModules: ["proposal-generation", "revenue-visibility"],
   templates: {
     standard: { sections: ["Context", "Scope", "Pricing", "Terms"] },
   },

@@ -57,6 +57,17 @@ Define an **`EventStorePort`**. The initial implementation is a **`JsonlEventSto
 ### State reconstruction from events
 Even if simple, state must be reconstructable by **replaying events**. This validates the event-first model early — the whole point of the first slice.
 
+### Event lineage (minimal traceability)
+Every `DomainEvent` carries: `eventId`, `type`, `tenantId`, `occurredAt`, `actor`, `causationId`, `correlationId`, `payload`. `correlationId` groups all events in one logical flow; `causationId` links an event to the one that caused it (`null` at a flow's origin). A command-initiated flow starts a fresh correlation (`startLineage`); a reactor building a **derived** event (e.g. a module reacting to another module's event) uses `followFrom(event)` to inherit the correlation and set causation. This is the minimal seam for cross-module traceability — **no event bus, no workflow engine**.
+
+### Package export discipline
+Packages are **explicit contracts**, not folders of barrels that expose everything:
+- Each `package.json` declares explicit `exports`. The main entry (`.`) exposes only the **public contract** (use cases, command types, the ports and domain types strictly needed to consume them).
+- **Adapters live behind explicit subpaths** (e.g. `@daedalus/proposal-generation/adapters`), never in the main barrel. Composition roots (apps) import them from there.
+- **No deep imports.** With no wildcard in `exports`, Node blocks reaching into a package's internals (`ERR_PACKAGE_PATH_NOT_EXPORTED`), so accidental coupling is impossible.
+- Barrels use **curated named exports**, not `export *`.
+- Tests consume the **public API**, and adapters from their subpath — exercising the same contract consumers see.
+
 ---
 
 ## Reference Architecture (the canonical layout)

@@ -1,6 +1,6 @@
 // Use case: start a proposal draft from a QUALIFIED lead (Spec 002 AC-1).
 
-import { appendIntents, projectLead } from "@daedalus/core";
+import { appendIntents, projectLead, startLineage } from "@daedalus/core";
 import type { ProposalDeps } from "./deps.ts";
 import { startDraft } from "../domain/proposal-draft.ts";
 
@@ -21,6 +21,6 @@ export async function startDraftUseCase(deps: ProposalDeps, cmd: StartDraftComma
   }
   const { draft, events: intents } = startDraft(deps.newId(), cmd.tenantId, cmd.leadId, cmd.template);
   await deps.draftStore.save(draft);
-  await appendIntents(deps, cmd.tenantId, intents);
+  await appendIntents(deps, cmd.tenantId, intents, startLineage(deps.newId));
   return { draftId: draft.id };
 }

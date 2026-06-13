@@ -92,3 +92,24 @@ test("AC-7: lead state is reconstructable by replaying events", async () => {
   await qualifyLeadUseCase(deps, { tenantId: T, leadId });
   assert.equal(projectLead(await deps.eventStore.readStream(T), leadId)?.state, "qualified");
 });
+
+test("lineage: every event carries a correlationId; a flow's events share one", async () => {
+  const { deps } = makeTestDeps();
+  const { leadId } = await createLeadUseCase(deps, { tenantId: T, customer: "ACME (mock)" });
+  await qualifyLeadUseCase(deps, { tenantId: T, leadId });
+  const { draftId } = await startDraftUseCase(deps, { tenantId: T, leadId, template: "standard" });
+  await finalizeDraftUseCase(deps, { tenantId: T, draftId, currency: "CLP" });
+
+  const events = await deps.eventStore.readStream(T);
+  // Every event has lineage fields.
+  for (const e of events) {
+    assert.equal(typeof e.eventId, "string");
+    assert.equal(typeof e.correlationId, "string");
+    assert.ok("causationId" in e);
+  }
+  // The finalize flow emits ProposalDraftFinalized + ProposalGenerated sharing one correlationId.
+  const finalized = events.find((e) => e.type === "ProposalDraftFinalized");
+  const generated = events.find((e) => e.type === "ProposalGenerated");
+  assert.ok(finalized && generated);
+  assert.equal(finalized.correlationId, generated.correlationId);
+});

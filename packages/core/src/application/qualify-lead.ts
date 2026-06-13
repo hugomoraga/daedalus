@@ -1,7 +1,7 @@
 // Use case: qualify a Lead. Replays events to rebuild the lead before deciding.
 
 import type { CoreDeps } from "./deps.ts";
-import { appendIntents } from "./lineage.ts";
+import { appendIntents, startLineage } from "./lineage.ts";
 import { qualifyLead } from "../domain/lead.ts";
 import { projectLead } from "./projections.ts";
 
@@ -17,5 +17,5 @@ export async function qualifyLeadUseCase(deps: CoreDeps, cmd: QualifyLeadCommand
     throw new Error(`Lead ${cmd.leadId} not found in tenant ${cmd.tenantId}`);
   }
   const intents = qualifyLead(lead);
-  await appendIntents(deps, cmd.tenantId, intents);
+  await appendIntents(deps, cmd.tenantId, intents, startLineage(deps.newId));
 }

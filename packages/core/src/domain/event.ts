@@ -2,13 +2,17 @@
 // Pure types. No I/O, no infrastructure.
 
 // A persisted, immutable domain event with full lineage.
+// Lineage fields make events traceable and let derived events (across modules) be followed:
+//   - causationId: the eventId of the event/command that directly caused this one (null at flow origin)
+//   - correlationId: shared across every event in one logical flow, so a chain can be reconstructed
 export type DomainEvent = {
-  id: string;
+  eventId: string;
   type: string;
   tenantId: string;
   occurredAt: string; // ISO-8601
   actor: string;
-  cause: string | null; // id of the triggering event/command, if any
+  causationId: string | null;
+  correlationId: string;
   payload: Record<string, unknown>;
 };
 

@@ -72,6 +72,8 @@ This is the architectural decision that keeps the platform from collapsing into 
 ### Core — generic
 The Constitution, the domain model, the event vocabulary, and the policy/workflow/agent engines. The Core knows **nothing** about any specific tenant. It could operate a different founder tomorrow with no change. (Constitution, Principle 10; protected from amendment under Article VI.)
 
+> The `Lead → Payment` value chain is the **first reference workflow** for validation, **not** the universal lifecycle of every organization. The universal root entity is deliberately deferred — see [ADR-001](../governance/decisions/ADR-001-defer-root-entity-selection.md).
+
 ### Modules — reusable
 Capabilities that solve a class of pain. A module may be **born** from Tenant 0's specific pain, but it is **designed** so any tenant with that pain can adopt it unchanged. A module that only works for Tenant 0 is a defect.
 

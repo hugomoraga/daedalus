@@ -46,6 +46,8 @@ Lead → Proposal → Approval → Project → Delivery → Invoice → Payment
 
 Everything modeled here exists to support *this* chain. It is generic: a "Lead" means the same thing for any tenant. Tenant 0's specifics (who its clients are, its jurisdiction) live in its [profile](../tenants/tenant-0-founder-profile.md), not here.
 
+> **Guardrail — reference workflow, not universal ontology.** The `Lead → Payment` chain is the **first reference workflow** used to validate the platform through Tenant 0. It is **not** assumed to be the universal lifecycle of every organization Daedalus may operate (a product venture, an NGO, a studio, a research project may have entirely different chains). The choice of a universal root entity is deliberately deferred — see [ADR-001](../governance/decisions/ADR-001-defer-root-entity-selection.md). Future specs must not implicitly turn this commercial chain into the system's root ontology by adding commercial-specific Core concepts without an ADR.
+
 ---
 
 ## 2. Bounded Contexts

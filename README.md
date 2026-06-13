@@ -23,11 +23,12 @@ Phase 0 — Foundations. No production code, schemas, APIs, or UI by design. Rea
 1. **[Manifesto](docs/manifesto.md)** — what Daedalus is, why it exists, what we optimize for.
 2. **[Identity](docs/identity.md)** — the platform/tenant boundary; Core vs. Modules vs. Tenants. *Canon.*
 3. **[Constitution](memory/constitution.md)** — immutable principles, governance, decision hierarchy, agent limits, human responsibilities. *Supreme governing document.*
-4. **[Domain Model](docs/domain-model.md)** — domains, bounded contexts, aggregates, modules, relationships.
-5. **[Event Catalog](docs/event-catalog.md)** — the vocabulary of organizational events.
-6. **[Roadmap](docs/roadmap.md)** — capability maturity, validated through Tenant 0.
-7. **[Repository Structure](docs/repository-structure.md)** — how this repo is organized and why.
-8. **[Tenant 0 — Founder Profile](tenants/tenant-0-founder-profile.md)** — the first concrete tenant. *Tenant-scoped, not Core.*
+4. **[Technical Principles](memory/technical-principles.md)** — how we build: hexagonal architecture, event-first, tenant isolation, CLI + JSONL first. *Canon for implementation; binds every `/plan`.*
+5. **[Domain Model](docs/domain-model.md)** — domains, bounded contexts, aggregates, modules, relationships.
+6. **[Event Catalog](docs/event-catalog.md)** — the vocabulary of organizational events.
+7. **[Roadmap](docs/roadmap.md)** — capability maturity, validated through Tenant 0.
+8. **[Repository Structure](docs/repository-structure.md)** — how this repo is organized and why.
+9. **[Tenant 0 — Founder Profile](tenants/tenant-0-founder-profile.md)** — the first concrete tenant. *Tenant-scoped, not Core.*
 
 ---
 

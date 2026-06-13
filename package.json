@@ -1,0 +1,14 @@
+{
+  "name": "daedalus",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Daedalus — an architecture for autonomous organizations. Proposal Generation v0 vertical slice.",
+  "engines": {
+    "node": ">=22.6.0"
+  },
+  "scripts": {
+    "daedalus": "node src/adapters/cli/index.ts",
+    "test": "node --test"
+  }
+}

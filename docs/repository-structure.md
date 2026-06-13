@@ -16,7 +16,8 @@
 daedalus/
 ├── README.md                     # Entry point: what this is, how to navigate
 ├── memory/
-│   └── constitution.md           # Supreme governing doc (Spec Kit convention)
+│   ├── constitution.md           # Supreme governing doc (Spec Kit convention)
+│   └── technical-principles.md   # How we build (hexagonal, event-first); binds every /plan
 │
 ├── docs/                         # Foundational, human-facing documents
 │   ├── manifesto.md
@@ -24,7 +25,9 @@ daedalus/
 │   ├── domain-model.md
 │   ├── event-catalog.md
 │   ├── roadmap.md
-│   └── repository-structure.md   # (this file)
+│   ├── repository-structure.md   # (this file)
+│   ├── reviews/                  #   architecture reviews
+│   └── evidence/                 #   recorded validation runs of built slices
 │
 ├── specs/                        # Spec-Driven Development: one spec per capability
 │   └── README.md                 #   every capability begins here, before code
@@ -61,8 +64,16 @@ daedalus/
 ├── knowledge/                    # Organizational knowledge base / reference
 │   └── README.md
 │
-└── infrastructure/               # Infrastructure as Code (reproducible, versioned)
-    └── README.md
+├── infrastructure/               # Infrastructure as Code (reproducible, versioned)
+│   └── README.md
+│
+├── src/                          # Implementation code — hexagonal (see memory/technical-principles.md)
+│   ├── domain/                   #   pure: aggregates, value objects, domain events (Core + modules)
+│   ├── application/              #   use cases / command handlers + ports
+│   ├── adapters/                 #   driven (JSONL stores) + driving (CLI) adapters
+│   └── config/tenants/           #   tenant config (e.g. tenant-0) — no PII
+│
+└── .data/                        # GITIGNORED runtime event logs + draft work-areas (no PII)
 ```
 
 ---
@@ -71,7 +82,7 @@ daedalus/
 
 | Directory | Maps to | Rationale |
 |---|---|---|
-| `memory/` | Constitution | Spec Kit convention — the non-negotiable context for every spec. Named *memory* because it is what the system must never forget. |
+| `memory/` | Constitution + Technical Principles | Spec Kit convention — the non-negotiable context injected into every spec and `/plan`. Named *memory* because it is what the system must never forget. |
 | `docs/` | Manifesto, Identity, Domain Model, Event Catalog, Roadmap | Human-facing foundations. The "why" and "what," separate from machine-consumed artifacts. `identity.md` fixes the platform/tenant boundary. |
 | `specs/` | Spec-Driven Development | Every capability begins as a spec here. Enforces the constitutional principle structurally. |
 | `domains/` | Bounded contexts & aggregates (generic Core) | One folder per bounded context. New contexts (People, Finance) are added as siblings — *Modular Evolution* made literal. |
@@ -84,6 +95,8 @@ daedalus/
 | `events/` | Event Catalog (canonical) | The vocabulary of state changes. Separated from `docs/` because events are machine-relevant artifacts, not just prose. |
 | `knowledge/` | Knowledge base | Reference material the organization relies on. The substrate for future knowledge-driven capabilities. |
 | `infrastructure/` | Infrastructure as Code | Reproducible, versioned infra. Required by the constitution's IaC mandate. |
+| `src/` | Implementation code | Hexagonal layers (domain / application / adapters / config) per [Technical Principles](../memory/technical-principles.md). The conceptual `domains/`, `modules/`, `tenants/` dirs are docs; `src/` is the code that realizes them. |
+| `.data/` | Runtime event logs + work-areas | **Gitignored.** Append-only JSONL per tenant. No real tenant data / PII in version control. |
 
 ---
 

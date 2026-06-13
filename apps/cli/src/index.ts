@@ -6,7 +6,6 @@ import { parseArgs } from "node:util";
 import { randomUUID } from "node:crypto";
 import { createLeadUseCase, qualifyLeadUseCase } from "@daedalus/core";
 import {
-  JsonFileDraftStoreAdapter,
   startDraftUseCase,
   addLineItemUseCase,
   setScopeUseCase,
@@ -14,8 +13,9 @@ import {
   discardDraftUseCase,
 } from "@daedalus/proposal-generation";
 import type { ProposalDeps } from "@daedalus/proposal-generation";
+import { JsonFileDraftStoreAdapter } from "@daedalus/proposal-generation/adapters";
 import { JsonlEventStoreAdapter } from "@daedalus/jsonl-event-store";
-import { tenant0 } from "../../../config/tenants/tenant-0.ts";
+import { loadTenantConfig, defaultTenantId } from "../../../config/tenants/index.ts";
 
 const DATA_DIR = ".data";
 
@@ -27,10 +27,6 @@ function buildDeps(): ProposalDeps {
     now: () => new Date().toISOString(),
     actor: "cli",
   };
-}
-
-function currencyFor(tenantId: string): string {
-  return tenantId === tenant0.id ? tenant0.currency : "USD";
 }
 
 function requireOpt(value: string | undefined, name: string): string {
@@ -56,7 +52,7 @@ async function main(): Promise<void> {
   });
 
   const command = positionals[0];
-  const tenantId = values.tenant ?? tenant0.id;
+  const tenantId = values.tenant ?? defaultTenantId;
   const deps = buildDeps();
 
   switch (command) {
@@ -110,7 +106,7 @@ async function main(): Promise<void> {
       const out = await finalizeDraftUseCase(deps, {
         tenantId,
         draftId: requireOpt(values.draft, "draft"),
-        currency: currencyFor(tenantId),
+        currency: loadTenantConfig(tenantId).currency,
       });
       console.log(
         `ProposalDraftFinalized + ProposalGenerated  proposal=${out.proposalId}  ` +

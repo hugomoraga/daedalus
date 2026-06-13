@@ -1,6 +1,6 @@
 // Use case: discard a draft. Emits ProposalDraftDiscarded; no Core Proposal is created (Spec 002 AC-6).
 
-import { appendIntents } from "@daedalus/core";
+import { appendIntents, startLineage } from "@daedalus/core";
 import type { ProposalDeps } from "./deps.ts";
 import { discardDraft } from "../domain/proposal-draft.ts";
 
@@ -16,5 +16,5 @@ export async function discardDraftUseCase(deps: ProposalDeps, cmd: DiscardDraftC
   }
   const { draft: discarded, events: intents } = discardDraft(draft);
   await deps.draftStore.save(discarded);
-  await appendIntents(deps, cmd.tenantId, intents);
+  await appendIntents(deps, cmd.tenantId, intents, startLineage(deps.newId));
 }

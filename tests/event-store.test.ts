@@ -10,12 +10,13 @@ import type { DomainEvent } from "@daedalus/core";
 
 function evt(tenantId: string, type: string, n: number): DomainEvent {
   return {
-    id: `e-${n}`,
+    eventId: `e-${n}`,
     type,
     tenantId,
     occurredAt: "2026-06-13T00:00:00.000Z",
     actor: "test",
-    cause: null,
+    causationId: null,
+    correlationId: `c-${n}`,
     payload: { n },
   };
 }

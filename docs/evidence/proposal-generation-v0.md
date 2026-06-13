@@ -47,7 +47,7 @@ ProposalGenerated      {"proposalId":"6793885c…","leadId":"c9831cd7…","draft
 
 ## What this proves
 
-- **Event-First works.** Five auditable, append-only, tenant-scoped events with full lineage (id, type, tenantId, occurredAt, actor, cause, payload).
+- **Event-First works.** Five auditable, append-only, tenant-scoped events with full lineage (`eventId`, `type`, `tenantId`, `occurredAt`, `actor`, `causationId`, `correlationId`, `payload`); the finalize flow's events share a `correlationId`.
 - **The draft is a read-model (Spec 002 §6).** The two `add-item` edits emitted **no** events — only deliberate milestones did.
 - **Clean Module → Core handoff.** `finalize` emitted the module's `ProposalDraftFinalized` **and exactly one** Core `ProposalGenerated` (no duplication, R1).
 - **Cross-module contract ready.** `ProposalGenerated` carries `expectedValue {amount, currency}` for Revenue Visibility (Spec 001) to consume later.

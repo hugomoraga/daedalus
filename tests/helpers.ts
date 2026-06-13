@@ -5,7 +5,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { ProposalDeps } from "@daedalus/proposal-generation";
-import { JsonFileDraftStoreAdapter } from "@daedalus/proposal-generation";
+import { JsonFileDraftStoreAdapter } from "@daedalus/proposal-generation/adapters";
 import { JsonlEventStoreAdapter } from "@daedalus/jsonl-event-store";
 
 export function makeTestDeps(): { deps: ProposalDeps; baseDir: string } {

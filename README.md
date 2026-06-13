@@ -4,7 +4,7 @@
 
 Daedalus is a **platform**, not a company. It lets an organization be modeled, operated, and evolved as a software system — *Organization as Code* — where processes are explicit, policies are first-class, decisions are auditable, and agents execute work under governance while humans stay accountable.
 
-It is designed to operate **many** independent organizations, each as an isolated tenant. Its first tenant is the founder's independent professional activity — **Tenant 0** — the first real validation case, not the definition of the system. **Daedalus is not "Hugo OS."**
+It is designed to operate **many** independent organizations, each as an isolated tenant. Its first tenant is the founder's independent professional activity — **Tenant 0** — the first real validation case, not the definition of the system. **Daedalus is not "Founder OS."**
 
 ---
 

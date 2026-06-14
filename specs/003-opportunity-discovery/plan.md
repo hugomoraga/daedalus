@@ -1,12 +1,17 @@
 # Plan — Opportunity Discovery v0 (implementation)
 
 **Status:** Draft · implementation plan for [Spec 003](./spec.md)
-**Goal:** Build the leanest **hexagonal** slice that validates the upstream module pattern — a module that produces Core domain events on handoff, proving the bidirectional composition: Proposal Generation *consumes* Core events; Opportunity Discovery *produces* them.
+**Goal:** Build the leanest **hexagonal** slice that resolves the §11 open boundary for v0 and validates the upstream module pattern — a module that both enriches and produces Core domain events.
 **Conforms to:** [Technical Principles](../../memory/technical-principles.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md)
 **Version:** 0.1.0
 **Last updated:** 2026-06-14
 
-> The `/plan` step: *how* we build Opportunity Discovery v0. The spec defines *what*. We build the leanest slice that exercises the canonical chain **and** a new pattern: module → Core event production (qualification handoff).
+> **§11 boundary resolution (v0).** The spec deliberately leaves open whether this is one bounded context or two (Discovery vs Engagement/Qualification). Per the spec's own decision rule — "settled by implementation evidence, not more modeling" — this v0 resolves it as **one module** with a simplified lifecycle: `Opportunity` with states `surfaced → qualified | dismissed`. The rationale:
+>
+> - Tenant 0 is a solo commercial founder. The Discovery/Engagement distinction is immaterial at this stage — the founder records an opportunity and qualifies or dismisses it manually.
+> - The spec names event types as provisional ("names provisional, final event set settled at implementation"). This v0 uses `OpportunitySurfaced`, `OpportunityEnriched`, `OpportunityQualified`, `OpportunityDismissed` — aligning with the Event Catalog rather than the provisional §6 names.
+> - If a second tenant (community/creative) makes the models diverge, the split into two contexts is cheap because the module boundary is already hexagonal.
+> - The §12 privacy flag is respected: only mock/synthetic data in this phase. No PII.
 
 ---
 
@@ -27,9 +32,11 @@
 ## 2. Architecture — hexagonal in a modular monorepo
 
 ```
-packages/core/                          # @daedalus/core (CHANGES: add LeadDiscarded event, OpportunityStorePort removed — module owns it)
+packages/core/                          # @daedalus/core (CHANGES: +LeadDiscarded, +opportunityId on LeadCreated)
   src/domain/value-chain.ts             #   + LeadDiscarded constant
-  src/application/projections.ts        #   + projectLead handles LeadDiscarded
+  src/domain/lead.ts                    #   + discardLead(), LeadState:"discarded", optional opportunityId
+  src/application/projections.ts        #   + handle LeadDiscarded
+  src/application/discard-lead.ts       #   new use case
   src/index.ts                           #   + LeadDiscarded export
 packages/opportunity-discovery/          # @daedalus/opportunity-discovery (depends on @daedalus/core)
   src/domain/events.ts                  #   OpportunitySurfaced, OpportunityEnriched, OpportunityQualified, OpportunityDismissed
@@ -37,39 +44,44 @@ packages/opportunity-discovery/          # @daedalus/opportunity-discovery (depe
   src/application/surface-opportunity.ts #   use case
   src/application/enrich-opportunity.ts #   use case
   src/application/qualify-opportunity.ts #   use case (module milestone + Core handoff)
-  src/application/dismiss-opportunity.ts#   use case
+  src/application/dismiss-opportunity.ts #   use case
   src/application/projections.ts        #   pipeline projection (read-model)
-  src/application/ports/opportunity-store.ts  #   OpportunityStorePort (work-area, like DraftStorePort)
+  src/application/ports/opportunity-store.ts  #   OpportunityStorePort (work-area)
   src/application/deps.ts              #   OpportunityDiscoveryDeps = CoreDeps & { opportunityStore }
   src/index.ts                         #   public contract
   src/adapters/json-opportunity-store.ts #   adapter
   src/adapters/index.ts                 #   adapter barrel
-apps/cli/src/index.ts                   #   + opportunity commands
+apps/cli/src/index.ts                   #   + opportunity commands, + lead:discard
 config/tenants/tenant-0.ts             #   + "opportunity-discovery" in enabledModules
 ```
 
-### Core change: `LeadDiscarded` + optional `opportunityId` on `LeadCreated`
+### §11 boundary resolution — v0 simplification
 
-The **smallest generic change** to Core:
-1. Add `LeadDiscarded` to `value-chain.ts` — the Event Catalog already lists it.
-2. Add `opportunityId` as an **optional** field to the `LeadCreated` payload — when the Lead originates from Opportunity Discovery, it carries the lineage. Direct `lead:create` still works without it.
-3. Update `projectLead` to handle `LeadDiscarded` (transitions `Lead` to `discarded` state, a new state added to `LeadState`).
+The spec identifies two halves: **Discovery** (evaluate/prioritize) and **Engagement/Qualification** (contact/qualify). For Tenant 0 (a solo commercial founder where manual entry is the only source), these collapse into a single lifecycle:
 
-### The opportunity work-area (like ProposalDraft)
+```
+surfaced ──(enrich: event)──► surfaced
+    │ qualify                              │ dismiss
+    ▼                                      ▼
+qualified (→ Core LeadCreated + LeadQualified)   dismissed (with reason)
+```
 
-Consistent with Spec 002 §6 and Technical Principles: the **live state of a surfaced opportunity** is a mutable work-area behind a port. Only the four milestone transitions (`surfaced`, `enriched`, `qualified`, `dismissed`) emit events. Day-to-day enrichment mutates the work-area but also emits `OpportunityEnriched` (per Spec 003 §6 decision: enrichment records what was known at decision time).
+- `OpportunitySurfaced` covers both `EntityDiscovered` and `EntityPrioritized` — in v0, recording an entity *is* prioritizing it (manual, face value).
+- `OpportunityEnriched` covers the engagement half — recording what was known when the founder updated the opportunity's context.
+- `OpportunityQualified` covers `InterestDetected` + the Core handoff.
+- `OpportunityDismissed` covers the negative outcome (no explicit equivalent in the provisional §6 table; it's "the decision not to pursue").
+
+This simplification is **evidence-based per the spec's own rule**: build one module, split when a second tenant makes the models diverge.
 
 ### Lineage (the key pattern: module → Core production)
 
 ```
 OpportunitySurfaced(correlationId=C, eventId=O1, payload={opportunityId, label, source})
-   └─ enrich → OpportunityEnriched(correlationId=C, causationId=O1, payload={opportunityId, description, contact})
-   └─ qualify → OpportunityQualified(correlationId=C, causationId=O?, payload={opportunityId})
+   └─ enrich → OpportunityEnriched(correlationId=C, causationId=O?, payload={opportunityId, description, contact})
+   └─ qualify → OpportunityQualified(correlationId=C, payload={opportunityId, leadId})
                   + LeadCreated      (correlationId=C, payload={leadId, customer, opportunityId})
-                  + LeadQualified    (correlationId=C, causationId=leadCreated.eventId)
+                  + LeadQualified    (correlationId=C, causationId=leadCreated.eventId, payload={leadId})
 ```
-
-The qualification use case shares one `correlationId` across the module milestone and the Core handoff events, exactly mirroring the `ProposalDraftFinalized` + `ProposalGenerated` pattern from Spec 002.
 
 ---
 
@@ -83,103 +95,48 @@ The qualification use case shares one `correlationId` across the module mileston
 | `opportunity:dismiss --tenant t0 --opportunity <id> --reason <r>` | dismiss-opportunity | `OpportunityDismissed` |
 | `opportunity:show --tenant t0 --opportunity <id>` | (read) | print opportunity work-area |
 | `opportunity:pipeline --tenant t0` | (read) | print pipeline by state (surfaced/qualified/dismissed) |
-| `lead:discard --tenant t0 --lead <id>` | discard-lead | `LeadDiscarded` (Core addition) |
-
-> **`lead:discard`** is added to Core and the CLI to complete the Lead lifecycle per the Event Catalog. It is a small, necessary addition — not scope creep from Opportunity Discovery.
+| `lead:discard --tenant t0 --lead <id> --reason <r>` | discard-lead | `LeadDiscarded` (Core addition) |
 
 ---
 
-## 4. Build steps (lean, inside-out per hexagonal)
-
-1. **Core: add `LeadDiscarded`** — event type constant, update `LeadState` to `"unqualified" | "qualified" | "discarded"`, implement `discardLead`, update `projectLead`, add `discardLeadUseCase`, update Core barrel. Update `createLead` to accept optional `opportunityId` in payload.
-
-2. **Domain events** — define `OpportunitySurfaced`, `OpportunityEnriched`, `OpportunityQualified`, `OpportunityDismissed` in `domain/events.ts`.
-
-3. **Opportunity aggregate** — `Opportunity` type, `OpportunityState` (`"surfaced" | "qualified" | "dismissed"`), factory functions: `surfaceOpportunity`, `enrichOpportunity`, `qualifyOpportunity`, `dismissOpportunity`. Only surface/enrich/qualify/dismiss are state transitions; `qualified` and `dismissed` are terminal.
-
-4. **Ports** — `OpportunityStorePort` (load/save, same pattern as `DraftStorePort`), `OpportunityDiscoveryDeps = CoreDeps & { opportunityStore, leadStore }`.
-
-5. **JSON adapter** — `JsonOpportunityStoreAdapter` (mirrors `JsonFileDraftStoreAdapter` pattern).
-
-6. **Use cases** — `surfaceOpportunityUseCase`, `enrichOpportunityUseCase`, `qualifyOpportunityUseCase`, `dismissOpportunityUseCase`. The qualify use case is the critical one: it emits the module milestone + Core event pair with shared lineage.
-
-7. **Pipeline projection** — `projectPipeline(events)`: returns `{ surfaced, qualified, dismissed }` with counts and opportunity summaries, derived by replay.
-
-8. **CLI** — add all `opportunity:*` and `lead:discard` commands to the CLI driving adapter.
-
-9. **Tests** — `node:test` encoding all AC from Spec 003 plus the existing tests.
-
-10. **Evidence run** — scripted E2E session.
-
-11. **`.gitignore`** — already has `.data/`; no changes needed.
-
----
-
-## 5. Acceptance-criteria → test mapping
+## 4. Acceptance-criteria → test mapping
 
 | Spec 003 AC | Covered by |
 |---|---|
-| AC-1 (surface: event emitted, appears in pipeline) | Steps 2-3 + 6-7 |
-| AC-2 (enrich: event emitted; closed state rejected) | Steps 3 + 6 |
-| AC-3 (qualify: module + Core events with lineage; idempotent rejection) | Steps 3 + 6 (the key composition test) |
-| AC-4 (dismiss: event with reason; closed state rejected) | Steps 3 + 6 |
-| AC-5 (pipeline projection: grouped by state, no event on read) | Steps 7-8 |
-| AC-6 (state reconstructable from event stream) | Steps 7 + 9 |
-| AC-7 (auditability: lineage on every event) | Steps 6 + 9 |
-| AC-8 (tenant isolation) | Step 9 |
+| AC-1 (surface: event emitted, appears in pipeline) | Domain + use case + projection tests |
+| AC-2 (enrich: event emitted; closed state rejected) | Domain + use case tests |
+| AC-3 (qualify: module + Core events with lineage; idempotent rejection) | Use case tests (the key composition test) |
+| AC-4 (handoff: no Core entity beyond Lead) | AC-3 produces LeadCreated + LeadQualified; no new Core entity |
+| AC-5 (auditability: lineage on every event) | All tests verify lineage fields |
+| AC-6 (isolation: tenant-scoped) | Separate tenant tests |
+| Dismissal (negative outcome) | Use case tests |
 
 Plus: existing Core + Proposal Generation + Revenue Visibility tests stay green.
 
 ---
 
-## 6. The evidence we capture
+## 5. The evidence we capture
 
 A recorded end-to-end session (synthetic data only):
 
 ```
-opportunity:surface t0 "ACME consulting" --source referral  -> OpportunitySurfaced
-opportunity:enrich t0 <oppId> --description "Infrastructure review" --contact "cxo@acme.com"
-                                                          -> OpportunityEnriched
-opportunity:qualify t0 <oppId>                           -> OpportunityQualified + LeadCreated + LeadQualified
-opportunity:pipeline t0                                  -> pipeline summary
-opportunity:surface t0 "Beta Corp" --source cold         -> OpportunitySurfaced
+opportunity:surface t0 "ACME consulting" --source referral   -> OpportunitySurfaced
+opportunity:enrich t0 <oppId> --description "Infra review" --contact "cto@acme.com"
+                                                            -> OpportunityEnriched
+opportunity:qualify t0 <oppId>                             -> OpportunityQualified + LeadCreated + LeadQualified
+opportunity:pipeline t0                                    -> pipeline summary
+opportunity:surface t0 "Beta Corp" --source cold           -> OpportunitySurfaced
 opportunity:dismiss t0 <oppId2> --reason "bad fit"      -> OpportunityDismissed
-opportunity:pipeline t0                                  -> 1 qualified, 1 dismissed
-proposal:start t0 <leadId> --template standard             -> ProposalDraftCreated (cross-module: qualified lead → proposal)
-events t0                                                -> full audit trail with lineage
+opportunity:pipeline t0                                    -> 1 qualified, 1 dismissed
+proposal:start t0 <leadId> --template standard             -> ProposalDraftCreated (cross-module)
+events t0                                                  -> full audit trail with lineage
 ```
 
-This demonstrates:
-1. The full canonical chain for Opportunity Discovery (surface → enrich → qualify → Lead handoff).
-2. The bidirectional module pattern: Proposal Generation *consumes* Core events; Opportunity Discovery *produces* them.
-3. The dismiss path (negative audit trail).
-4. Cross-module composition: a Lead produced by Opportunity Discovery flows into Proposal Generation without friction.
+Demonstrates the bidirectional composition: Proposal Generation *consumes* Core events; Opportunity Discovery *produces* them. A Lead from Opportunity Discovery flows into Proposal Generation without friction.
 
 ---
 
-## 7. Package export discipline
-
-Per [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md) and Technical Principles:
-
-- `@daedalus/opportunity-discovery` exposes `.` (public contract: use cases, command types, domain types needed to consume them).
-- Adapters behind `./adapters` subpath.
-- No deep imports. The `exports` block in `package.json` enforces this.
-
----
-
-## 8. Scope guardrails (do NOT build in v0)
-
-- No automated prospecting, scoring, or AI assistance.
-- No multi-step qualification workflows.
-- No integration with external sources (email, CRM, social).
-- No pipeline alerts or health signals (deferred per §9 of the spec).
-- No UI, API, or database.
-- No replacement for `lead:create` / `lead:qualify` (those stay in Core for direct use).
-- From the framework's "avoid" list: no CQRS, sagas, DI framework, relational DB, event bus, etc.
-
----
-
-## 9. Definition of done (v0)
+## 6. Definition of done (v0)
 
 - The canonical chain `Command → Use Case → Aggregate → Domain Events → Event Store Port → JSONL Adapter → CLI` runs cleanly for Opportunity Discovery.
 - All acceptance-criteria tests pass (`node --test`).
@@ -188,6 +145,7 @@ Per [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.m
 - Existing tests (Core, Proposal Generation, Revenue Visibility) remain green.
 - CLI contains no business logic; domain knows nothing of JSONL.
 - `.data/` gitignored; no PII in the repo.
+- The §11 boundary is resolved for v0 (documented above). The split into two contexts remains cheap if evidence demands it.
 
 ---
 

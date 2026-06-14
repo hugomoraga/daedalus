@@ -106,6 +106,9 @@ export function dismissOpportunity(
   if (opportunity.state === "qualified") {
     throw new Error(`Opportunity ${opportunity.id} is qualified and cannot be dismissed`);
   }
+  if (reason.trim().length === 0) {
+    throw new Error("Dismissing an opportunity requires a reason");
+  }
   return {
     opportunity: { ...opportunity, state: "dismissed", dismissedReason: reason },
     events: [{ type: OpportunityDismissed, payload: { opportunityId: opportunity.id, reason } }],

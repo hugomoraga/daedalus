@@ -38,5 +38,8 @@ export function discardLead(lead: Lead, reason: string): EventIntent[] {
   if (lead.state === "discarded") {
     throw new Error(`Lead ${lead.id} is already discarded`);
   }
+  if (reason.trim().length === 0) {
+    throw new Error("Discarding a lead requires a reason");
+  }
   return [{ type: LeadDiscarded, payload: { leadId: lead.id, reason } }];
 }

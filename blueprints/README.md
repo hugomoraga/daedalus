@@ -13,6 +13,10 @@ The **conceptual model** of Daedalus — design artifacts that *describe* the sy
 | `policies/`, `workflows/`, `agents/` | Design notes for the future Policy/Workflow/Agent engines |
 | `knowledge/` | Organizational knowledge-base design |
 
+Cross-cutting notes (loose files, not folders):
+
+- [`modeling-observation-transformations-vs-capabilities.md`](./modeling-observation-transformations-vs-capabilities.md) — non-binding modeling lens: distinguish *what changes* (transformation) from *the mechanism* (capability), validated by the four-tenant test.
+
 ## Conceptual vs. real
 
 - **Conceptual** (here): how we *think* about domains, modules, tenants, events.

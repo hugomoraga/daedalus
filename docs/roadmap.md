@@ -22,9 +22,9 @@ Modules are prioritized by **founder value delivered to Tenant 0**, not by archi
 |---|---|---|---|---|
 | **1** | **Proposal Generation** | customer acquisition (the controllable, high-frequency, revenue-adjacent half) | [Spec 002](../specs/002-proposal-generation/spec.md) | Phase 1 (v0: structured assembly) |
 | **2** | **Revenue Visibility** | accounting / runway / solvency | [Spec 001](../specs/001-revenue-visibility/spec.md) | Phase 1 (projection-only) |
-| **3** | **Opportunity Discovery** | customer acquisition (top of funnel) | — | Phase 2 |
-| **4** | **Tax & Compliance Guard** | taxes & compliance | — | Phase 3 (policy-shaped; blocked on jurisdiction) |
-| **5** | **Administrative Shield** | the administrative tail | — | Phase 4 (needs agent runtime) |
+| **3** | **Opportunity Discovery** | customer acquisition (top of funnel) | [Spec 003](../specs/003-opportunity-discovery/spec.md) (Draft; boundary open) | Phase 2 |
+| **4** | **Tax & Compliance Guard** | taxes & compliance | [Spec 004](../specs/004-tax-compliance-guard/spec.md) (stub; blocked) | Phase 3 (policy-shaped; blocked on jurisdiction) |
+| **5** | **Administrative Shield** | the administrative tail | [Spec 005](../specs/005-administrative-shield/spec.md) (stub; blocked) | Phase 4 (needs agent runtime) |
 
 > **Scope of this sequence (binding clarification).** This is an **incremental validation strategy only**. It does **NOT** redefine Daedalus's mission, and it does **NOT** establish the system's root/fundamental entity. The philosophical question of the fundamental entity is deliberately left open — the team prefers to *learn by building* over continuing to model it now. The Constitution, Domain Model, and Identity are unchanged.
 >

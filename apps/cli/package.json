@@ -10,6 +10,7 @@
     "@daedalus/core": "*",
     "@daedalus/proposal-generation": "*",
     "@daedalus/revenue-visibility": "*",
-    "@daedalus/jsonl-event-store": "*"
+    "@daedalus/jsonl-event-store": "*",
+    "@daedalus/opportunity-discovery": "*"
   }
 }

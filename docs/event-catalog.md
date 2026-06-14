@@ -71,8 +71,10 @@ These events arise from the initial **modules**. They are born from Tenant 0's p
 
 | Event | Module | Emitted when | Rationale |
 |---|---|---|---|
-| `OpportunitySurfaced` `[deferred]` | Opportunity Discovery | A potential client/opportunity is detected or captured, *before* it becomes a qualified Lead. | Makes "finding clients" auditable so nothing is dropped silently. Precedes `LeadCreated`. |
-| `OpportunityDismissed` `[deferred]` | Opportunity Discovery | A surfaced opportunity is judged not worth pursuing. | Records the *decision not to pursue* — protects the founder's focus and lets discovery quality be reviewed. |
+| `OpportunitySurfaced` **(implemented, v0)** | Opportunity Discovery | A potential engagement is recorded. | The origin of a pipeline entry; a deliberate human input. See [Spec 003 plan](../specs/003-opportunity-discovery/plan.md). |
+| `OpportunityEnriched` **(implemented, v0)** | Opportunity Discovery | A surfaced opportunity's context (description, contact) is updated. | Records what was known at decision time for audit quality. |
+| `OpportunityQualified` **(implemented, v0)** | Opportunity Discovery | An opportunity is qualified and handed off to the pipeline as a Lead. | A commitment decision — creates a Lead and closes the opportunity for further editing. |
+| `OpportunityDismissed` **(implemented, v0)** | Opportunity Discovery | An opportunity is deliberately dropped with a reason. | Records *why not* — protects focus and enables pipeline quality analysis. |
 | `RevenueEstimateCreated` **(implemented, v0)** | Revenue Visibility | An expected-revenue item is recorded. **v0:** derived from a `ProposalGenerated` via `followFrom()` (carries `sourceProposalId`, shares the proposal's `correlationId`). Manual entry deferred. | The origin of an expectation; first cross-module derived event. See [Spec 001 plan](../specs/001-revenue-visibility/plan.md). |
 | `RevenueEstimateUpdated` `[deferred]` | Revenue Visibility | An estimate changes. | The change of a forecast must be traceable. |
 | `RevenueConfirmed` `[deferred]` | Revenue Visibility | Revenue moves to `confirmed` (manually or via Core `ProposalApproved`). | A commitment decision that materially changes the picture. |

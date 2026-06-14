@@ -3,10 +3,12 @@
 // It can be promoted to a port later if a non-file source is ever needed (record in an ADR).
 
 import { tenant0 } from "./tenant-0.ts";
+import { tenantOther } from "./tenant-other.ts";
 import type { TenantConfig } from "./tenant-0.ts";
 
 const registry: Record<string, TenantConfig> = {
   [tenant0.id]: tenant0,
+  [tenantOther.id]: tenantOther,
 };
 
 export const defaultTenantId = tenant0.id;

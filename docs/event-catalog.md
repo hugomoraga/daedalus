@@ -32,7 +32,7 @@ The core narrative: a lead becomes money in the bank.
 | `LeadDiscarded` | A lead is dropped. | Negative outcomes matter as much as positive ones. Auditing *why we said no* prevents silent loss and reveals qualification quality. |
 | `ProposalGenerated` | A formal offer is produced from a qualified lead. | The transition from internal intent to an external commitment-in-waiting. First artifact a customer sees. |
 | `ProposalSubmitted` | The proposal is sent to the customer. | Marks the boundary between internal drafting and external exposure — a different accountability regime begins here. |
-| `ProposalApproved` | The proposal is accepted (the **approval gate**). | A pivotal governed decision. Triggers Project creation. Frequently human-governed per Constitution Article V. |
+| `ProposalApproved` **(implemented, v1 of Revenue Visibility)** | The proposal is accepted (the **approval gate**). | A pivotal governed decision. Triggers Project creation. Frequently human-governed per Constitution Article V. |
 | `ProposalRejected` | The proposal is declined. | Closes the branch with a reason. Essential for win/loss analysis and for proving the chain ended legitimately. |
 | `ProjectCreated` | An approved proposal becomes committed work. | The organization now owes delivery. Marks the start of obligation and the handoff between Commercial and Delivery contexts. |
 | `ProjectDelivered` | The committed work is completed. | The "Delivery" step of the value chain. Pre-condition for legitimate invoicing — you should not bill for undelivered work. |
@@ -41,7 +41,7 @@ The core narrative: a lead becomes money in the bank.
 | `InvoiceSent` | The invoice is delivered to the customer. | Starts payment-term clocks and external accountability. Distinct from issuing it internally. |
 | `InvoicePaid` | Payment is received and applied. | The value chain's success condition. Closes the loop opened by `LeadCreated`. |
 | `InvoiceOverdue` | Payment terms lapse without settlement. | A risk signal. Auditable so dunning/collections actions are themselves governed and traceable. |
-| `PaymentReceived` | Funds are received against an invoice. | The irreversible financial fact. Distinct from `InvoicePaid` (which is the *application* of a payment to an invoice) to keep money-movement and accounting-status separable. |
+| `PaymentReceived` **(implemented, v1 of Revenue Visibility)** | Funds are received against an invoice. | The irreversible financial fact. Distinct from `InvoicePaid` (which is the *application* of a payment to an invoice) to keep money-movement and accounting-status separable. |
 
 > **Design note — why `PaymentReceived` and `InvoicePaid` are separate.** Receiving money and marking an invoice settled are two facts that can diverge (partial payment, payment to the wrong invoice, overpayment). Keeping them as distinct events preserves truth even when reconciliation is messy. This is a deliberate cost paid against *Simplicity First* because the alternative loses auditability of money movement — a poor trade for a system whose whole point is auditability.
 
@@ -76,11 +76,12 @@ These events arise from the initial **modules**. They are born from Tenant 0's p
 | `OpportunityQualified` **(implemented, v0)** | Opportunity Discovery | An opportunity is qualified and handed off to the pipeline as a Lead. | A commitment decision — creates a Lead and closes the opportunity for further editing. |
 | `OpportunityDismissed` **(implemented, v0)** | Opportunity Discovery | An opportunity is deliberately dropped with a reason. | Records *why not* — protects focus and enables pipeline quality analysis. |
 | `RevenueEstimateCreated` **(implemented, v0)** | Revenue Visibility | An expected-revenue item is recorded. **v0:** derived from a `ProposalGenerated` via `followFrom()` (carries `sourceProposalId`, shares the proposal's `correlationId`). Manual entry deferred. | The origin of an expectation; first cross-module derived event. See [Spec 001 plan](../specs/001-revenue-visibility/plan.md). |
-| `RevenueEstimateUpdated` `[deferred]` | Revenue Visibility | An estimate changes. | The change of a forecast must be traceable. |
-| `RevenueConfirmed` `[deferred]` | Revenue Visibility | Revenue moves to `confirmed` (manually or via Core `ProposalApproved`). | A commitment decision that materially changes the picture. |
-| `RevenueReceived` `[deferred]` | Revenue Visibility | Revenue moves to `received` (manually or via Core `PaymentReceived`). | Money-in is a hard fact. |
-| `ExpenseRegistered` `[deferred]` | Revenue Visibility | A founder registers an expense. | A deliberate input affecting margin and runway. |
-| `RevenueSnapshotGenerated` `[deferred]` | Revenue Visibility | A point-in-time financial snapshot is explicitly taken. | A deliberate act freezing a value the founder may rely on. |
+| `RevenueEstimateUpdated` **(implemented, v1)** | Revenue Visibility | An estimate's amount or notes are corrected. | The change of a forecast must be traceable. |
+| `RevenueConfirmed` **(implemented, v1)** | Revenue Visibility | An estimate moves to `confirmed` (manually or via Core `ProposalApproved` reactor with `followFrom()`). | A commitment decision that materially changes the picture. |
+| `RevenueReceived` **(implemented, v1)** | Revenue Visibility | An estimate moves to `received` (manually or via Core `PaymentReceived` reactor with `followFrom()`). | Money-in is a hard fact. |
+| `ExpenseRegistered` **(implemented, v1)** | Revenue Visibility | A founder registers an expense. | A deliberate input affecting margin and runway. |
+| `RevenueSnapshotGenerated` **(implemented, v1)** | Revenue Visibility | A point-in-time financial snapshot is explicitly taken. | A deliberate act freezing a value the founder may rely on. |
+| `FinancialRiskFlagged` **(implemented, v1)** | Revenue Visibility | An alert rule triggers (low_runway, revenue_concentration, negative_cashflow). | A governed risk signal that escalates to the human before damage — operationalizes Human Governance for finance. Emit-once-until-clear. |
 | ~~`RevenueProjectionUpdated`~~ **(retired)** | Revenue Visibility | — | **Decision (Spec 001):** the live revenue projection is a **read-model**, not an event. It recomputes silently; only auditable facts/decisions above earn events. |
 | `TaxObligationDetected` `[deferred]` | Tax & Compliance Guard | An obligation becomes relevant (parameterized by the tenant's jurisdiction). | Turns dread into a traceable, governed signal. Cannot be defined until jurisdiction is set in the tenant profile. |
 | `ComplianceRiskFlagged` `[deferred]` | Tax & Compliance Guard | A deadline approaches or a rule is at risk of breach. | A governed risk signal that escalates to the human before damage — operationalizes Human Governance for compliance. |

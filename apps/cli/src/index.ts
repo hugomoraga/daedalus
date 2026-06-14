@@ -4,7 +4,13 @@
 
 import { parseArgs } from "node:util";
 import { randomUUID } from "node:crypto";
-import { createLeadUseCase, qualifyLeadUseCase, discardLeadUseCase } from "@daedalus/core";
+import {
+  createLeadUseCase,
+  qualifyLeadUseCase,
+  discardLeadUseCase,
+  approveProposalUseCase,
+  recordPaymentReceivedUseCase,
+} from "@daedalus/core";
 import {
   startDraftUseCase,
   addLineItemUseCase,
@@ -14,7 +20,20 @@ import {
 } from "@daedalus/proposal-generation";
 import type { ProposalDeps } from "@daedalus/proposal-generation";
 import { JsonFileDraftStoreAdapter } from "@daedalus/proposal-generation/adapters";
-import { ingestProposalRevenueUseCase, projectExpectedRevenue } from "@daedalus/revenue-visibility";
+import {
+  ingestProposalRevenueUseCase,
+  projectExpectedRevenue,
+  projectFinancialSummary,
+  createEstimateUseCase,
+  updateEstimateUseCase,
+  confirmRevenueUseCase,
+  receiveRevenueUseCase,
+  registerExpenseUseCase,
+  takeSnapshotUseCase,
+  evaluateAlertsUseCase,
+} from "@daedalus/revenue-visibility";
+import type { RevenueDeps } from "@daedalus/revenue-visibility";
+import { TenantConfigThresholdsAdapter } from "@daedalus/revenue-visibility/adapters";
 import {
   surfaceOpportunityUseCase,
   enrichOpportunityUseCase,
@@ -29,11 +48,12 @@ import { loadTenantConfig, defaultTenantId } from "../../../config/tenants/index
 
 const DATA_DIR = ".data";
 
-function buildDeps(): ProposalDeps & OpportunityDiscoveryDeps {
+function buildDeps(): ProposalDeps & OpportunityDiscoveryDeps & RevenueDeps {
   return {
     eventStore: new JsonlEventStoreAdapter(DATA_DIR),
     draftStore: new JsonFileDraftStoreAdapter(DATA_DIR),
     opportunityStore: new JsonOpportunityStoreAdapter(DATA_DIR),
+    thresholds: new TenantConfigThresholdsAdapter(),
     newId: () => randomUUID(),
     now: () => new Date().toISOString(),
     actor: "cli",
@@ -64,6 +84,10 @@ async function main(): Promise<void> {
       description: { type: "string" },
       contact: { type: "string" },
       reason: { type: "string" },
+      estimate: { type: "string" },
+      proposal: { type: "string" },
+      payment: { type: "string" },
+      notes: { type: "string" },
     },
   });
 
@@ -72,6 +96,7 @@ async function main(): Promise<void> {
   const deps = buildDeps();
 
   switch (command) {
+    // ---- Core: lead lifecycle ----
     case "lead:create": {
       const out = await createLeadUseCase(deps, { tenantId, customer: requireOpt(values.customer, "customer") });
       console.log(`LeadCreated  lead=${out.leadId}`);
@@ -87,6 +112,36 @@ async function main(): Promise<void> {
       console.log(`LeadDiscarded  lead=${values.lead}`);
       break;
     }
+
+    // ---- Core: proposal approval + payment (v1) ----
+    case "proposal:approve": {
+      const proposalId = requireOpt(values.proposal, "proposal");
+      const events = await deps.eventStore.readStream(tenantId);
+      const proposal = events.find((e) => e.type === "ProposalGenerated" && e.payload.proposalId === proposalId);
+      if (proposal === undefined) throw new Error(`Proposal ${proposalId} not found`);
+      const expectedValue = proposal.payload.expectedValue as { amount: number; currency: string } | undefined;
+      if (expectedValue === undefined) throw new Error(`Proposal ${proposalId} has no expectedValue`);
+      await approveProposalUseCase(deps, {
+        tenantId,
+        proposalId,
+        leadId: String(proposal.payload.leadId ?? ""),
+        expectedValue,
+      });
+      console.log(`ProposalApproved  proposal=${proposalId}`);
+      break;
+    }
+    case "payment:record": {
+      const proposalId = requireOpt(values.proposal, "proposal");
+      const paymentId = requireOpt(values.payment, "payment");
+      const amount = Number(requireOpt(values.amount, "amount"));
+      if (!Number.isFinite(amount) || amount <= 0) throw new Error("--amount must be a positive number");
+      const currency = loadTenantConfig(tenantId).currency;
+      await recordPaymentReceivedUseCase(deps, { tenantId, proposalId, paymentId, amount, currency });
+      console.log(`PaymentReceived  proposal=${proposalId}  payment=${paymentId}  ${amount} ${currency}`);
+      break;
+    }
+
+    // ---- Proposal Generation ----
     case "proposal:start": {
       const out = await startDraftUseCase(deps, {
         tenantId,
@@ -140,6 +195,8 @@ async function main(): Promise<void> {
       console.log(`ProposalDraftDiscarded  draft=${values.draft}`);
       break;
     }
+
+    // ---- Opportunity Discovery ----
     case "opportunity:surface": {
       const out = await surfaceOpportunityUseCase(deps, {
         tenantId,
@@ -200,9 +257,13 @@ async function main(): Promise<void> {
       }
       break;
     }
+
+    // ---- Revenue Visibility v0 (kept) ----
     case "revenue:ingest": {
       const out = await ingestProposalRevenueUseCase(deps, { tenantId });
-      console.log(`revenue:ingest  ingested=${out.ingested} estimate(s) from ProposalGenerated`);
+      console.log(
+        `revenue:ingest  ingested=${out.ingested}  confirmed=${out.confirmed}  received=${out.received}`,
+      );
       break;
     }
     case "revenue:show": {
@@ -212,6 +273,105 @@ async function main(): Promise<void> {
       console.log(`expected revenue: ${summary.expected} ${currency}  (${summary.count} estimate(s))`);
       break;
     }
+
+    // ---- Revenue Visibility v1 (new) ----
+    case "revenue:create": {
+      const amount = Number(requireOpt(values.amount, "amount"));
+      if (!Number.isFinite(amount)) throw new Error("--amount must be a number");
+      const out = await createEstimateUseCase(deps, {
+        tenantId,
+        label: requireOpt(values.label, "label"),
+        amount,
+        currency: loadTenantConfig(tenantId).currency,
+        notes: values.notes,
+      });
+      console.log(`RevenueEstimateCreated  estimate=${out.estimateId}`);
+      break;
+    }
+    case "revenue:update": {
+      const amount = values.amount !== undefined ? Number(values.amount) : undefined;
+      if (amount !== undefined && !Number.isFinite(amount)) throw new Error("--amount must be a number");
+      await updateEstimateUseCase(deps, {
+        tenantId,
+        estimateId: requireOpt(values.estimate, "estimate"),
+        amount,
+        notes: values.notes,
+      });
+      console.log(`RevenueEstimateUpdated  estimate=${values.estimate}`);
+      break;
+    }
+    case "revenue:confirm": {
+      const out = await confirmRevenueUseCase(deps, {
+        tenantId,
+        estimateId: requireOpt(values.estimate, "estimate"),
+      });
+      console.log(
+        out.changed
+          ? `RevenueConfirmed  estimate=${values.estimate}`
+          : `already confirmed or received  estimate=${values.estimate}`,
+      );
+      break;
+    }
+    case "revenue:receive": {
+      const out = await receiveRevenueUseCase(deps, {
+        tenantId,
+        estimateId: requireOpt(values.estimate, "estimate"),
+      });
+      console.log(
+        out.changed
+          ? `RevenueReceived  estimate=${values.estimate}`
+          : `already received  estimate=${values.estimate}`,
+      );
+      break;
+    }
+    case "expense:register": {
+      const amount = Number(requireOpt(values.amount, "amount"));
+      if (!Number.isFinite(amount)) throw new Error("--amount must be a number");
+      const out = await registerExpenseUseCase(deps, {
+        tenantId,
+        label: requireOpt(values.label, "label"),
+        amount,
+        currency: loadTenantConfig(tenantId).currency,
+      });
+      console.log(`ExpenseRegistered  expense=${out.expenseId}  "${values.label}"=${amount}`);
+      break;
+    }
+    case "revenue:snapshot": {
+      await takeSnapshotUseCase(deps, { tenantId });
+      console.log(`RevenueSnapshotGenerated  tenant=${tenantId}`);
+      break;
+    }
+    case "revenue:summary": {
+      const events = await deps.eventStore.readStream(tenantId);
+      const s = projectFinancialSummary(events);
+      const currency = s.currency.length === 0 ? loadTenantConfig(tenantId).currency : s.currency;
+      console.log("=== Financial Summary ===");
+      console.log(`currency:        ${currency}`);
+      console.log(`expected:        ${s.expected}  (${s.expectedCount} estimate${s.expectedCount === 1 ? "" : "s"})`);
+      console.log(`confirmed:       ${s.confirmed}  (${s.confirmedCount})`);
+      console.log(`received:        ${s.received}  (${s.receivedCount})`);
+      console.log(`expenses:        ${s.expenses}  (${s.expenseCount})`);
+      console.log(`margin:          ${s.margin} ${currency}`);
+      console.log(`runway (months): ${Number.isFinite(s.runwayMonths) ? s.runwayMonths.toFixed(2) : "∞"}`);
+      console.log(`basic state:     ${s.basicState}`);
+      break;
+    }
+    case "revenue:alerts": {
+      const out = await evaluateAlertsUseCase(deps, { tenantId });
+      if (out.raised.length === 0 && out.cleared.length === 0) {
+        console.log("no alert changes");
+      } else {
+        for (const a of out.raised) {
+          console.log(`RAISED  ${a.ruleId}  threshold=${a.threshold}  actual=${a.actual}`);
+        }
+        for (const id of out.cleared) {
+          console.log(`CLEARED  ${id}`);
+        }
+      }
+      break;
+    }
+
+    // ---- events dump ----
     case "events": {
       const events = await deps.eventStore.readStream(tenantId);
       if (events.length === 0) {
@@ -223,16 +383,19 @@ async function main(): Promise<void> {
       }
       break;
     }
+
     default:
       console.log(
         [
-          "Daedalus CLI — Proposal Generation v0",
+          "Daedalus CLI",
           "Usage: node apps/cli/src/index.ts <command> [--options]",
           "",
           "Commands:",
           "  lead:create        --tenant <id> --customer <name>",
           "  lead:qualify       --tenant <id> --lead <id>",
           "  lead:discard       --tenant <id> --lead <id> --reason <r>",
+          "  proposal:approve   --tenant <id> --proposal <id>",
+          "  payment:record     --tenant <id> --proposal <id> --payment <id> --amount <n>",
           "  opportunity:surface  --tenant <id> --label <l> --source <s>",
           "  opportunity:enrich   --tenant <id> --opportunity <id> [--description <d>] [--contact <c>]",
           "  opportunity:qualify  --tenant <id> --opportunity <id>",
@@ -247,6 +410,14 @@ async function main(): Promise<void> {
           "  proposal:discard  --tenant <id> --draft <id>",
           "  revenue:ingest  --tenant <id>",
           "  revenue:show    --tenant <id>",
+          "  revenue:create  --tenant <id> --label <l> --amount <n> [--notes <t>]",
+          "  revenue:update  --tenant <id> --estimate <id> [--amount <n>] [--notes <t>]",
+          "  revenue:confirm --tenant <id> --estimate <id>",
+          "  revenue:receive --tenant <id> --estimate <id>",
+          "  expense:register --tenant <id> --label <l> --amount <n>",
+          "  revenue:snapshot --tenant <id>",
+          "  revenue:summary  --tenant <id>",
+          "  revenue:alerts   --tenant <id>",
           "  events          --tenant <id>",
         ].join("\n"),
       );

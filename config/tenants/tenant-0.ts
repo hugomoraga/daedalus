@@ -6,6 +6,13 @@ export type TenantConfig = {
   currency: string;
   enabledModules: string[];
   templates: Record<string, { sections: string[] }>;
+  // Optional alert thresholds for Revenue Visibility. If absent, the module's
+  // TenantConfigThresholdsAdapter falls back to its built-in defaults.
+  alertThresholds?: {
+    runwayFloorMonths: number;
+    concentrationCeilingRatio: number;
+    cashflowPeriodMonths: number;
+  };
 };
 
 export const tenant0: TenantConfig = {
@@ -15,5 +22,11 @@ export const tenant0: TenantConfig = {
   enabledModules: ["proposal-generation", "revenue-visibility", "opportunity-discovery"],
   templates: {
     standard: { sections: ["Context", "Scope", "Pricing", "Terms"] },
+  },
+  // Tenant-supplied thresholds (Spec 001 §9: thresholds are Tenant-injected).
+  alertThresholds: {
+    runwayFloorMonths: 3,         // flag if runway < 3 months
+    concentrationCeilingRatio: 0.6, // flag if any single source > 60% of confirmed+received
+    cashflowPeriodMonths: 3,      // trailing period for the negative_cashflow check
   },
 };

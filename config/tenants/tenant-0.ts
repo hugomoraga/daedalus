@@ -12,7 +12,7 @@ export const tenant0: TenantConfig = {
   id: "tenant-0",
   // Confirmed initial currency for Tenant 0 (resolves Spec 002 Q2 / Spec 001 Q4).
   currency: "CLP",
-  enabledModules: ["proposal-generation", "revenue-visibility"],
+  enabledModules: ["proposal-generation", "revenue-visibility", "opportunity-discovery"],
   templates: {
     standard: { sections: ["Context", "Scope", "Pricing", "Terms"] },
   },

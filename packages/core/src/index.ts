@@ -10,9 +10,10 @@ export type { CoreDeps } from "./application/deps.ts";
 export type { Lineage } from "./application/lineage.ts";
 export type { CreateLeadCommand } from "./application/create-lead.ts";
 export type { QualifyLeadCommand } from "./application/qualify-lead.ts";
+export type { DiscardLeadCommand } from "./application/discard-lead.ts";
 
 // Value-chain event type identifiers (the public event vocabulary)
-export { LeadCreated, LeadQualified, ProposalGenerated } from "./domain/value-chain.ts";
+export { LeadCreated, LeadQualified, LeadDiscarded, ProposalGenerated } from "./domain/value-chain.ts";
 
 // Application kernel — modules build on these to emit lineage-bearing events
 export { enrich, appendIntents, startLineage, followFrom } from "./application/lineage.ts";
@@ -21,3 +22,4 @@ export { projectLead } from "./application/projections.ts";
 // Core use cases
 export { createLeadUseCase } from "./application/create-lead.ts";
 export { qualifyLeadUseCase } from "./application/qualify-lead.ts";
+export { discardLeadUseCase } from "./application/discard-lead.ts";

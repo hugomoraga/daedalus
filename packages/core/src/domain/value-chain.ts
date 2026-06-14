@@ -4,4 +4,5 @@
 
 export const LeadCreated = "LeadCreated";
 export const LeadQualified = "LeadQualified";
+export const LeadDiscarded = "LeadDiscarded";
 export const ProposalGenerated = "ProposalGenerated";

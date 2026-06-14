@@ -4,7 +4,7 @@
 
 import { parseArgs } from "node:util";
 import { randomUUID } from "node:crypto";
-import { createLeadUseCase, qualifyLeadUseCase } from "@daedalus/core";
+import { createLeadUseCase, qualifyLeadUseCase, discardLeadUseCase } from "@daedalus/core";
 import {
   startDraftUseCase,
   addLineItemUseCase,
@@ -15,15 +15,25 @@ import {
 import type { ProposalDeps } from "@daedalus/proposal-generation";
 import { JsonFileDraftStoreAdapter } from "@daedalus/proposal-generation/adapters";
 import { ingestProposalRevenueUseCase, projectExpectedRevenue } from "@daedalus/revenue-visibility";
+import {
+  surfaceOpportunityUseCase,
+  enrichOpportunityUseCase,
+  qualifyOpportunityUseCase,
+  dismissOpportunityUseCase,
+  projectPipeline,
+} from "@daedalus/opportunity-discovery";
+import type { OpportunityDiscoveryDeps } from "@daedalus/opportunity-discovery";
+import { JsonOpportunityStoreAdapter } from "@daedalus/opportunity-discovery/adapters";
 import { JsonlEventStoreAdapter } from "@daedalus/jsonl-event-store";
 import { loadTenantConfig, defaultTenantId } from "../../../config/tenants/index.ts";
 
 const DATA_DIR = ".data";
 
-function buildDeps(): ProposalDeps {
+function buildDeps(): ProposalDeps & OpportunityDiscoveryDeps {
   return {
     eventStore: new JsonlEventStoreAdapter(DATA_DIR),
     draftStore: new JsonFileDraftStoreAdapter(DATA_DIR),
+    opportunityStore: new JsonOpportunityStoreAdapter(DATA_DIR),
     newId: () => randomUUID(),
     now: () => new Date().toISOString(),
     actor: "cli",
@@ -49,6 +59,11 @@ async function main(): Promise<void> {
       label: { type: "string" },
       amount: { type: "string" },
       text: { type: "string" },
+      source: { type: "string" },
+      opportunity: { type: "string" },
+      description: { type: "string" },
+      contact: { type: "string" },
+      reason: { type: "string" },
     },
   });
 
@@ -65,6 +80,11 @@ async function main(): Promise<void> {
     case "lead:qualify": {
       await qualifyLeadUseCase(deps, { tenantId, leadId: requireOpt(values.lead, "lead") });
       console.log(`LeadQualified  lead=${values.lead}`);
+      break;
+    }
+    case "lead:discard": {
+      await discardLeadUseCase(deps, { tenantId, leadId: requireOpt(values.lead, "lead"), reason: requireOpt(values.reason, "reason") });
+      console.log(`LeadDiscarded  lead=${values.lead}`);
       break;
     }
     case "proposal:start": {
@@ -120,6 +140,66 @@ async function main(): Promise<void> {
       console.log(`ProposalDraftDiscarded  draft=${values.draft}`);
       break;
     }
+    case "opportunity:surface": {
+      const out = await surfaceOpportunityUseCase(deps, {
+        tenantId,
+        label: requireOpt(values.label, "label"),
+        source: requireOpt(values.source, "source"),
+      });
+      console.log(`OpportunitySurfaced  opportunity=${out.opportunityId}`);
+      break;
+    }
+    case "opportunity:enrich": {
+      await enrichOpportunityUseCase(deps, {
+        tenantId,
+        opportunityId: requireOpt(values.opportunity, "opportunity"),
+        description: values.description,
+        contact: values.contact,
+      });
+      console.log(`OpportunityEnriched  opportunity=${values.opportunity}`);
+      break;
+    }
+    case "opportunity:qualify": {
+      const out = await qualifyOpportunityUseCase(deps, {
+        tenantId,
+        opportunityId: requireOpt(values.opportunity, "opportunity"),
+      });
+      console.log(`OpportunityQualified + LeadCreated + LeadQualified  lead=${out.leadId}`);
+      break;
+    }
+    case "opportunity:dismiss": {
+      await dismissOpportunityUseCase(deps, {
+        tenantId,
+        opportunityId: requireOpt(values.opportunity, "opportunity"),
+        reason: requireOpt(values.reason, "reason"),
+      });
+      console.log(`OpportunityDismissed  opportunity=${values.opportunity}`);
+      break;
+    }
+    case "opportunity:show": {
+      const opp = await deps.opportunityStore.load(tenantId, requireOpt(values.opportunity, "opportunity"));
+      if (opp === null) throw new Error(`Opportunity ${values.opportunity} not found`);
+      console.log(JSON.stringify(opp, null, 2));
+      break;
+    }
+    case "opportunity:pipeline": {
+      const events = await deps.eventStore.readStream(tenantId);
+      const pipeline = projectPipeline(events);
+      console.log("=== Pipeline ===");
+      console.log(`Surfaced (${pipeline.surfaced.length}):`);
+      for (const s of pipeline.surfaced) {
+        console.log(`  ${s.id}  "${s.label}"  source=${s.source}`);
+      }
+      console.log(`Qualified (${pipeline.qualified.length}):`);
+      for (const q of pipeline.qualified) {
+        console.log(`  ${q.id}  "${q.label}"  lead=${q.leadId}`);
+      }
+      console.log(`Dismissed (${pipeline.dismissed.length}):`);
+      for (const d of pipeline.dismissed) {
+        console.log(`  ${d.id}  "${d.label}"  reason="${d.reason}"`);
+      }
+      break;
+    }
     case "revenue:ingest": {
       const out = await ingestProposalRevenueUseCase(deps, { tenantId });
       console.log(`revenue:ingest  ingested=${out.ingested} estimate(s) from ProposalGenerated`);
@@ -150,8 +230,15 @@ async function main(): Promise<void> {
           "Usage: node apps/cli/src/index.ts <command> [--options]",
           "",
           "Commands:",
-          "  lead:create     --tenant <id> --customer <name>",
-          "  lead:qualify    --tenant <id> --lead <id>",
+          "  lead:create        --tenant <id> --customer <name>",
+          "  lead:qualify       --tenant <id> --lead <id>",
+          "  lead:discard       --tenant <id> --lead <id> --reason <r>",
+          "  opportunity:surface  --tenant <id> --label <l> --source <s>",
+          "  opportunity:enrich   --tenant <id> --opportunity <id> [--description <d>] [--contact <c>]",
+          "  opportunity:qualify  --tenant <id> --opportunity <id>",
+          "  opportunity:dismiss  --tenant <id> --opportunity <id> --reason <r>",
+          "  opportunity:show     --tenant <id> --opportunity <id>",
+          "  opportunity:pipeline  --tenant <id>",
           "  proposal:start  --tenant <id> --lead <id> [--template standard]",
           "  proposal:add-item --tenant <id> --draft <id> --label <l> --amount <n>",
           "  proposal:set-scope --tenant <id> --draft <id> --text <s>",

@@ -147,5 +147,5 @@ test("friction/qualify an opportunity from a different tenant id (path injection
 test("friction/revenue:ingest with no proposals at all is a no-op, not an error", async () => {
   const { deps } = makeTestDeps();
   const out = await ingestProposalRevenueUseCase(deps, { tenantId: T });
-  assert.deepEqual(out, { ingested: 0 });
+  assert.deepEqual(out, { ingested: 0, confirmed: 0, received: 0 });
 });

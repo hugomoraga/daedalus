@@ -6,6 +6,18 @@ export type PricingLineItem = {
   amount: number;
 };
 
+export function validateLineItem(item: PricingLineItem): void {
+  if (item.label.trim().length === 0) {
+    throw new Error("Line item requires a label");
+  }
+  if (!Number.isFinite(item.amount)) {
+    throw new Error("Line item amount must be a finite number");
+  }
+  if (item.amount < 0) {
+    throw new Error("Line item amount must be non-negative");
+  }
+}
+
 export type ExpectedValue = {
   amount: number;
   currency: string;

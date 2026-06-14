@@ -6,7 +6,7 @@
 
 import type { EventIntent } from "@daedalus/core";
 import type { PricingLineItem, ExpectedValue } from "./value-objects.ts";
-import { sumLineItems } from "./value-objects.ts";
+import { sumLineItems, validateLineItem } from "./value-objects.ts";
 import {
   ProposalDraftCreated,
   ProposalDraftFinalized,
@@ -55,7 +55,7 @@ export function startDraft(
 // Mutations: pure, no events (the work-area is a read-model).
 export function addLineItem(draft: ProposalDraft, item: PricingLineItem): ProposalDraft {
   assertEditable(draft);
-  if (item.label.trim().length === 0) throw new Error("Line item requires a label");
+  validateLineItem(item);
   return { ...draft, lineItems: [...draft.lineItems, item] };
 }
 

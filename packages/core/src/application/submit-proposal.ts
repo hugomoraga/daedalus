@@ -1,27 +1,25 @@
-// Use case: approve a Proposal. Emits the Core ProposalApproved event.
-// Idempotent: approving an already-approved proposal is a no-op; rejecting-then-approving is rejected.
-// This is a Core-internal use case; the human/governance gate is in the CLI (Constitution Article V).
+// Use case: submit a Proposal. Idempotent.
 
 import type { CoreDeps } from "./deps.ts";
 import { appendIntents, startLineage } from "./lineage.ts";
-import { approveProposal } from "../domain/proposal.ts";
+import { submitProposal } from "../domain/proposal.ts";
 import { projectProposal } from "./projections.ts";
 
-export type ApproveProposalCommand = {
+export type SubmitProposalCommand = {
   tenantId: string;
   proposalId: string;
 };
 
-export async function approveProposalUseCase(
+export async function submitProposalUseCase(
   deps: CoreDeps,
-  cmd: ApproveProposalCommand,
+  cmd: SubmitProposalCommand,
 ): Promise<{ changed: boolean }> {
   const events = await deps.eventStore.readStream(cmd.tenantId);
   const proposal = projectProposal(events, cmd.proposalId);
   if (proposal === null) {
     throw new Error(`Proposal ${cmd.proposalId} not found in tenant ${cmd.tenantId}`);
   }
-  const { events: intents } = approveProposal(proposal);
+  const { events: intents } = submitProposal(proposal);
   if (intents.length === 0) return { changed: false };
   await appendIntents(deps, cmd.tenantId, intents, startLineage(deps.newId));
   return { changed: true };

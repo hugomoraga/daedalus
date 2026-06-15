@@ -297,20 +297,16 @@ test("v1: update-estimate emits RevenueEstimateUpdated", async () => {
 });
 
 // Core: approve-proposal idempotency.
-test("core: approve-proposal rejects double approval", async () => {
+test("core: approve-proposal is idempotent on a second invocation", async () => {
   const { deps } = makeTestDeps();
   const proposalId = await finalizeAProposal(deps);
-  const proposal = (await deps.eventStore.readStream(T)).find(
-    (e) => e.type === "ProposalGenerated" && e.payload.proposalId === proposalId,
-  );
-  const expectedValue = proposal!.payload.expectedValue as { amount: number; currency: string };
-  const leadId = String(proposal!.payload.leadId);
-
-  await approveProposalUseCase(deps, { tenantId: T, proposalId, leadId, expectedValue });
-  await assert.rejects(
-    () => approveProposalUseCase(deps, { tenantId: T, proposalId, leadId, expectedValue }),
-    /already approved/,
-  );
+  const first = await approveProposalUseCase(deps, { tenantId: T, proposalId });
+  const second = await approveProposalUseCase(deps, { tenantId: T, proposalId });
+  assert.equal(first.changed, true);
+  assert.equal(second.changed, false); // no-op
+  // Only one ProposalApproved event in the stream.
+  const events = await deps.eventStore.readStream(T);
+  assert.equal(events.filter((e) => e.type === "ProposalApproved").length, 1);
 });
 
 // Core: record-payment rejects duplicates.

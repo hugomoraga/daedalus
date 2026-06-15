@@ -8,8 +8,20 @@ import {
   createLeadUseCase,
   qualifyLeadUseCase,
   discardLeadUseCase,
+  submitProposalUseCase,
+  rejectProposalUseCase,
   approveProposalUseCase,
   recordPaymentReceivedUseCase,
+  createProjectUseCase,
+  markProjectDeliveredUseCase,
+  closeProjectUseCase,
+  issueInvoiceUseCase,
+  sendInvoiceUseCase,
+  payInvoiceUseCase,
+  markInvoiceOverdueUseCase,
+  projectProposal,
+  projectProject,
+  projectInvoice,
 } from "@daedalus/core";
 import {
   startDraftUseCase,
@@ -86,6 +98,8 @@ async function main(): Promise<void> {
       reason: { type: "string" },
       estimate: { type: "string" },
       proposal: { type: "string" },
+      project: { type: "string" },
+      invoice: { type: "string" },
       payment: { type: "string" },
       notes: { type: "string" },
     },
@@ -113,23 +127,35 @@ async function main(): Promise<void> {
       break;
     }
 
-    // ---- Core: proposal approval + payment (v1) ----
-    case "proposal:approve": {
-      const proposalId = requireOpt(values.proposal, "proposal");
-      const events = await deps.eventStore.readStream(tenantId);
-      const proposal = events.find((e) => e.type === "ProposalGenerated" && e.payload.proposalId === proposalId);
-      if (proposal === undefined) throw new Error(`Proposal ${proposalId} not found`);
-      const expectedValue = proposal.payload.expectedValue as { amount: number; currency: string } | undefined;
-      if (expectedValue === undefined) throw new Error(`Proposal ${proposalId} has no expectedValue`);
-      await approveProposalUseCase(deps, {
-        tenantId,
-        proposalId,
-        leadId: String(proposal.payload.leadId ?? ""),
-        expectedValue,
-      });
-      console.log(`ProposalApproved  proposal=${proposalId}`);
+    // ---- Core: proposal lifecycle (submit/reject/approve) ----
+    case "proposal:submit": {
+      const out = await submitProposalUseCase(deps, { tenantId, proposalId: requireOpt(values.proposal, "proposal") });
+      console.log(out.changed ? `ProposalSubmitted  proposal=${values.proposal}` : `already submitted  proposal=${values.proposal}`);
       break;
     }
+    case "proposal:reject": {
+      const out = await rejectProposalUseCase(deps, {
+        tenantId,
+        proposalId: requireOpt(values.proposal, "proposal"),
+        reason: requireOpt(values.reason, "reason"),
+      });
+      console.log(out.changed ? `ProposalRejected  proposal=${values.proposal}` : `already rejected  proposal=${values.proposal}`);
+      break;
+    }
+    case "proposal:approve": {
+      const out = await approveProposalUseCase(deps, { tenantId, proposalId: requireOpt(values.proposal, "proposal") });
+      console.log(out.changed ? `ProposalApproved  proposal=${values.proposal}` : `already approved  proposal=${values.proposal}`);
+      break;
+    }
+    case "proposal:status": {
+      const events = await deps.eventStore.readStream(tenantId);
+      const p = projectProposal(events, requireOpt(values.proposal, "proposal"));
+      if (p === null) throw new Error(`Proposal ${values.proposal} not found`);
+      console.log(JSON.stringify(p, null, 2));
+      break;
+    }
+
+    // ---- Core: payment + project + invoice (Spec 006) ----
     case "payment:record": {
       const proposalId = requireOpt(values.proposal, "proposal");
       const paymentId = requireOpt(values.payment, "payment");
@@ -138,6 +164,63 @@ async function main(): Promise<void> {
       const currency = loadTenantConfig(tenantId).currency;
       await recordPaymentReceivedUseCase(deps, { tenantId, proposalId, paymentId, amount, currency });
       console.log(`PaymentReceived  proposal=${proposalId}  payment=${paymentId}  ${amount} ${currency}`);
+      break;
+    }
+    case "project:create": {
+      const out = await createProjectUseCase(deps, { tenantId, proposalId: requireOpt(values.proposal, "proposal") });
+      console.log(out.created ? `ProjectCreated  project=${out.projectId}` : `project already exists  proposal=${values.proposal}`);
+      break;
+    }
+    case "project:deliver": {
+      const out = await markProjectDeliveredUseCase(deps, { tenantId, projectId: requireOpt(values.project, "project") });
+      console.log(out.changed ? `ProjectDelivered  project=${values.project}` : `already delivered  project=${values.project}`);
+      break;
+    }
+    case "project:close": {
+      const out = await closeProjectUseCase(deps, {
+        tenantId,
+        projectId: requireOpt(values.project, "project"),
+        reason: values.reason,
+      });
+      console.log(out.changed ? `ProjectClosed  project=${values.project}` : `already closed  project=${values.project}`);
+      break;
+    }
+    case "project:status": {
+      const events = await deps.eventStore.readStream(tenantId);
+      const p = projectProject(events, requireOpt(values.project, "project"));
+      if (p === null) throw new Error(`Project ${values.project} not found`);
+      console.log(JSON.stringify(p, null, 2));
+      break;
+    }
+    case "invoice:issue": {
+      const out = await issueInvoiceUseCase(deps, { tenantId, projectId: requireOpt(values.project, "project") });
+      console.log(out.created ? `InvoiceIssued  invoice=${out.invoiceId}` : `invoice already exists  project=${values.project}`);
+      break;
+    }
+    case "invoice:send": {
+      const out = await sendInvoiceUseCase(deps, { tenantId, invoiceId: requireOpt(values.invoice, "invoice") });
+      console.log(out.changed ? `InvoiceSent  invoice=${values.invoice}` : `already sent  invoice=${values.invoice}`);
+      break;
+    }
+    case "invoice:pay": {
+      const out = await payInvoiceUseCase(deps, {
+        tenantId,
+        invoiceId: requireOpt(values.invoice, "invoice"),
+        paymentId: requireOpt(values.payment, "payment"),
+      });
+      console.log(out.changed ? `InvoicePaid  invoice=${values.invoice}` : `already paid  invoice=${values.invoice}`);
+      break;
+    }
+    case "invoice:overdue": {
+      await markInvoiceOverdueUseCase(deps, { tenantId, invoiceId: requireOpt(values.invoice, "invoice") });
+      console.log(`InvoiceOverdue  invoice=${values.invoice}`);
+      break;
+    }
+    case "invoice:status": {
+      const events = await deps.eventStore.readStream(tenantId);
+      const i = projectInvoice(events, requireOpt(values.invoice, "invoice"));
+      if (i === null) throw new Error(`Invoice ${values.invoice} not found`);
+      console.log(JSON.stringify(i, null, 2));
       break;
     }
 
@@ -258,7 +341,7 @@ async function main(): Promise<void> {
       break;
     }
 
-    // ---- Revenue Visibility v0 (kept) ----
+    // ---- Revenue Visibility v0 + v1 ----
     case "revenue:ingest": {
       const out = await ingestProposalRevenueUseCase(deps, { tenantId });
       console.log(
@@ -273,8 +356,6 @@ async function main(): Promise<void> {
       console.log(`expected revenue: ${summary.expected} ${currency}  (${summary.count} estimate(s))`);
       break;
     }
-
-    // ---- Revenue Visibility v1 (new) ----
     case "revenue:create": {
       const amount = Number(requireOpt(values.amount, "amount"));
       if (!Number.isFinite(amount)) throw new Error("--amount must be a number");
@@ -394,8 +475,20 @@ async function main(): Promise<void> {
           "  lead:create        --tenant <id> --customer <name>",
           "  lead:qualify       --tenant <id> --lead <id>",
           "  lead:discard       --tenant <id> --lead <id> --reason <r>",
+          "  proposal:submit    --tenant <id> --proposal <id>",
+          "  proposal:reject    --tenant <id> --proposal <id> --reason <r>",
           "  proposal:approve   --tenant <id> --proposal <id>",
+          "  proposal:status    --tenant <id> --proposal <id>",
           "  payment:record     --tenant <id> --proposal <id> --payment <id> --amount <n>",
+          "  project:create     --tenant <id> --proposal <id>",
+          "  project:deliver    --tenant <id> --project <id>",
+          "  project:close      --tenant <id> --project <id> [--reason <r>]",
+          "  project:status     --tenant <id> --project <id>",
+          "  invoice:issue      --tenant <id> --project <id>",
+          "  invoice:send       --tenant <id> --invoice <id>",
+          "  invoice:pay        --tenant <id> --invoice <id> --payment <id>",
+          "  invoice:overdue    --tenant <id> --invoice <id>",
+          "  invoice:status     --tenant <id> --invoice <id>",
           "  opportunity:surface  --tenant <id> --label <l> --source <s>",
           "  opportunity:enrich   --tenant <id> --opportunity <id> [--description <d>] [--contact <c>]",
           "  opportunity:qualify  --tenant <id> --opportunity <id>",

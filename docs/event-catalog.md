@@ -31,16 +31,16 @@ The core narrative: a lead becomes money in the bank.
 | `LeadQualified` | A lead is judged worth pursuing. | Records a *decision* (governed by policy/human) to invest effort. Separates raw interest from committed pipeline. |
 | `LeadDiscarded` | A lead is dropped. | Negative outcomes matter as much as positive ones. Auditing *why we said no* prevents silent loss and reveals qualification quality. |
 | `ProposalGenerated` | A formal offer is produced from a qualified lead. | The transition from internal intent to an external commitment-in-waiting. First artifact a customer sees. |
-| `ProposalSubmitted` | The proposal is sent to the customer. | Marks the boundary between internal drafting and external exposure — a different accountability regime begins here. |
+| `ProposalSubmitted` **(implemented, Spec 006 v0)** | The proposal is sent to the customer. | Marks the boundary between internal drafting and external exposure — a different accountability regime begins here. |
 | `ProposalApproved` **(implemented, v1 of Revenue Visibility)** | The proposal is accepted (the **approval gate**). | A pivotal governed decision. Triggers Project creation. Frequently human-governed per Constitution Article V. |
-| `ProposalRejected` | The proposal is declined. | Closes the branch with a reason. Essential for win/loss analysis and for proving the chain ended legitimately. |
-| `ProjectCreated` | An approved proposal becomes committed work. | The organization now owes delivery. Marks the start of obligation and the handoff between Commercial and Delivery contexts. |
-| `ProjectDelivered` | The committed work is completed. | The "Delivery" step of the value chain. Pre-condition for legitimate invoicing — you should not bill for undelivered work. |
-| `ProjectClosed` | The project is formally concluded. | Distinguishes "work done" from "engagement closed" (e.g. after billing settles). Bookend of the engagement lifecycle. |
-| `InvoiceIssued` | A demand for payment is created. | Creates a financial claim. Must be traceable to a delivered project — the anti-fraud / anti-error anchor of billing. |
-| `InvoiceSent` | The invoice is delivered to the customer. | Starts payment-term clocks and external accountability. Distinct from issuing it internally. |
-| `InvoicePaid` | Payment is received and applied. | The value chain's success condition. Closes the loop opened by `LeadCreated`. |
-| `InvoiceOverdue` | Payment terms lapse without settlement. | A risk signal. Auditable so dunning/collections actions are themselves governed and traceable. |
+| `ProposalRejected` **(implemented, Spec 006 v0)** | The proposal is declined. | Closes the branch with a reason. Essential for win/loss analysis and for proving the chain ended legitimately. |
+| `ProjectCreated` **(implemented, Spec 006 v0)** | An approved proposal becomes committed work. | The organization now owes delivery. Marks the start of obligation and the handoff between Commercial and Delivery contexts. Reactor from `ProposalApproved`. |
+| `ProjectDelivered` **(implemented, Spec 006 v0)** | The committed work is completed. | The "Delivery" step of the value chain. Pre-condition for legitimate invoicing — you should not bill for undelivered work. |
+| `ProjectClosed` **(implemented, Spec 006 v0)** | The project is formally concluded. | Distinguishes "work done" from "engagement closed" (e.g. after billing settles). Bookend of the engagement lifecycle. |
+| `InvoiceIssued` **(implemented, Spec 006 v0)** | A demand for payment is created. | Creates a financial claim. Must be traceable to a delivered project — the anti-fraud / anti-error anchor of billing. Reactor from `ProjectDelivered`. |
+| `InvoiceSent` **(implemented, Spec 006 v0)** | The invoice is delivered to the customer. | Starts payment-term clocks and external accountability. Distinct from issuing it internally. |
+| `InvoicePaid` **(implemented, Spec 006 v0)** | Payment is received and applied. | The value chain's success condition. Closes the loop opened by `LeadCreated`. Reactor from `PaymentReceived`. |
+| `InvoiceOverdue` **(implemented, Spec 006 v0)** | Payment terms lapse without settlement. | A risk signal. Auditable so dunning/collections actions are themselves governed and traceable. |
 | `PaymentReceived` **(implemented, v1 of Revenue Visibility)** | Funds are received against an invoice. | The irreversible financial fact. Distinct from `InvoicePaid` (which is the *application* of a payment to an invoice) to keep money-movement and accounting-status separable. |
 
 > **Design note — why `PaymentReceived` and `InvoicePaid` are separate.** Receiving money and marking an invoice settled are two facts that can diverge (partial payment, payment to the wrong invoice, overpayment). Keeping them as distinct events preserves truth even when reconciliation is messy. This is a deliberate cost paid against *Simplicity First* because the alternative loses auditability of money movement — a poor trade for a system whose whole point is auditability.

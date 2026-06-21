@@ -1,0 +1,17 @@
+{
+  "name": "@daedalus/atlas",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "ATLAS — read-only mission-control driving adapter (Spec 007, ADR-005). Zero external runtime dependencies.",
+  "bin": {
+    "atlas": "./src/cli.ts"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@daedalus/core": "*",
+    "@daedalus/jsonl-event-store": "*"
+  }
+}

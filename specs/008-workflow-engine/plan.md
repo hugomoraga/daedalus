@@ -1,9 +1,9 @@
 # Plan — Workflow Engine v0 (implementation when authorized)
 
-**Status:** Draft · implementation plan for [Spec 008](./spec.md)
+**Status:** Ratified · implementation plan for [Spec 008](./spec.md) v0.2.0
 **Goal:** Build a declarative workflow engine that subscribes to the event stream, runs workflow instances, invokes use cases, enforces human gates, and emits engine events for observability. v0 ships a single workflow: `lead-to-payment`.
 **Conforms to:** [Technical Principles](../../memory/technical-principles.md), [ADR-002](../../governance/decisions/ADR-002-adopt-technical-framework.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md), Spec 001–007 contracts.
-**Version:** 0.1.0
+**Version:** 0.2.0
 **Last updated:** 2026-06-21
 
 > **Pre-conditions for build authorization.** This plan activates only after (a) Spec 008 is ratified, (b) an ADR moves the Workflow Engine into the [Roadmap](../../docs/roadmap.md) Phase 2 slot, and (c) stewards approve the move. Until then, this file is planning, not authorization.

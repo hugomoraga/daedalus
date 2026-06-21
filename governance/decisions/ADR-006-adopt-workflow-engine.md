@@ -1,7 +1,8 @@
 # ADR-006 — Adopt the Workflow Engine (Phase 2)
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-06-21
+**Ratified:** 2026-06-21 · branch `023-workflow-engine-ratify-pack` · steward approval recorded
 **Deciders:** Stewards
 **Trigger:** [Spec 008](../../specs/008-workflow-engine/spec.md) (PR #20, pending); [Roadmap](../../docs/roadmap.md) Phase 1 closed.
 **Related:** [Constitution](../../memory/constitution.md), [Technical Principles](../../memory/technical-principles.md), [Identity](../../docs/identity.md), [Roadmap](../../docs/roadmap.md), [ADR-002](./ADR-002-adopt-technical-framework.md), [ADR-004](./ADR-004-export-discipline-and-lineage.md), [ADR-005](./ADR-005-atlas-driving-adapter.md), Spec 001–007 contracts
@@ -99,11 +100,11 @@ This ADR records the architectural decision: **adopt the Workflow Engine as defi
 
 This ADR moves the Workflow Engine into Phase 2 only when **all** of the following hold:
 
-1. **Spec 008 is ratified.** *(Pending — PR #20.)*
-2. **This ADR is accepted.** *(Pending steward review.)*
-3. **The founder (Tenant 0) confirms** the `lead-to-payment` v0.1.0 shape matches their operator needs (or approves the deviation).
+1. **Spec 008 is ratified.** ✅ — branch `023-workflow-engine-ratify-pack` (see `specs/008-workflow-engine/spec.md` status flip).
+2. **This ADR is accepted.** ✅ — status flipped to `Accepted` on 2026-06-21.
+3. **The founder (Tenant 0) confirms** the `lead-to-payment` v0.1.0 shape matches their operator needs (or approves the deviation). ✅ — see companion confirmation in the PR description of `023-workflow-engine-ratify-pack`.
 
-T-01…T-27 in [Spec 008 tasks](../../specs/008-workflow-engine/tasks.md) may begin only after these three are satisfied.
+All three satisfied. T-01…T-27 in [Spec 008 tasks](../../specs/008-workflow-engine/tasks.md) are now authorized to build.
 
 ---
 

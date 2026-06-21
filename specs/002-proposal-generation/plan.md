@@ -1,12 +1,133 @@
-# Plan — Proposal Generation v0 (implementation)
+# Plan — Proposal Generation v1 (orchestrated form)
 
-**Status:** Draft · implementation plan for [Spec 002](./spec.md)
-**Goal:** Get **real usage evidence** by building the smallest clean vertical slice — not more conceptual modeling.
-**Conforms to:** [Technical Principles](../../memory/technical-principles.md) ([ADR-002](../../governance/decisions/ADR-002-adopt-technical-framework.md))
-**Version:** 0.2.0
-**Last updated:** 2026-06-13
+**Status:** Ratified · implementation plan for [Spec 002](./spec.md) v1.0
+**Goal:** Make the two transition points the Workflow Engine can drive automatic: `LeadQualified` → auto-start-draft, and `ProposalApproved` → auto-create-project. The human-decision steps (add-item, set-scope, finalize, submit, approve, reject) remain manual.
+**Conforms to:** [Technical Principles](../../memory/technical-principles.md), [ADR-002](../../governance/decisions/ADR-002-adopt-technical-framework.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md), [Spec 008 — Workflow Engine](../008-workflow-engine/spec.md) (just shipped)
+**Version:** 1.0.0
+**Last updated:** 2026-06-21
 
-> The `/plan` step: *how* we build Proposal Generation v0. The spec defines *what*. Code is now in scope. We build the leanest **hexagonal** slice that exercises the canonical chain and produces an auditable, replayable event trail.
+> The `/plan` step for v1: *how* we extend Proposal Generation to its orchestrated form on top of the shipped engine. The v0 implementation (this package, the CLI commands, the audit trail) is unchanged; v1 adds two **workflow actions** and one **engine-level wiring change**.
+
+---
+
+## 0. Q resolutions (from Spec 002 §12 + new v1 questions)
+
+- **Q1 (draft as first-class):** unchanged from v0.
+- **Q2 (currency):** unchanged — Tenant 0 currency.
+- **Q3 (revision history):** unchanged — finalized snapshot only.
+- **Q4 (template authoring):** unchanged — Tenant-scoped, out of module core.
+- **Q5 (expectedValue on Core event):** deferred — separate ADR if promoted (T-13 in tasks).
+- **Q6 (drafting AI):** out of v1 — Phase 4.
+- **Q7 (v1 orchestration scope — new):** two auto-steps: `LeadQualified` → `startDraftUseCase`; `ProposalApproved` → `createProjectUseCase`. Nothing else automated (Article V).
+- **Q8 (v1 module use cases in the engine — new):** the engine's `UseCaseRegistry` is built by the composition root; module use cases join Core use cases. Each module invoker carries its own deps (e.g. `DraftStorePort`) at registry-construction time. The engine itself stays Core-only.
+
+---
+
+## 1. What v1 changes
+
+| Layer | Change |
+|---|---|
+| `@daedalus/proposal-generation` | **No code changes** — `startDraftUseCase` is already exported. |
+| `@daedalus/core` | **No code changes** — `createProjectUseCase` is already exported. |
+| `packages/workflow-engine` | **Add `proposalGenerationUseCases(propGenDeps)` factory** that wraps `startDraftUseCase` into the engine's `UseCaseRegistry`. (Pattern mirrors `coreUseCases(coreDeps)` from PR #28.) |
+| `blueprints/workflows/` | **Add `lead-to-payment.v0.2.0.json`** with two transitions owning the actions above. v0.1.0 stays unchanged (existing instances continue under v0.1.0; AC-6). |
+| `config/tenants/tenant-0/workflows.json` | Unchanged (`[]`); v0.2.0 will be picked up automatically. |
+
+The audit trail already records the auto-actions via `WorkflowTransitionFired.payload.actionEventIds` (Spec 008 AC-3) — no additional event types required.
+
+---
+
+## 2. The new workflow artifact — `lead-to-payment.v0.2.0.json`
+
+Identical shape to v0.1.0 (Spec 008 §9) with two transitions gaining `actions`:
+
+```diff
+   draft: {
+     on: {
+-      LeadQualified: [{ id: "draft-to-qualified", target: "qualified" }]
++      LeadQualified: [{
++        id: "draft-to-qualified",
++        target: "qualified",
++        actions: [{ useCase: "startDraftUseCase", args: { _event: true } }]
++      }]
+     }
+   },
+   ...
+   submitted: {
+     on: {
+-      ProposalApproved: [{ id: "submitted-to-approved", target: "approved" }]
++      ProposalApproved: [{
++        id: "submitted-to-approved",
++        target: "approved",
++        actions: [{ useCase: "createProjectUseCase", args: { _event: true } }]
++      }]
+     }
+   },
+```
+
+`args: { _event: true }` copies the triggering event's payload into the command (Spec 002 v0.1.0 `buildCommand` semantics). For `LeadQualified` this gives `{ leadId, tenantId }`; the workflow hard-codes `template: "standard"` in a follow-up step (see §3).
+
+### Why not auto-finalize / auto-submit / auto-approve?
+Constitution Article V (Human Responsibilities) — irreversible/strategic decisions stay with humans. Spec 008 §11 non-goal "no agent runtime". The two auto-steps above are mechanical bookkeeping (create draft, create project); the lifecycle decisions are not.
+
+---
+
+## 3. Composition-root wiring (engine CLI)
+
+`packages/workflow-engine/src/cli.ts` currently builds the registry as `coreUseCases(core)`. v1 extends it:
+
+```diff
+-  useCases: coreUseCases(core),
++  useCases: {
++    ...coreUseCases(core),
++    startDraftUseCase: async (cmd, runtime) =>
++      startDraftUseCase(
++        { ...runtime, draftStore: new JsonFileDraftStoreAdapter(process.cwd()) },
++        cmd as Parameters<typeof startDraftUseCase>[1],
++      ).then(() => undefined),
++  },
+```
+
+(Or, cleaner, expose a `proposalGenerationUseCases(propGenDeps)` factory analogous to `coreUseCases`. Implementation picks the cleaner of the two — see tasks §2.)
+
+The `apps/cli` CLI is unchanged — `proposal:start`, `proposal:finalize`, etc. still work manually for tenants not running the v0.2.0 workflow (or for tenants whose workflow v0.2.0 is overridden).
+
+---
+
+## 4. Acceptance-criteria → test mapping
+
+| Spec 002 AC | Covered by |
+|---|---|
+| AC-1..AC-9 (v0) | Already green — `tests/proposal-generation.test.ts` (unchanged) |
+| AC-10 (orchestrated auto-start) | New: `tests/proposal-generation-orchestrated.test.ts` |
+| AC-11 (orchestrated auto-project) | Same new file (both ACs in one scenario) |
+| AC-6 from Spec 008 (versioning) | Already green — `tests/engine-versioning.test.ts` (v0.1.0 in-flight instances stay on v0.1.0) |
+
+The new test sets up a temp dir with both v0.1.0 AND v0.2.0 of the workflow; seeds `LeadQualified`; asserts:
+1. The engine emits `WorkflowTransitionFired` for `draft-to-qualified` whose `actionEventTypes = ["ProposalDraftCreated"]`.
+2. A `ProposalDraftCreated` event is appended to the stream for that flow.
+3. Then seed `ProposalApproved`; assert `WorkflowTransitionFired` for `submitted-to-approved` whose `actionEventTypes = ["ProjectCreated"]`.
+
+---
+
+## 5. Definition of done (v1)
+
+- `blueprints/workflows/lead-to-payment.v0.2.0.json` shipped.
+- `proposalGenerationUseCases(...)` (or equivalent wiring in the engine CLI) shipped.
+- New test file covers AC-10 + AC-11.
+- `node --test` — 127 (current) + 2 = 129+ tests, all green.
+- `@daedalus/core` unchanged.
+- `@daedalus/proposal-generation` unchanged (only the existing exports are wired into the engine registry).
+- Manual CLI commands still work (`proposal:start` / `project:create`) for non-v0.2.0 tenants and as a manual escape hatch.
+
+---
+
+## 6. Out of scope (binding — from Spec 002 §13)
+
+- No auto-finalize, auto-submit, auto-approve (Constitution Article V).
+- No richer tenant templates (T-12 — separate, requires Tenant 0 to author).
+- No `expectedValue` on Core event schema (T-13, Q5 — separate ADR if promoted).
+- No AI drafting assistance (T-14, Q6 — Phase 4).
 
 ---
 

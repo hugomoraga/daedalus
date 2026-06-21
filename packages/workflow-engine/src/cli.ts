@@ -9,11 +9,12 @@
 
 import type { CoreDeps } from "@daedalus/core";
 import { JsonlEventStoreAdapter } from "@daedalus/jsonl-event-store";
+import { JsonFileDraftStoreAdapter } from "@daedalus/proposal-generation/adapters";
 import { JsonlInstanceStoreAdapter, JsonlWorkflowStoreAdapter } from "./adapters/index.ts";
 import type { EngineDeps } from "./application/deps.ts";
 import { runEngine } from "./application/engine.ts";
 import { noOpPolicy } from "./application/ports/policy.ts";
-import { coreUseCases } from "./application/use-cases.ts";
+import { coreUseCases, proposalGenerationUseCases } from "./application/use-cases.ts";
 
 type ParsedArgs = {
   command: string | null;
@@ -48,13 +49,18 @@ function coreDeps(): CoreDeps {
   };
 }
 
-function engineDeps(core: CoreDeps, tenantId: string): EngineDeps {
+function engineDeps(core: CoreDeps, _tenantId: string): EngineDeps {
   return {
     ...core,
     policy: noOpPolicy,
     workflowStore: new JsonlWorkflowStoreAdapter(process.cwd()),
     instanceStore: new JsonlInstanceStoreAdapter(process.cwd()),
-    useCases: coreUseCases(core),
+    useCases: {
+      ...coreUseCases(core),
+      ...proposalGenerationUseCases({
+        draftStore: new JsonFileDraftStoreAdapter(process.cwd()),
+      }),
+    },
   };
 }
 

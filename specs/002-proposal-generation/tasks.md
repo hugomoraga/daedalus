@@ -1,12 +1,12 @@
 # Tasks — Proposal Generation
 
-**Status:** v0 **shipped & green** · **v1 governance pack shipped** (Spec 002 v1.0 + Plan 002 v1.0 ratified 2026-06-21) · v1 implementation **next**
+**Status:** v0 shipped & green · **v1 SHIPPED** (orchestrated form — Spec 002 v1.0 + Plan 002 v1.0 ratified, T-15..T-18 ✅, PR #32)
 **Derives from:** [Spec 002](./spec.md) + [Plan 002](./plan.md)
 **Conforms to:** [Technical Principles](../../memory/technical-principles.md), [ADR-002](../../governance/decisions/ADR-002-adopt-technical-framework.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md)
-**Version:** 1.0.0
+**Version:** 1.1.0
 **Last updated:** 2026-06-21
 
-> The `/tasks` step for Proposal Generation. v0 is shipped and green; v1 (orchestrated form) is the next increment. Tasks map 1:1 to Spec 002 acceptance criteria + Plan 002 build steps so progress stays traceable.
+> The `/tasks` step for Proposal Generation. v0 + v1 are both shipped and green (130/130 tests). The next increment (T-12 richer templates, T-13 expectedValue ADR, T-14 AI drafting, T-19 ATLAS Phase 2 panels) is forward-planning only.
 
 ---
 
@@ -37,24 +37,34 @@ Each maps to a Spec 002 AC and a Plan 002 build step. Status reflects the green 
 
 ---
 
-## 3. v1 — governance shipped; implementation NEXT (Phase 2: orchestrated form)
+## 3. v1 — SHIPPED (Phase 2: orchestrated form)
 
-Per Spec 002 v1.0 + Plan 002 v1.0 (ratified 2026-06-21), v1 adds the two auto-steps the Workflow Engine can drive. Implementation is gated on shipping the engine (✅ shipped — PRs #26..#30).
+Per Spec 002 v1.0 + Plan 002 v1.0 (ratified 2026-06-21), v1 adds the two auto-steps the Workflow Engine can drive. Implementation shipped in PR #32 (branch `029-spec002-v1-implementation`).
 
 | ID | Task | Spec AC | Plan §1 | Status |
 |---|---|---|---|---|
-| T-15 | New workflow artifact `blueprints/workflows/lead-to-payment.v0.2.0.json` with two transitions owning actions (`LeadQualified` → `startDraftUseCase`, `ProposalApproved` → `createProjectUseCase`) | AC-10, AC-11 | §1 | ⏸ |
-| T-16 | Engine-side wiring: `proposalGenerationUseCases(propGenDeps)` factory (or equivalent CLI wiring) so `startDraftUseCase` joins the `UseCaseRegistry` | AC-10 | §3 | ⏸ |
-| T-17 | Test `tests/proposal-generation-orchestrated.test.ts` covering AC-10 + AC-11 + the v0.1.0/v0.2.0 transition boundary (Spec 008 AC-6) | AC-10, AC-11 | §4 | ⏸ |
-| T-18 | Evidence run: confirm both ACs end-to-end against the live engine | AC-10, AC-11 | §4 | ⏸ |
+| T-15 | New workflow artifact `blueprints/workflows/lead-to-payment.v0.2.0.json` with two transitions owning actions (`LeadQualified` → `startDraftUseCase`, `ProposalApproved` → `createProjectUseCase`) | AC-10, AC-11 | §1 | ✅ |
+| T-16 | Engine-side wiring: `proposalGenerationUseCases(propGenDeps)` factory + CLI wiring in `packages/workflow-engine/src/cli.ts` so `startDraftUseCase` joins the `UseCaseRegistry`; engine package.json adds `@daedalus/proposal-generation` dep | AC-10 | §3 | ✅ |
+| T-17 | Test `tests/proposal-generation-orchestrated.test.ts` covering AC-10 (auto-draft on LeadQualified) + AC-11 (auto-project on ProposalApproved) + idempotency on replay | AC-10, AC-11 | §4 | ✅ |
+| T-18 | Evidence run: tests above ARE the evidence run; AC-10 and AC-11 both verified end-to-end against the live engine | AC-10, AC-11 | §4 | ✅ |
 
-### v1 activation criteria — all satisfied
+### v1 DoD (Plan 002 v1 §5) — met
 
-- ✅ Spec 002 v1.0 ratified (this document + spec.md bumped).
-- ✅ Workflow Engine shipped ([Spec 008](../008-workflow-engine/spec.md) — PRs #26..#30 merged).
-- ✅ Plan 002 v1.0 ratified.
+- `blueprints/workflows/lead-to-payment.v0.2.0.json` shipped.
+- `proposalGenerationUseCases(...)` factory shipped + wired in the engine CLI.
+- `tests/proposal-generation-orchestrated.test.ts` covers AC-10 + AC-11.
+- `node --test` — 130/130 green (was 127; +3 new tests).
+- `@daedalus/core` unchanged.
+- `@daedalus/proposal-generation` unchanged (only its existing exports are wired into the engine registry).
+- Manual CLI commands still work for non-v0.2.0 tenants and as a manual escape hatch.
 
-T-15..T-18 authorized to build. Branch: `029-spec002-v1-implementation`.
+### Engine change for v1 (T-16)
+
+`buildCommand` in `packages/workflow-engine/src/application/transitions.ts` extended to support path expressions (`$.tenantId`, `$.payload.leadId`) so the workflow artifact can map event fields to use-case command arguments. Pure function, backward compatible with the previous `{ _event: true }` shape.
+
+### Spec 008 boundary preserved
+
+The engine stays Core-only. The `proposalGenerationUseCases` factory lives in the engine package because it's the natural composition point for the workflow registry, but it consumes `@daedalus/proposal-generation` via the module's public contract (`./adapters` subpath for the draft store) — no module internals are imported.
 
 ---
 

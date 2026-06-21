@@ -59,10 +59,15 @@ export async function invokeActions(
   return capture.drain();
 }
 
-// Build a use-case command from the action's args map. v0 supports two shapes:
-//   - { "_event": true }            → the triggering event's payload (verbatim)
-//   - { "field": <literal-value> }  → field-by-field literal command
-// Field-by-event is a future enhancement (e.g. dotted-path expressions).
+// Build a use-case command from the action's args map. Supports three shapes:
+//   - { "_event": true }              → the triggering event's payload + tenantId
+//   - { "field": <literal-value> }    → literal field-by-field command
+//   - { "field": "$.path.expression" } → dotted path read from the event
+//     ("$.tenantId", "$.payload.leadId", etc.). Read errors → undefined.
+//   - mixed: any combination of the above per field.
+//
+// This is intentionally small and string-based (no DSL). Workflow authors
+// stay close to JSON; richer mapping rules are an explicit future spec.
 function buildCommand(
   args: Record<string, unknown>,
   event: DomainEvent,
@@ -71,7 +76,36 @@ function buildCommand(
   if (args["_event"] === true) {
     return { ...event.payload, tenantId: event.tenantId };
   }
-  return { ...args };
+  const cmd: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(args)) {
+    if (typeof value === "string" && value.startsWith("$.")) {
+      cmd[key] = readEventPath(event, value.slice(2));
+    } else {
+      cmd[key] = value;
+    }
+  }
+  return cmd;
+}
+
+function readEventPath(event: DomainEvent, path: string): unknown {
+  if (path === "tenantId") return event.tenantId;
+  if (path === "type") return event.type;
+  if (path === "eventId") return event.eventId;
+  if (path === "actor") return event.actor;
+  if (path === "occurredAt") return event.occurredAt;
+  if (path === "correlationId") return event.correlationId;
+  if (path === "causationId") return event.causationId;
+  if (path === "payload") return event.payload;
+  if (path.startsWith("payload.")) {
+    const segment = path.slice("payload.".length);
+    let cur: unknown = event.payload;
+    for (const part of segment.split(".")) {
+      if (cur === null || cur === undefined || typeof cur !== "object") return undefined;
+      cur = (cur as Record<string, unknown>)[part];
+    }
+    return cur;
+  }
+  return undefined;
 }
 
 // Advance the instance to the transition's target state. Pure — returns a new

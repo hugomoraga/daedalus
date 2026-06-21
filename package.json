@@ -13,6 +13,7 @@
   },
   "scripts": {
     "test": "node --test",
-    "cli": "node apps/cli/src/index.ts"
+    "cli": "node apps/cli/src/index.ts",
+    "atlas": "node apps/atlas/src/cli.ts"
   }
 }

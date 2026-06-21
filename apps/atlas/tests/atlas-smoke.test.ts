@@ -71,7 +71,7 @@ test("atlas v0.1: unknown panel returns 404 (AC-6 — absent, not empty)", async
   const { server } = createAtlasServer({ port: 0 });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", () => resolve()));
   try {
-    const res = await get(server, "/t/tenant-0/health");
+    const res = await get(server, "/t/tenant-0/throughput");
     assert.equal(res.status, 404);
   } finally {
     server.close();

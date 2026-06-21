@@ -4,6 +4,8 @@
 // context per request and never caches cross-tenant data server-side.
 
 import { defaultTenantId, loadTenantConfig } from "../../../config/tenants/index.ts";
+import { tenant0 } from "../../../config/tenants/tenant-0.ts";
+import { tenantOther } from "../../../config/tenants/tenant-other.ts";
 
 export type TenantContext = {
   readonly tenantId: string;
@@ -11,21 +13,23 @@ export type TenantContext = {
   readonly activeModules: ReadonlySet<string>;
 };
 
-const KNOWN_TENANTS_CACHE: ReadonlySet<string> | null = null;
+const KNOWN_TENANT_IDS: readonly string[] = Object.freeze([tenant0.id, tenantOther.id]);
 
 export function listKnownTenants(): readonly string[] {
-  if (KNOWN_TENANTS_CACHE !== null) return Array.from(KNOWN_TENANTS_CACHE);
-  return [defaultTenantId];
+  return KNOWN_TENANT_IDS;
 }
 
 export function resolveTenant(tenantId: string | null | undefined): TenantContext | null {
   if (typeof tenantId !== "string" || tenantId.length === 0) return null;
-  const known = listKnownTenants();
-  if (!known.includes(tenantId)) return null;
-  const cfg = loadTenantConfig(tenantId);
-  return {
-    tenantId,
-    currency: cfg.currency,
-    activeModules: new Set(cfg.enabledModules ?? []),
-  };
+  if (!KNOWN_TENANT_IDS.includes(tenantId)) return null;
+  try {
+    const cfg = loadTenantConfig(tenantId);
+    return {
+      tenantId,
+      currency: cfg.currency,
+      activeModules: new Set(cfg.enabledModules ?? []),
+    };
+  } catch {
+    return null;
+  }
 }

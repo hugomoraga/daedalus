@@ -56,7 +56,7 @@ export function runEngine(
   void run();
 
   async function run(): Promise<void> {
-    const workflows = await deps.workflowStore.loadFor(tenantId);
+    const workflows = sortWorkflowsNewestFirst(await deps.workflowStore.loadFor(tenantId));
     let cursor = await deps.instanceStore.getCursor(tenantId);
     while (!stopped) {
       options.signal?.throwIfAborted();
@@ -98,11 +98,20 @@ async function dispatch(
 
   for (const workflow of workflows) {
     const existing = await deps.instanceStore.findByCorrelationId(tenantId, event.correlationId);
+    // An instance is "ours" if it belongs to this workflow's name (regardless
+    // of version). The instance is bound to its original version at start
+    // and never re-binds (AC-6). When we later iterate an older version, the
+    // lookup must skip this instance because it's not bound to that version.
     let instance = existing.find(
       (i) => i.workflowName === workflow.name && i.workflowVersion === workflow.version,
     );
 
     if (!instance && matchesInitialTrigger(workflow, event)) {
+      // No instance for THIS version yet. If any instance exists for this
+      // workflow name on this correlationId (a different version), skip —
+      // the existing instance is already bound to its original version.
+      const anyForName = existing.find((i) => i.workflowName === workflow.name);
+      if (anyForName) continue;
       instance = await startInstance(workflow, event, deps, tenantId);
     }
     if (!instance) continue;
@@ -369,6 +378,36 @@ function filterAfterCursor(events: DomainEvent[], cursor: string | null): Domain
 
 const defaultSleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
+
+// Sort workflows so that for each (name) the highest semver version comes
+// first. The engine's dispatch tries workflows in order; when a fresh
+// correlation id matches an initial trigger, the newest version wins
+// (AC-6 — "new instances start under the latest version").
+function sortWorkflowsNewestFirst(workflows: Workflow[]): Workflow[] {
+  const byName = new Map<string, Workflow[]>();
+  for (const w of workflows) {
+    const list = byName.get(w.name) ?? [];
+    list.push(w);
+    byName.set(w.name, list);
+  }
+  const out: Workflow[] = [];
+  for (const list of byName.values()) {
+    list.sort((a, b) => compareSemverDesc(a.version, b.version));
+    out.push(...list);
+  }
+  return out;
+}
+
+function compareSemverDesc(a: string, b: string): number {
+  const pa = a.split(".").map((n) => Number.parseInt(n, 10));
+  const pb = b.split(".").map((n) => Number.parseInt(n, 10));
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const na = pa[i] ?? 0;
+    const nb = pb[i] ?? 0;
+    if (na !== nb) return nb - na;
+  }
+  return 0;
+}
 
 // Silence unused-import warnings for symbols kept for symmetry with Plan 008 §4
 // and future engine features (command-initiated flow boot, derived events).

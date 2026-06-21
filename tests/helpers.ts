@@ -1,7 +1,7 @@
 // Test helpers: deterministic deps (fixed ids/clock) over the REAL adapters in a temp dir.
-// Integration-level: composes core + proposal-generation + opportunity-discovery + revenue-visibility + jsonl-event-store.
+// Integration-level: composes core + proposal-generation + opportunity-discovery + revenue-visibility + jsonl-event-store + workflow-engine.
 
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, copyFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { ProposalDeps } from "@daedalus/proposal-generation";
@@ -11,6 +11,10 @@ import { JsonOpportunityStoreAdapter } from "@daedalus/opportunity-discovery/ada
 import type { RevenueDeps } from "@daedalus/revenue-visibility";
 import { TenantConfigThresholdsAdapter } from "@daedalus/revenue-visibility/adapters";
 import { JsonlEventStoreAdapter } from "@daedalus/jsonl-event-store";
+import type { CoreDeps } from "@daedalus/core";
+import type { EngineDeps } from "@daedalus/workflow-engine";
+import { JsonlInstanceStoreAdapter, JsonlWorkflowStoreAdapter } from "@daedalus/workflow-engine/adapters";
+import { coreUseCases, noOpPolicy, runEngine, type PolicyDecisionPort } from "@daedalus/workflow-engine";
 
 export type TestDeps = ProposalDeps & OpportunityDiscoveryDeps & RevenueDeps;
 
@@ -27,4 +31,60 @@ export function makeTestDeps(): { deps: TestDeps; baseDir: string } {
     actor: "test",
   };
   return { deps, baseDir };
+}
+
+// Workflow-engine specific: sets up a temp dir with the lead-to-payment
+// workflow artifact + an empty tenant override, wires EngineDeps with the
+// given policy.
+export type EngineTestHandle = {
+  deps: EngineDeps;
+  baseDir: string;
+  tenantId: string;
+  append: CoreDeps["eventStore"]["append"];
+  readStream: CoreDeps["eventStore"]["readStream"];
+  // Wipe the engine cursor (test helper — simulates engine restart re-reading from start).
+  resetCursor: () => Promise<void>;
+  // Run the engine loop for `ms` milliseconds, then stop.
+  runFor: (ms: number) => Promise<void>;
+};
+
+export function makeEngineDeps(
+  opts: { policy?: PolicyDecisionPort; tenantId?: string } = {},
+): EngineTestHandle {
+  const baseDir = mkdtempSync(join(tmpdir(), "daedalus-engine-"));
+  const tenantId = opts.tenantId ?? "tenant-0";
+  mkdirSync(join(baseDir, "blueprints", "workflows"), { recursive: true });
+  mkdirSync(join(baseDir, "config", "tenants", tenantId), { recursive: true });
+  copyFileSync(
+    "blueprints/workflows/lead-to-payment.v0.1.0.json",
+    join(baseDir, "blueprints", "workflows", "lead-to-payment.v0.1.0.json"),
+  );
+  writeFileSync(join(baseDir, "config", "tenants", tenantId, "workflows.json"), "[]\n");
+  let counter = 0;
+  const eventStore = new JsonlEventStoreAdapter(baseDir);
+  const core: CoreDeps = {
+    eventStore,
+    newId: () => `id-${++counter}`,
+    now: () => "2026-06-13T00:00:00.000Z",
+    actor: "test",
+  };
+  const deps: EngineDeps = {
+    ...core,
+    policy: opts.policy ?? noOpPolicy,
+    workflowStore: new JsonlWorkflowStoreAdapter(baseDir),
+    instanceStore: new JsonlInstanceStoreAdapter(baseDir),
+    useCases: coreUseCases(core),
+  };
+  const append = eventStore.append.bind(eventStore);
+  const readStream = eventStore.readStream.bind(eventStore);
+  const resetCursor = async (): Promise<void> => {
+    await deps.instanceStore.setCursor(tenantId, "");
+  };
+  const runFor = async (ms: number): Promise<void> => {
+    const handle = runEngine(deps, tenantId, { pollMs: 10 });
+    await new Promise((r) => setTimeout(r, ms));
+    handle.stop();
+    await new Promise((r) => setTimeout(r, 30));
+  };
+  return { deps, baseDir, tenantId, append, readStream, resetCursor, runFor };
 }

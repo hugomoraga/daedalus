@@ -26,7 +26,7 @@ export async function compensate(
   instance: Instance,
   failingTransition: Transition,
   error: Error,
-  deps: CoreDeps & { useCases: Record<string, (cmd: Record<string, unknown>) => Promise<void>> },
+  deps: CoreDeps & { useCases: Record<string, (cmd: Record<string, unknown>, runtime: CoreDeps) => Promise<void>> },
   capture: CapturingEventStore,
 ): Promise<CompensationResult> {
   capture.drain();
@@ -37,7 +37,8 @@ export async function compensate(
     const invoker = deps.useCases[failingTransition.compensate.useCase];
     if (invoker) {
       try {
-        await invoker(failingTransition.compensate.args);
+        const runtimeDeps: CoreDeps = { ...deps, eventStore: capture };
+        await invoker(failingTransition.compensate.args, runtimeDeps);
         const emitted = capture.drain();
         compensatingEvents.push(...emitted);
       } catch (e) {

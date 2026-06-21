@@ -26,7 +26,7 @@ export function evaluateTransitions(
   event: DomainEvent,
 ): Transition[] {
   const state = workflow.states[instance.currentState];
-  if (!state) return [];
+  if (!state || !state.on) return [];
   const candidates = state.on[event.type] ?? [];
   return candidates.filter((t) => evaluateGuard(t.guard, event, instance));
 }
@@ -38,11 +38,14 @@ export async function invokeActions(
   transition: Transition,
   event: DomainEvent,
   instance: Instance,
-  deps: CoreDeps & { useCases: Record<string, (cmd: Record<string, unknown>) => Promise<void>> },
+  deps: CoreDeps & { useCases: Record<string, (cmd: Record<string, unknown>, runtime: CoreDeps) => Promise<void>> },
   capture: CapturingEventStore,
 ): Promise<DomainEvent[]> {
   if (!transition.actions || transition.actions.length === 0) return [];
   capture.drain();
+  // Hand each invoker the CURRENT deps — the engine wraps `eventStore` in a
+  // capturing store per dispatch tick so we can record what the actions emit.
+  const runtimeDeps: CoreDeps = { ...deps, eventStore: capture };
   for (const action of transition.actions) {
     const invoker = deps.useCases[action.useCase];
     if (!invoker) {
@@ -51,7 +54,7 @@ export async function invokeActions(
       );
     }
     const command = buildCommand(action.args, event, instance);
-    await invoker(command);
+    await invoker(command, runtimeDeps);
   }
   return capture.drain();
 }

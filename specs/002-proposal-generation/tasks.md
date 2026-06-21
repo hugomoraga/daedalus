@@ -1,12 +1,12 @@
 # Tasks — Proposal Generation
 
-**Status:** v0 **shipped & green** · next increment **not started**
+**Status:** v0 **shipped & green** · **v1 governance pack shipped** (Spec 002 v1.0 + Plan 002 v1.0 ratified 2026-06-21) · v1 implementation **next**
 **Derives from:** [Spec 002](./spec.md) + [Plan 002](./plan.md)
-**Conforms to:** [Technical Principles](../../memory/technical-principles.md), [ADR-002](../../governance/decisions/ADR-002-adopt-technical-framework.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md)
-**Version:** 0.1.0
-**Last updated:** 2026-06-13
+**Conforms to:** [Technical Principles](../../memory/technical-principles.md), [ADR-002](../../governance/decisions/ADR-002-adopt-technical-framework.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md)
+**Version:** 1.0.0
+**Last updated:** 2026-06-21
 
-> The `/tasks` step: the executable breakdown of Plan 002. The plan says *how*; this tracks *what is done and what remains*. Tasks map 1:1 to Spec 002 acceptance criteria and Plan 002 build steps so progress stays traceable.
+> The `/tasks` step for Proposal Generation. v0 is shipped and green; v1 (orchestrated form) is the next increment. Tasks map 1:1 to Spec 002 acceptance criteria + Plan 002 build steps so progress stays traceable.
 
 ---
 
@@ -37,25 +37,45 @@ Each maps to a Spec 002 AC and a Plan 002 build step. Status reflects the green 
 
 ---
 
-## 3. Next increment — NOT STARTED (Phase 2: orchestrated form)
+## 3. v1 — governance shipped; implementation NEXT (Phase 2: orchestrated form)
 
-Per Spec 002 §13 and the [Roadmap](../../docs/roadmap.md), v0 is structured assembly; the **orchestrated** form matures in Phase 2 (react to events, move qualified leads toward proposals without manual shepherding). These are **not authorized to build yet** — they depend on capabilities not present.
+Per Spec 002 v1.0 + Plan 002 v1.0 (ratified 2026-06-21), v1 adds the two auto-steps the Workflow Engine can drive. Implementation is gated on shipping the engine (✅ shipped — PRs #26..#30).
 
-| ID | Task | Source | Depends on / Blocked by |
-|---|---|---|---|
-| T-11 | Orchestrated flow: a reactor advances qualified leads toward drafts without manual CLI steps | Roadmap Phase 2 | **Workflow engine (Phase 2)** — does not exist yet |
-| T-12 | Richer tenant templates (beyond the v0 mock `standard` template) | Spec 002 §4 (Tenant layer) | Tenant 0 profile supplies real templates; no Core change |
-| T-13 | Resolve Q5 — whether Core `ProposalGenerated` needs a formal `expectedValue` attribute vs the v0 optional payload | Spec 002 §12 Q5 | Cross-module decision; **touches Core payload → ADR if promoted** |
-| T-14 | Drafting assistance as a bounded agent under policy (Q6) | Spec 002 §12 Q6 | **Agent runtime (Phase 4)** + **Policy engine (Phase 3)** — not built; future spec required |
+| ID | Task | Spec AC | Plan §1 | Status |
+|---|---|---|---|---|
+| T-15 | New workflow artifact `blueprints/workflows/lead-to-payment.v0.2.0.json` with two transitions owning actions (`LeadQualified` → `startDraftUseCase`, `ProposalApproved` → `createProjectUseCase`) | AC-10, AC-11 | §1 | ⏸ |
+| T-16 | Engine-side wiring: `proposalGenerationUseCases(propGenDeps)` factory (or equivalent CLI wiring) so `startDraftUseCase` joins the `UseCaseRegistry` | AC-10 | §3 | ⏸ |
+| T-17 | Test `tests/proposal-generation-orchestrated.test.ts` covering AC-10 + AC-11 + the v0.1.0/v0.2.0 transition boundary (Spec 008 AC-6) | AC-10, AC-11 | §4 | ⏸ |
+| T-18 | Evidence run: confirm both ACs end-to-end against the live engine | AC-10, AC-11 | §4 | ⏸ |
 
-> **Scope guardrails still binding (Plan §7):** no quoting/pricing engine, no tax, no e-sign, no send, no CRM/pipeline, no UI. Adding any of these requires a new spec, not a task here.
+### v1 activation criteria — all satisfied
+
+- ✅ Spec 002 v1.0 ratified (this document + spec.md bumped).
+- ✅ Workflow Engine shipped ([Spec 008](../008-workflow-engine/spec.md) — PRs #26..#30 merged).
+- ✅ Plan 002 v1.0 ratified.
+
+T-15..T-18 authorized to build. Branch: `029-spec002-v1-implementation`.
 
 ---
 
-## 4. Open decisions for a human
+## 4. Phase 3+ — NOT STARTED (forward-planning only)
 
-- **T-13 (Q5)** is the one that can quietly touch the Core. Do **not** add an `expectedValue` field to the Core `ProposalGenerated` schema without an ADR — it risks fixing commercial shape into the Core (ADR-001 territory). Flagged for steward decision.
-- T-11 and T-14 are **blocked on engines that do not exist** (Workflow / Policy / Agent). Listing them is forward-planning, not a build authorization.
+| ID | Task | Depends on | Status |
+|---|---|---|---|
+| T-12 | Richer tenant templates (beyond the v0 mock `standard` template) | Tenant 0 profile supplies real templates; no Core change | ⛔ |
+| T-13 | Resolve Q5 — whether Core `ProposalGenerated` needs a formal `expectedValue` attribute vs the v0 optional payload | Cross-module decision; **touches Core payload → ADR if promoted** | ⛔ |
+| T-14 | Drafting assistance as a bounded agent under policy (Q6) | **Agent runtime (Phase 4)** + **Policy engine (Phase 3)** — not built; future spec required | ⛔ |
+| T-19 | ATLAS Phase 2 panels (`active-processes`, `queue-status`, `workflow-metrics`) | Follow-on spec gated on engine shipping (now shipped) | ⏸ |
+
+---
+
+## 5. Out of scope (binding — from Spec 002 §13 + Plan 002 §6)
+
+- No auto-finalize, auto-submit, auto-approve (Constitution Article V).
+- No richer tenant templates in this increment (T-12).
+- No `expectedValue` on Core event schema in this increment (T-13).
+- No AI drafting assistance in this increment (T-14).
+- No quoting/pricing engine, no tax, no e-sign, no send, no CRM/pipeline, no UI. Adding any requires a new spec, not a task here.
 
 ---
 

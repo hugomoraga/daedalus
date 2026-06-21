@@ -1,12 +1,12 @@
 # Spec 002 — Proposal Generation (Module)
 
-**Status:** Draft · Phase 0 (specification only — no implementation)
+**Status:** Ratified · Phase 2 (orchestrated form — build authorized)
 **Type:** Module specification (reusable capability over tenant-scoped data)
 **Owner:** Stewards
 **Tenant of origin:** [Tenant 0 — Founder Profile](../../blueprints/tenants/tenant-0-founder-profile.md)
 **Validation priority:** #1 (see [Roadmap → Module Validation Sequence](../../docs/roadmap.md))
-**Version:** 0.1.0
-**Last updated:** 2026-06-13
+**Version:** 1.0.0
+**Last updated:** 2026-06-21
 
 > **Method.** Spec-first (Constitution, Principle 8). This document defines *what* Proposal Generation must do and *why*, not *how*. No code, no API, no database schema, no UI, no e-signature, no CRM/email integration, no real data. Conceptual domain language only.
 
@@ -126,6 +126,19 @@ qualified Lead → (Proposal Generation: assemble draft) → finalize
 
 > **No event for intermediate revisions.** Editing the draft does not emit events. If a *versioned history* of revisions is later required for audit, that is an explicit enhancement (Q3) — not assumed now (Simplicity First).
 
+### Orchestrated form (v1, Phase 2)
+
+v0 of this module is **driven manually** — the founder runs each CLI command (start, add-item, set-scope, finalize, discard). v1 makes the two transition points the workflow engine can drive automatically:
+
+- **Auto-start on `LeadQualified`.** The [Workflow Engine](../008-workflow-engine/spec.md) observes `LeadQualified` arriving for a tenant whose workflow is `lead-to-payment` v0.2.0 (or later). The transition's `actions` invoke `startDraftUseCase` (this module's own use case) so a draft is created automatically with the standard template. The founder no longer runs `proposal:start` manually for tenants running the v0.2.0 workflow.
+- **Auto-project on `ProposalApproved`.** Today, `ProposalApproved` is followed by the founder running `project:create`. In v0.2.0 of `lead-to-payment`, the workflow's `ProposalApproved → approved` transition invokes `createProjectUseCase` (Core) so the project is created automatically. The CLI command remains available (idempotent); the workflow just removes the manual step.
+
+Both auto-actions are **observational via lineage**: the engine captures every event the actions emit and references their ids in `WorkflowTransitionFired.payload.actionEventIds`. The audit trail distinguishes workflow-driven actions from CLI-driven ones.
+
+> **Why two auto-steps and not the full lifecycle?** The remaining steps (add-item, set-scope, finalize, submit, approve, reject) are decisions the founder must make; they cannot be automated from the event stream alone. The orchestrated form covers what *can* be automated and leaves the human decisions where they belong (Constitution Article V).
+
+> **Boundary discipline.** The engine's `UseCaseRegistry` is built by the composition root (engine CLI or tests). Module use cases like `startDraftUseCase` join the registry alongside Core use cases. Each invoker carries its own module-specific deps (e.g. `DraftStorePort`) at registry-construction time; the engine itself stays Core-only.
+
 ---
 
 ## 7. User stories
@@ -173,6 +186,13 @@ qualified Lead → (Proposal Generation: assemble draft) → finalize
 
 **AC-9 (isolation):**
 - *Given* two tenants, *when* either assembles proposals, *then* templates, drafts, and events are scoped to that tenant only; no cross-tenant leakage.
+
+**AC-10 (orchestrated auto-start — v1):**
+- *Given* the Workflow Engine is running with a `lead-to-payment` workflow version ≥ v0.2.0 loaded for a tenant, *when* a `LeadQualified` event arrives for that tenant's stream, *then* the engine invokes `startDraftUseCase` (this module's use case) with `{ tenantId, leadId, template: "standard" }`, which emits exactly one `ProposalDraftCreated` event whose `leadId` matches. *And* the resulting `WorkflowTransitionFired` event carries the `ProposalDraftCreated` event id in `actionEventIds`.
+- *Given* a tenant running workflow version < v0.2.0, *when* `LeadQualified` arrives, *then* no `ProposalDraftCreated` is emitted by the engine (the auto-action only applies to v0.2.0+).
+
+**AC-11 (orchestrated auto-project — v1):**
+- *Given* the Workflow Engine is running with `lead-to-payment` ≥ v0.2.0 loaded, *when* a `ProposalApproved` event arrives for that tenant, *then* the engine invokes `createProjectUseCase` (Core), which emits exactly one `ProjectCreated` event for that proposal. *And* the resulting `WorkflowTransitionFired` event carries the `ProjectCreated` event id in `actionEventIds`.
 
 ---
 
@@ -234,11 +254,13 @@ The module owns the **draft**; the Core owns the **Proposal** from `ProposalGene
 
 ---
 
-## 13. Out of scope for Phase 0 (what comes next, not now)
+## 13. Out of scope (binding)
 
-- Implementation of any kind. Per [Roadmap](../../docs/roadmap.md), Proposal Generation **v0** (structured assembly) is a Phase 1 milestone; its orchestrated form matures in Phase 2.
-- Opportunity Discovery (#3), Tax & Compliance Guard (#4), Administrative Shield (#5) — deferred.
-- This spec does not authorize building anything — it authorizes the *next* step: review and ratification, then a Phase 1 implementation spec.
+- **Deeper orchestration.** v1 automates the two transition points the engine can drive (start-draft on `LeadQualified`, create-project on `ProposalApproved`). It does **not** auto-finalize, auto-submit, or auto-approve — those decisions remain with the founder (Constitution Article V; Spec 008 §11 non-goal "no agent runtime").
+- **Richer tenant templates (T-12 in tasks).** v1 ships the standard template; richer tenant-owned templates are a follow-on that requires Tenant 0 to author them.
+- **`expectedValue` on the Core `ProposalGenerated` event (T-13, Q5).** The v0 contract already carries `expectedValue` as an optional payload field; whether to promote it to a formal Core attribute is a cross-module decision (touches Core event payload) that requires its own ADR.
+- **Drafting assistance (AI, T-14).** Bounded agent under policy; Phase 4+; out of v1.
+- Opportunity Discovery (#3), Tax & Compliance Guard (#4), Administrative Shield (#5) — separate specs, deferred.
 
 ---
 

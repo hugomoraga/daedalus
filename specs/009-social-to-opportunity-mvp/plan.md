@@ -3,7 +3,7 @@
 **Status:** Draft · implementation plan for [Spec 009](./spec.md) v0.2.0 (revised after architectural review)
 **Goal:** Ship the first end-to-end agent slice. Tenant 0 connects a LinkedIn Channel, configures their Offering (via the new `@daedalus/offering` module), and runs a bounded agent that surfaces Candidates for human triage. Promoted Candidates become real `Opportunity` events (Spec 003).
 **Conforms to:** [Constitution](../../memory/constitution.md), [Technical Principles](../../memory/technical-principles.md), [ADR-002](../../governance/decisions/ADR-002-adopt-technical-framework.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md), Spec 003, Spec 007, Spec 008.
-**Version:** 0.3.0 (forward-looking observations documented; no architectural change vs. v0.2.0)
+**Version:** 0.2.0
 **Last updated:** 2026-06-22
 
 > **Pre-conditions for build authorization.** This plan activates only after (a) Spec 009 is ratified, (b) an ADR moves the agent into the [Roadmap](../../docs/roadmap.md) as the first Phase 4 milestone AND proposes `@daedalus/offering` as a new module, (c) Workflow Engine (Spec 008) is shipped, (d) explicit-human-approval mode is in effect, and (e) the founder confirms the LinkedIn-only scope.
@@ -20,16 +20,6 @@
 - **Q6 (dedup window):** Default 30 days; per-tenant configurable.
 - **Q7 (confidence threshold):** Default `medium`; per-tenant configurable.
 - **Q8 (learning from dismissal):** Out of scope. Audit trail preserves dismissals; Phase 4+ may use them with explicit opt-in.
-
-### 0.1 Forward-looking observations (from v0.2.0 review)
-
-See Spec 009 §11.1 for the full discussion. Summary of resolutions:
-
-- **O-1 (Signal/Match ownership):** v0 keeps `Signal` and `Match` in `@daedalus/offering`. Future Spec 003 v1 may split ownership; that work belongs there.
-- **O-2 (event-driven promotion):** v0 keeps the direct call to `surfaceOpportunityUseCase`. Future Spec 003 v1 introduces an `opportunity-from-candidate` workflow; the agent then drops the import.
-- **O-3 (Workflow Engine as a hard dependency):** v0 keeps Workflow Engine as the substrate. The simpler-use-case alternative is documented but not adopted.
-- **O-4 (AC-12 grep fragility):** Acknowledged. The grep test is the fast guardrail; ADR-004 package boundaries are the structural one.
-- **O-5 (strategic concept `Problem`):** Out of scope for v0. Documented as a future direction (likely Spec 003 v1 or a new Spec 011).
 
 ---
 

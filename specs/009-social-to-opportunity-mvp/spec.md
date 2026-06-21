@@ -3,12 +3,10 @@
 **Status:** Draft · Phase 4 (planning — earliest buildable, gated on Phase 2 + Phase 3 + this ratification)
 **Type:** Module slice + reusable capability — the first end-to-end agent scenario
 **Owner:** Stewards
-**Version:** 0.3.0 (forward-looking observations from the second architectural review)
-**Last updated:** 2026-06-23
+**Version:** 0.2.0 (revised after architectural review of v0.1.0)
+**Last updated:** 2026-06-22
 
 > **Method.** Spec-first (Constitution, Principle 8). Defines *what* the MVP does and *why*, not *how*. Conceptual — no JSON shapes, no code, no vendor selection, no API key handling.
-
-> **Revision note (v0.3.0).** v0.2.0 was approved with no blockers. The architectural review raised five forward-looking observations that don't change v0 but are documented in §11 for future iterations: ownership of Signal/Match, event-driven promotion, the Workflow Engine choice, AC-12 fragility, and the strategic concept `Problem`. None are applied in v0.3.0.
 
 > **Revision note (v0.2.0).** v0.1.0 leaked the LinkedIn platform into the domain language. The architectural review corrected this:
 > - **LinkedIn is an adapter**, not a domain concept. The domain is platform-agnostic: `Offering`, `Signal`, `Match`, `Candidate`, `Opportunity`, `Channel`. The Channel has a `kind` discriminator; LinkedIn is one value of `kind`.
@@ -292,88 +290,6 @@ The architectural review (PR #22 review) flagged that **Offering is strategicall
 - A future "offering evolution" use case might surface when the offering drifts from the actual portfolio of accepted opportunities.
 
 Each of these is a separate spec with its own ADR; none modifies `@daedalus/offering` without going through the spec/ADR process.
-
----
-
-## 11.1 Forward-looking architectural observations (from the v0.2.0 review)
-
-The second architectural review of this spec (PR #23 comment) approved the direction with no blockers. Five forward-looking observations were raised. They are **documented here, not applied in v0.3.0**. Each is a candidate for a future spec/ADR when evidence justifies it.
-
-### O-1 · Ownership of `Signal` and `Match`
-
-**Observation.** v0.2.0 places `Signal` and `Match` in `@daedalus/offering`. Signal is inbound data — closer to the Opportunity Discovery space. Match depends on what you match against: against an Offering (then `Match` belongs in `@daedalus/offering`); against opportunity criteria (then it belongs in Opportunity Discovery).
-
-**Direction.** For v0, keeping them together in `@daedalus/offering` is acceptable (low coupling, single owner, easy to evolve). The future direction is:
-- `Signal` moves to Opportunity Discovery (or a generic "inbound" module).
-- `Match` stays in `@daedalus/offering` for *offering-matching* and gets a parallel concept in Opportunity Discovery for *qualification-matching*.
-- This split is a Spec 003 v1 concern, not a Spec 009 concern.
-
-**Why deferred.** Splitting requires duplicating `Signal` or creating a shared "inbound types" package. Both are heavier than v0 warrants. Document and revisit when Spec 003 v1 lands.
-
-### O-2 · Event-driven promotion
-
-**Observation.** v0.2.0 has the Inbound Agent call `surfaceOpportunityUseCase` (Spec 003) directly to promote a candidate. The alternative is purely event-driven:
-
-```
-Inbound Agent → emits CandidatePromoted event
-Opportunity Discovery (its own workflow) → reacts to CandidatePromoted → emits OpportunitySurfaced
-```
-
-This decouples the Inbound Agent from `@daedalus/opportunity-discovery`. The relationship becomes a stream subscription rather than a function call.
-
-**Direction.** This is the event-first architecture's natural shape. The v0.2.0 direct call is **simpler** and **works** but couples modules. The future Spec 003 v1 should introduce a workflow artifact (`opportunity-from-candidate`) in Opportunity Discovery that listens for `CandidatePromoted` and runs `surfaceOpportunityUseCase`. The Inbound Agent then drops the direct import.
-
-**Why deferred in v0.** Requires a workflow artifact in Opportunity Discovery, which is Spec 003 v1's scope. Spec 009 should not pre-empt that.
-
-### O-3 · Workflow Engine as a hard dependency
-
-**Observation.** v0.2.0 makes the Inbound Agent a workflow instance under `inbound-agent-run.v0.1.0`, requiring the Workflow Engine (Spec 008). The flow (poll → match → surface → human review) could potentially be a single bounded use case with internal state management — without the Workflow Engine.
-
-**Position (canonical).** Workflow Engine is the right substrate for v0 because:
-- The agent is intrinsically event-driven (reacts to `CandidatePromoted`/`Dismissed`/`OfferingUpdated`/`ChannelDisconnected`).
-- Workflow Engine is the canonical event-driven substrate in Daedalus (Spec 008 + ADR-006).
-- Consistency with the rest of the architecture (no special-case "polling loops").
-- Phase 4+ general (multi-channel, multi-step, compensation, versioning) will need the Workflow Engine anyway.
-- Spec 008's activation criteria are already on the roadmap.
-
-**Alternative path (v0.3.0-simpler).** If shipping speed becomes more important than architectural consistency, the agent could be reduced to a single use case with internal state — bypassing Workflow Engine. This would require its own ADR and a documented divergence from Spec 008's pattern.
-
-**Why we keep Workflow Engine.** The cost of using it is small (the substrate already exists in the canon). The cost of NOT using it (special-case agent architecture, diverging from Spec 008) is high. The reviewer's concern is valid; we record it and explain why we disagree, leaving the door open.
-
-### O-4 · AC-12 grep fragility
-
-**Observation.** AC-12 enforces domain-platform-agnosticism with a `grep` test. Grep-based enforcement is fragile over time (renames, substring matches in comments, etc.).
-
-**Position.** AC-12 is the **fast** guardrail; package boundaries (ADR-004 export discipline) are the **structural** guardrail. Over time, when the agent package grows, the structural protection dominates:
-- `@daedalus/offering`'s public contract is curated (ADR-004).
-- `packages/inbound-agent/src/domain/` contains only the domain types; platforms never appear there because the adapter is in `adapters/channels/`.
-- The grep test is a complement, not a substitute.
-
-**Action for v0.3.0.** Document the layering. No code change. Future contributors who add a "linkedin" string to `domain/` will fail AC-12's grep test **and** the architectural review.
-
-### O-5 · Strategic concept: `Problem`
-
-**Observation.** The reviewer notes that the Daedalus vision aims to discover and materialize meaningful problems, not simply generate leads. A future concept `Problem` may emerge between `Signal` and `Opportunity`:
-
-```
-Signal → Problem → Opportunity
-```
-
-rather than
-
-```
-Signal → Opportunity
-```
-
-**Why this matters.** "Lead generation" optimizes for any contact; "Problem discovery" optimizes for material problems the tenant can actually solve. The Offering module already encodes what the tenant solves; pairing that with discovered Problems is closer to the Daedalus thesis than pairing it with Leads.
-
-**Status.** Out of scope for Spec 009. Documented as a strategic direction for a future spec (likely Spec 003 v1 or a new Spec 011). The `Problem` concept would be a first-class aggregate (not a projection — unlike `Candidate`) because it has its own lifecycle (discovered → validated → qualified → resolved). A future ADR would settle it.
-
-**Implication for v0.** The Inbound Agent currently emits `CandidateSurfaced` and the human triages. If `Problem` becomes a first-class concept, the triage decision may shift from "promote to Opportunity" to "is this a real Problem? If yes, promote to Problem; if no, dismiss." That's a later evolution, not a v0 concern.
-
-### Summary
-
-None of O-1..O-5 changes v0. v0 ships as v0.2.0 specified. Each observation is a **direction** for a future spec/ADR, not a defect. The Strategic Importance of `@daedalus/offering` (above) and this section together form the bridge to Phase 4+ general evolution.
 
 ---
 

@@ -3,7 +3,7 @@
 **Status:** Planning (build **not authorized**). Activates only when [Spec 009](./spec.md) is ratified AND an ADR moves the agent into the [Roadmap](../../docs/roadmap.md) Phase 4 slot AND the Workflow Engine (Spec 008) is shipped AND explicit-human-approval mode is in effect.
 **Derives from:** Spec 009 v0.2.0 + Plan 009 v0.2.0
 **Conforms to:** [Technical Principles](../../memory/technical-principles.md), [ADR-002](../../governance/decisions/ADR-002-adopt-technical-framework.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md), Spec 003, Spec 007, Spec 008.
-**Version:** 0.3.0 (forward-looking observations documented; no architectural change vs. v0.2.0)
+**Version:** 0.2.0
 **Last updated:** 2026-06-22
 
 > The `/tasks` step for the Inbound Discovery Agent MVP. Tasks map 1:1 to Spec 009 acceptance criteria and Plan 009 build steps. v0 is forward-planning; activation is gated on the five activation criteria in `spec.md` §13.
@@ -113,22 +113,6 @@ These tasks ship the agent that orchestrates runs.
 | OF-14 | Spec 002 v1 — use `@daedalus/offering` to align draft proposals with the offering | Spec 002 v1 ratification | ⛔ |
 | OF-15 | Future "offering alignment" use case (evaluate a draft proposal against the offering) | v0 shipped + ADR | ⛔ |
 | OF-16 | Future "offering drift" use case (surface when the offering drifts from the actual portfolio) | v0 shipped + ADR | ⛔ |
-
----
-
-## 5.1 Forward-looking observations (from v0.2.0 review) — DOCUMENTED, NOT BLOCKED
-
-These correspond to Spec 009 §11.1 (O-1..O-5). Each is documented here so future specs can pick them up without re-deriving. None blocks v0.
-
-| ID | Observation | Future work | Status |
-|---|---|---|---|
-| OF-17 | **O-1 — Signal/Match ownership.** Signal may belong to Opportunity Discovery (or a generic inbound module); Match is offering-dependent. | Spec 003 v1 splits `Signal` ownership; or a new "inbound types" package emerges. | 📝 |
-| OF-18 | **O-2 — Event-driven promotion.** Agent emits `CandidatePromoted`; Opportunity Discovery's own workflow reacts and emits `OpportunitySurfaced`. Decouples the Inbound Agent from `@daedalus/opportunity-discovery`. | Spec 003 v1 introduces `opportunity-from-candidate` workflow artifact. The Inbound Agent drops the direct import. | 📝 |
-| OF-19 | **O-3 — Workflow Engine as a hard dependency.** Position: Workflow Engine is the canonical event-driven substrate; v0 keeps it. Alternative path documented. | If a future ADR proves the alternative simpler, the agent could become a single use case. Requires its own ADR. | 📝 |
-| OF-20 | **O-4 — AC-12 grep fragility.** Grep is the fast guardrail; package boundaries (ADR-004) are the structural guardrail. | Future contributors who add a "linkedin" string to `domain/` fail AC-12's grep **and** the architectural review. | 📝 |
-| OF-21 | **O-5 — Strategic concept: `Problem`.** Future `Signal → Problem → Opportunity` may emerge, closer to the Daedalus vision of discovering material problems rather than generating leads. | A future spec (likely Spec 003 v1 or a new Spec 011) defines `Problem` as a first-class aggregate. The Inbound Agent's triage decision may shift. | 📝 |
-
-**Status legend.** 📝 = documented in spec/plan/tasks, awaiting future evidence. ⛔ = blocked by another spec/ADR. ⏸ = planned but not started.
 
 ---
 

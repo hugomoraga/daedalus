@@ -161,11 +161,13 @@ async function fireTransition(
   instance: Instance,
   deps: EngineDeps,
   tenantId: string,
+  options: { skipHumanGate?: boolean } = {},
 ): Promise<void> {
   const lineage: Lineage = { correlationId: instance.id, causationId: event.eventId };
 
-  // Human gate (Spec 008 §5, AC-4). Mark waiting and emit the request; do not invoke actions.
-  if (transition.requiresHuman) {
+  // Human gate (Spec 008 §5, AC-4). Skip the check when this fireTransition
+  // was triggered by HumanApproved handling — the gate is now cleared.
+  if (transition.requiresHuman && !options.skipHumanGate) {
     const waiting = markWaitingHuman(instance, transition, deps.now());
     await deps.instanceStore.save(tenantId, waiting);
     await appendIntents(
@@ -348,7 +350,12 @@ async function resolveHumanGate(
       continue;
     }
 
-    await fireTransition(workflow, pending, event, instance, deps, tenantId);
+    // HumanApproved: fire the pending transition, bypassing the human-gate
+    // check (the gate is now cleared). We pass `skipHumanGate: true` so
+    // fireTransition advances state instead of re-emitting the request.
+    await fireTransition(workflow, pending, event, instance, deps, tenantId, {
+      skipHumanGate: true,
+    });
   }
 }
 

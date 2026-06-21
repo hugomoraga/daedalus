@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@daedalus/core": "*",
-    "@daedalus/jsonl-event-store": "*"
+    "@daedalus/jsonl-event-store": "*",
+    "@daedalus/revenue-visibility": "*"
   }
 }

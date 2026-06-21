@@ -2,11 +2,15 @@
 // The System Health panel's SHA-256 must be deterministic for the same input
 // and must change when the input changes.
 
-import { test } from "node:test";
+import { test, before } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import type { DomainEvent } from "@daedalus/core";
-import { seedTenant, clearAll, makeFlow } from "./helpers.ts";
+import { seedTenant, clearAll, makeFlow, useTempDataDir } from "./helpers.ts";
+
+before(async () => {
+  await useTempDataDir();
+});
 
 function hashEvents(events: readonly DomainEvent[]): string {
   const canonical = events

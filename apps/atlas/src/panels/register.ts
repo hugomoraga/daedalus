@@ -3,22 +3,26 @@
 
 import type { DomainEvent } from "@daedalus/core";
 import type { TenantContext } from "../tenant.ts";
+import type { AtlasDeps } from "../deps.ts";
 import { renderWelcomePanel } from "./welcome.ts";
 import { renderEventsPanel } from "./events.ts";
 import { renderActivityPanel } from "./activity.ts";
 import { renderLogsPanel } from "./logs.ts";
 import { renderHealthPanel } from "./health.ts";
+import { renderThroughputPanel } from "./throughput.ts";
+import { renderMonitoringPanel } from "./monitoring.ts";
 
 export type PanelContext = {
   tenant: TenantContext;
   events: readonly DomainEvent[];
+  deps: AtlasDeps;
 };
 
 export type Panel = {
   readonly slug: string;
   readonly label: string;
   readonly backingModel: string;
-  render: (ctx: PanelContext) => string;
+  render: (ctx: PanelContext) => string | Promise<string>;
 };
 
 export const PANELS: ReadonlyArray<Panel> = [
@@ -52,13 +56,25 @@ export const PANELS: ReadonlyArray<Panel> = [
     backingModel: "core.events.jsonl + sha256 replay",
     render: (ctx) => renderHealthPanel(ctx),
   },
+  {
+    slug: "throughput",
+    label: "Throughput",
+    backingModel: "core.events.jsonl (windowed per day, hand-drawn SVG)",
+    render: (ctx) => renderThroughputPanel(ctx),
+  },
+  {
+    slug: "monitoring",
+    label: "Monitoring",
+    backingModel: "revenue-visibility.projectFinancialSummary + alerts",
+    render: async (ctx) => renderMonitoringPanel(ctx, ctx.deps),
+  },
 ];
 
 export function findPanel(slug: string): Panel | null {
   return PANELS.find((p) => p.slug === slug) ?? null;
 }
 
-export function renderPanel(slug: string, ctx: PanelContext): string | null {
+export async function renderPanel(slug: string, ctx: PanelContext): Promise<string | null> {
   const panel = findPanel(slug);
   if (panel === null) return null;
   return panel.render(ctx);

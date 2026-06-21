@@ -1,12 +1,16 @@
 // Tenant isolation — Spec 007 AC-2.
 // Two seeded tenants must never leak into each other's responses.
 
-import { test } from "node:test";
+import { test, before } from "node:test";
 import assert from "node:assert/strict";
 import { request } from "node:http";
 import type { Server } from "node:http";
 import { createAtlasServer } from "../src/server.ts";
-import { seedTenant, clearAll, makeFlow } from "./helpers.ts";
+import { seedTenant, clearAll, makeFlow, useTempDataDir } from "./helpers.ts";
+
+before(async () => {
+  await useTempDataDir();
+});
 
 function get(server: Server, path: string): Promise<{ status: number; body: string }> {
   return new Promise((resolve, reject) => {

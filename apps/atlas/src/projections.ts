@@ -6,10 +6,18 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { DomainEvent } from "@daedalus/core";
 
-const DATA_DIR = ".data";
+let dataDir = ".data";
+
+export function setDataDir(dir: string): void {
+  dataDir = dir;
+}
+
+export function getDataDir(): string {
+  return dataDir;
+}
 
 export async function readTenantEvents(tenantId: string): Promise<readonly DomainEvent[]> {
-  const path = join(DATA_DIR, "tenants", tenantId, "events.jsonl");
+  const path = join(dataDir, "tenants", tenantId, "events.jsonl");
   if (!existsSync(path)) return [];
   const raw = await readFile(path, "utf8");
   const events: DomainEvent[] = [];

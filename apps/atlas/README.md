@@ -12,7 +12,7 @@ npm run atlas -- serve --port 8788 --tenant tenant-0
 
 Then open `http://localhost:8788/t/tenant-0/welcome`.
 
-## Routes (v0)
+## Routes (v0 + v1)
 
 | Method | Route | Effect |
 |---|---|---|
@@ -21,9 +21,11 @@ Then open `http://localhost:8788/t/tenant-0/welcome`.
 | `GET`  | `/t/<tenantId>/activity` | Activity Timeline — events grouped by day |
 | `GET`  | `/t/<tenantId>/logs` | Recent Logs — last 50 events, dense |
 | `GET`  | `/t/<tenantId>/health` | System Health — event count, type distribution, SHA-256 replay integrity |
+| `GET`  | `/t/<tenantId>/throughput` | Throughput — events-per-day with hand-drawn SVG bars |
+| `GET`  | `/t/<tenantId>/monitoring` | Monitoring — FinancialSummary (Revenue Visibility v1) + alerts |
 | Other | any | `405` with the equivalent CLI command |
 
-Panels whose backing model doesn't exist (e.g. `throughput`, `monitoring`) return 404 (Spec 007 AC-6 — absent, not empty).
+Panels whose backing model doesn't exist (e.g. `processes`, `queue`, `integrations`) return 404 (Spec 007 AC-6 — absent, not empty).
 
 ## Design tokens
 
@@ -35,6 +37,9 @@ The canonical trio (`Inter Tight`, `Inter`, `JetBrains Mono`) is declared in CSS
 
 ## Status
 
-**v0 complete** — all five v0 panels ship (Welcome, Events, Activity, Logs, System Health) plus the full AC test suite (AC-1 read-only, AC-2 tenant isolation, AC-3 replay integrity, AC-4 zero deps, AC-5 token linter, AC-6 panel manifest).
+**v0 + v1 complete** — all seven panels ship:
 
-Next: ATLAS v1 (Throughput + Monitoring) gated on Revenue Visibility v1 stability. See `specs/007-atlas-ui/tasks.md`.
+- **v0**: Welcome, Events, Activity, Logs, System Health
+- **v1**: Throughput (events-per-day SVG bars), Monitoring (FinancialSummary + alerts from Revenue Visibility v1)
+
+Next: Phase 2 panels (Active Processes, Queue Status, Workflow Metrics) — blocked on the workflow engine. See `specs/007-atlas-ui/tasks.md`.

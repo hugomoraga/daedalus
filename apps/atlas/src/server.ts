@@ -8,10 +8,12 @@ import { resolveTenant } from "./tenant.ts";
 import { readTenantEvents } from "./projections.ts";
 import { renderPanel } from "./panels/register.ts";
 import { renderLayout } from "./templates/layout.ts";
+import { buildAtlasDeps, type AtlasDeps } from "./deps.ts";
 
 export type ServerOptions = {
   port?: number;
   host?: string;
+  deps?: AtlasDeps;
 };
 
 function cliHintFor(route: string, tenantId: string): string {
@@ -43,6 +45,7 @@ function notFound(res: ServerResponse, msg: string): void {
 export function createAtlasServer(opts: ServerOptions = {}) {
   const port = opts.port ?? 8788;
   const host = opts.host ?? "127.0.0.1";
+  const deps = opts.deps ?? buildAtlasDeps();
   const server = createServer(async (req, res) => {
     if (req.method !== "GET" && req.method !== "HEAD") {
       rejectMethod(req, res);
@@ -62,7 +65,7 @@ export function createAtlasServer(opts: ServerOptions = {}) {
       return;
     }
     const events = await readTenantEvents(tenant.tenantId);
-    const panelHtml = renderPanel(panelSlug, { tenant, events });
+    const panelHtml = await renderPanel(panelSlug, { tenant, events, deps });
     if (panelHtml === null) {
       notFound(res, `panel not registered: ${panelSlug}`);
       return;
@@ -76,5 +79,5 @@ export function createAtlasServer(opts: ServerOptions = {}) {
     res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
     res.end(html);
   });
-  return { server, port, host };
+  return { server, port, host, deps };
 }

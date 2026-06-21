@@ -1,11 +1,16 @@
 // Read-only contract — Spec 007 AC-1.
 // Every non-GET/HEAD request gets 405 with a body that names the CLI command.
 
-import { test } from "node:test";
+import { test, before } from "node:test";
 import assert from "node:assert/strict";
 import { request } from "node:http";
 import type { Server } from "node:http";
 import { createAtlasServer } from "../src/server.ts";
+import { useTempDataDir } from "./helpers.ts";
+
+before(async () => {
+  await useTempDataDir();
+});
 
 function req(server: Server, path: string, method: string): Promise<{ status: number; body: string }> {
   return new Promise((resolve, reject) => {

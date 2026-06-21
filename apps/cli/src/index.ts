@@ -56,6 +56,11 @@ import {
 import type { OpportunityDiscoveryDeps } from "@daedalus/opportunity-discovery";
 import { JsonOpportunityStoreAdapter } from "@daedalus/opportunity-discovery/adapters";
 import { JsonlEventStoreAdapter } from "@daedalus/jsonl-event-store";
+import { appendIntents } from "@daedalus/core";
+import {
+  HumanApproved,
+  HumanRejected,
+} from "@daedalus/workflow-engine";
 import { loadTenantConfig, defaultTenantId } from "../../../config/tenants/index.ts";
 
 const DATA_DIR = ".data";
@@ -102,6 +107,8 @@ async function main(): Promise<void> {
       invoice: { type: "string" },
       payment: { type: "string" },
       notes: { type: "string" },
+      workflow: { type: "string" },
+      instance: { type: "string" },
     },
   });
 
@@ -452,6 +459,47 @@ async function main(): Promise<void> {
       break;
     }
 
+    // ---- Workflow Engine (human gates) ----
+    case "human:approve": {
+      const instanceId = requireOpt(values.instance, "instance");
+      const workflowName = requireOpt(values.workflow, "workflow");
+      // correlationId == the workflow instance id; causationId is null
+      // (this is the human's command-initiated action — a new flow origin).
+      const engineLineage = { correlationId: instanceId, causationId: null };
+      await appendIntents(
+        deps,
+        tenantId,
+        [
+          {
+            type: HumanApproved,
+            payload: { workflowName, instanceId },
+          },
+        ],
+        engineLineage,
+      );
+      console.log(`${HumanApproved}  workflow=${workflowName}  instance=${instanceId}`);
+      break;
+    }
+    case "human:reject": {
+      const instanceId = requireOpt(values.instance, "instance");
+      const workflowName = requireOpt(values.workflow, "workflow");
+      const reason = requireOpt(values.reason, "reason");
+      const engineLineage = { correlationId: instanceId, causationId: null };
+      await appendIntents(
+        deps,
+        tenantId,
+        [
+          {
+            type: HumanRejected,
+            payload: { workflowName, instanceId, reason },
+          },
+        ],
+        engineLineage,
+      );
+      console.log(`${HumanRejected}  workflow=${workflowName}  instance=${instanceId}  reason="${reason}"`);
+      break;
+    }
+
     // ---- events dump ----
     case "events": {
       const events = await deps.eventStore.readStream(tenantId);
@@ -510,7 +558,9 @@ async function main(): Promise<void> {
           "  expense:register --tenant <id> --label <l> --amount <n>",
           "  revenue:snapshot --tenant <id>",
           "  revenue:summary  --tenant <id>",
-          "  revenue:alerts   --tenant <id>",
+"          revenue:alerts   --tenant <id>",
+          "  human:approve   --tenant <id> --workflow <w> --instance <corr>",
+          "  human:reject    --tenant <id> --workflow <w> --instance <corr> --reason <r>",
           "  events          --tenant <id>",
         ].join("\n"),
       );

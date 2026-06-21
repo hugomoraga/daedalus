@@ -11,6 +11,7 @@
     "@daedalus/proposal-generation": "*",
     "@daedalus/revenue-visibility": "*",
     "@daedalus/jsonl-event-store": "*",
-    "@daedalus/opportunity-discovery": "*"
+    "@daedalus/opportunity-discovery": "*",
+    "@daedalus/workflow-engine": "*"
   }
 }

@@ -64,10 +64,11 @@ Modules are prioritized by **founder value delivered to Tenant 0**, not by archi
 ## Phase 2 — Workflow Engine
 **Objective:** Make process **declarative**. Stop hand-driving transitions; describe the flow and let the engine orchestrate it.
 
-- Workflows describe the value-chain transitions declaratively; the engine reacts to events.
+- **Core capability milestone:** **Workflow Engine v0** — declarative orchestration of the value chain. Per [Spec 008](../specs/008-workflow-engine/spec.md) and [ADR-006](../governance/decisions/ADR-006-adopt-workflow-engine.md). Engine lives in `packages/workflow-engine/` (peer to `@daedalus/revenue-visibility`). Workflows are versioned JSON artifacts declared in `blueprints/workflows/`. Engine emits observability events (`WorkflowInstanceStarted`, `WorkflowTransitionFired`, `HumanApprovalRequired`, `HumanApproved`, `HumanRejected`, `WorkflowInstanceCompleted`, `WorkflowInstanceCompensated`) with full lineage. Compensation uses the named `…Cancelled` / `…Rejected` / `…Overdue` events already in the Event Catalog — no new value-chain events. `PolicyDecisionPort` seam wired but no-op in v0 (Phase 3 plugs in). Two new CLI commands (`human:approve`, `human:reject`) are the only paths to clear a human gate.
 - Compensation / error-correction semantics defined (the deferred `…Cancelled` / `…Reopened` events).
 - Workflows are versioned artifacts.
 - **Module milestones:** **Proposal Generation** matures into an orchestrated flow (reacting to events, moving qualified leads toward proposals without manual shepherding); **Opportunity Discovery** (#3) captures and qualifies opportunities so none are dropped.
+- **Follow-on (gated on engine shipping):** ATLAS Phase 2 panels — `active-processes`, `queue-status`, `workflow-metrics` — read-only views over the engine's events.
 
 **Exit criterion:** Tenant 0's Lead → Payment chain runs as a declared workflow reacting to events, with defined behavior for unhappy paths (rejection, overdue, cancellation).
 **Principles operationalized:** Organization as Code, Modular Evolution.

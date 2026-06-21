@@ -1,12 +1,12 @@
 # Tasks — Workflow Engine
 
-**Status:** Planning (build **not authorized**). Activates only when [Spec 008](./spec.md) is ratified AND an ADR moves the Workflow Engine into the [Roadmap](../../docs/roadmap.md) Phase 2 slot.
+**Status:** Build **authorized** — [Spec 008](./spec.md) ratified (v0.2.0) and [ADR-006](../../governance/decisions/ADR-006-adopt-workflow-engine.md) accepted on 2026-06-21.
 **Derives from:** Spec 008 + Plan 008
 **Conforms to:** [Technical Principles](../../memory/technical-principles.md), [ADR-002](../../governance/decisions/ADR-002-adopt-technical-framework.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md)
-**Version:** 0.1.0
+**Version:** 0.2.0
 **Last updated:** 2026-06-21
 
-> The `/tasks` step for the Workflow Engine. Tasks map 1:1 to Spec 008 acceptance criteria and Plan 008 build steps. v0 is forward-planning; activation is gated on ratification.
+> The `/tasks` step for the Workflow Engine. Tasks map 1:1 to Spec 008 acceptance criteria and Plan 008 build steps. Build authorized — implementation begins in branch `024-workflow-engine-scaffold`.
 
 ---
 
@@ -96,9 +96,11 @@ Each task maps to a Spec 008 AC and a Plan 008 build step.
 
 T-01…T-27 may begin only when **all** of the following are true:
 
-1. **Spec 008 is ratified** by stewards.
-2. **An ADR moves the Workflow Engine** into the [Roadmap](../../docs/roadmap.md) Phase 2 slot.
-3. **The founder (Tenant 0)** confirms the `lead-to-payment` v0.1.0 shape matches their operator needs (or approves the deviation).
+1. **Spec 008 is ratified** by stewards. ✅ (v0.2.0, 2026-06-21)
+2. **An ADR moves the Workflow Engine** into the [Roadmap](../../docs/roadmap.md) Phase 2 slot. ✅ ([ADR-006](../../governance/decisions/ADR-006-adopt-workflow-engine.md) Accepted, 2026-06-21; Roadmap §Phase 2 already references the engine.)
+3. **The founder (Tenant 0)** confirms the `lead-to-payment` v0.1.0 shape matches their operator needs (or approves the deviation). ✅ (steward confirmation recorded in branch `023-workflow-engine-ratify-pack`.)
+
+**All activation criteria satisfied. T-01…T-27 authorized to build.**
 
 ---
 

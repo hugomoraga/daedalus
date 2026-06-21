@@ -1,9 +1,9 @@
 # Spec 008 — Workflow Engine (Phase 2)
 
-**Status:** Draft · Phase 2 (planning — not authorized to build until ratified)
+**Status:** Ratified · Phase 2 (build authorized)
 **Type:** Core capability — declarative orchestration of value-chain transitions
 **Owner:** Stewards
-**Version:** 0.1.0
+**Version:** 0.2.0
 **Last updated:** 2026-06-21
 
 > **Method.** Spec-first (Constitution, Principle 8). Defines *what* the Workflow Engine is and *why*, not *how*. Conceptual domain language only — no JSON schemas, no code, no library choices.

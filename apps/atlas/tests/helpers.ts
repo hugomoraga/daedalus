@@ -1,9 +1,11 @@
 // Test helpers — seed JSONL directly for integration tests.
+// Each test gets its own temp directory so parallel test runs don't collide
+// on `.data/tenants/`.
 
-import { mkdir, writeFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
-
-export const DATA_DIR = ".data";
+import { setDataDir } from "../src/projections.ts";
 
 export type SeedEvent = {
   eventId: string;
@@ -16,8 +18,23 @@ export type SeedEvent = {
   payload: Record<string, unknown>;
 };
 
+let activeDir: string | null = null;
+
+export async function useTempDataDir(): Promise<string> {
+  const dir = await mkdtemp(join(tmpdir(), "atlas-test-"));
+  activeDir = dir;
+  setDataDir(dir);
+  return dir;
+}
+
+export function activeDataDir(): string {
+  if (activeDir === null) throw new Error("no active data dir; call useTempDataDir() first");
+  return activeDir;
+}
+
 export async function seedTenant(tenantId: string, events: readonly SeedEvent[]): Promise<void> {
-  const dir = join(DATA_DIR, "tenants", tenantId);
+  const base = activeDataDir();
+  const dir = join(base, "tenants", tenantId);
   await mkdir(dir, { recursive: true });
   const path = join(dir, "events.jsonl");
   const body = events.map((e) => JSON.stringify(e)).join("\n") + "\n";
@@ -25,11 +42,13 @@ export async function seedTenant(tenantId: string, events: readonly SeedEvent[])
 }
 
 export async function clearTenant(tenantId: string): Promise<void> {
-  await rm(join(DATA_DIR, "tenants", tenantId), { recursive: true, force: true });
+  const base = activeDataDir();
+  await rm(join(base, "tenants", tenantId), { recursive: true, force: true });
 }
 
 export async function clearAll(): Promise<void> {
-  await rm(join(DATA_DIR, "tenants"), { recursive: true, force: true });
+  const base = activeDataDir();
+  await rm(join(base, "tenants"), { recursive: true, force: true });
 }
 
 export function makeFlow(tenantId: string, correlationId: string, types: readonly string[]): SeedEvent[] {

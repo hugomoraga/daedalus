@@ -17,6 +17,8 @@ const RAIL_ITEMS: ReadonlyArray<{ slug: string; label: string }> = [
   { slug: "activity", label: "Activity" },
   { slug: "logs", label: "Recent Logs" },
   { slug: "health", label: "System Health" },
+  { slug: "throughput", label: "Throughput" },
+  { slug: "monitoring", label: "Monitoring" },
 ];
 
 export function renderLayout(props: LayoutProps): string {

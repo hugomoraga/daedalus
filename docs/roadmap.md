@@ -54,8 +54,9 @@ Modules are prioritized by **founder value delivered to Tenant 0**, not by archi
 - State reconstructable from the event stream.
 - **Module milestone #1 (priority):** **Proposal Generation v0** — structured assembly of a proposal from a qualified lead (no orchestration yet). It needs only the Core aggregates and event substrate, so it ships early and validates the highest-value pain (customer acquisition) first.
 - **Module milestone #2:** **Revenue Visibility v0** — a read-only projection over the value-chain events. Needs no workflow or policy engine; validates the event substrate and gives the founder a runway/margin picture once deals exist.
+- **Driving-adapter milestone:** **ATLAS v0** — read-only mission-control driving adapter (per [Spec 007](../specs/007-atlas-ui/spec.md) and [ADR-005](../governance/decisions/ADR-005-atlas-driving-adapter.md)). Renders Core and module projections as a multi-tenant mission-control surface (Welcome, Events, Activity Timeline, Recent Logs, System Health). Zero external runtime dependencies. No writes; writes stay in the CLI. Sections whose backing read-models do not yet exist are **absent**, not empty. Builds on top of milestones #1 and #2 — does not advance the roadmap.
 
-**Exit criterion:** Tenant 0's full value chain (Lead → Payment) can be walked end to end, every step an immutable, tenant-scoped, traceable event — even with transitions still driven manually. Proposal Generation can assemble a real proposal, and Revenue Visibility shows a trustworthy picture from those events.
+**Exit criterion:** Tenant 0's full value chain (Lead → Payment) can be walked end to end, every step an immutable, tenant-scoped, traceable event — even with transitions still driven manually. Proposal Generation can assemble a real proposal, Revenue Visibility shows a trustworthy picture from those events, and ATLAS renders that picture for the operator without requiring new CLI commands per view.
 **Principles operationalized:** Everything is an Event, Auditability by Default, Tenant Isolation, Generic Core / Specific Tenants.
 
 ---
@@ -108,6 +109,20 @@ Modules are prioritized by **founder value delivered to Tenant 0**, not by archi
 - New bounded contexts/modules (People, Finance, Procurement) added around the stable Core as needed.
 
 **Exit criterion:** Tenant 0's routine Lead → Payment chain operates with minimal founder intervention while human accountability and full auditability are preserved — **and** a second, different tenant is operable on the same Core. The paradigm — *Organization as Code*, as a platform — is validated.
+
+---
+
+## Phase 1+ follow-on — ATLAS v1 (Throughput + Monitoring)
+
+**Objective:** Extend ATLAS with the panels whose backing models only land once Revenue Visibility v1's projections are stable.
+
+- **Throughput** — windowed projection over the event stream (per-tenant time window).
+- **Monitoring** — alerts panel (reads Revenue Visibility v1's alerts).
+- Performance hardening for tenants with > 10k events: precomputed projections on disk so the 2-second Welcome target holds.
+
+**Exit criterion:** ATLAS renders FinancialSummary + alerts per tenant; AC-7 (performance) holds at 10k events.
+
+**Principles operationalized:** Auditability by Default (operators see alerts without polling), Simplicity First (hand-authored SVG, no charts library).
 **Principles operationalized:** all ten — the system as a whole.
 
 ---

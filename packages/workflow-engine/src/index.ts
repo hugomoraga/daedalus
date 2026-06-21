@@ -1,0 +1,28 @@
+// @daedalus/workflow-engine — explicit public contract.
+// ADR-004: no `export *` — curated named exports. Adapters live behind the
+// `./adapters` subpath and are NOT re-exported here.
+
+// Domain types
+export type {
+  StateRef,
+  GuardExpr,
+  ActionRef,
+  Transition,
+  State,
+  Workflow,
+} from "./domain/workflow.ts";
+export type { Instance, InstanceStatus, InstanceTransition } from "./domain/instance.ts";
+
+// Application — ports & deps (consumed by composition roots)
+export type { PolicyDecision, PolicyDecisionPort } from "./application/ports/policy.ts";
+export type { WorkflowStorePort } from "./application/ports/workflow-store.ts";
+export type { InstanceStorePort } from "./application/ports/instance-store.ts";
+export type { UseCaseInvoker, UseCaseRegistry } from "./application/use-cases.ts";
+export type { EngineDeps } from "./application/deps.ts";
+
+// Policy implementations (v0 no-op + a deny-all test double)
+export { noOpPolicy, denyAllPolicy } from "./application/ports/policy.ts";
+
+// Pure helpers
+export { evaluateGuard } from "./domain/guard.ts";
+export { newInstance } from "./domain/instance.ts";

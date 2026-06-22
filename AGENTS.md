@@ -18,6 +18,16 @@ Load them **on demand** with `@<path>` when the task requires it:
 
 Decisions live in the repo, not in any agent's chat memory. Agents coordinate **through artifacts** (commits, PRs, ADRs, `docs/reviews/`), not by talking to each other.
 
+## Off-limits (do not read unless the task is *about* that area)
+
+These directories are listed in `opencode.json` `watcher.ignore` and exist for humans / future work, not for current agent turns. Reading them bloats context with no current value:
+
+- `docs/reviews/` — architecture reviews (advisory, historical)
+- `blueprints/{agents,domains,events,knowledge,modules,policies}/` — conceptual blueprints, mostly stubs
+- `infrastructure/` — placeholder
+
+If a task legitimately needs one of these (e.g. "triage the open architecture review"), load only the specific file via `@<path>`.
+
 ## How we work (non-negotiable)
 
 - **Spec-Driven:** Spec → Plan → Tasks → Implementation. No functionality without an approved spec.

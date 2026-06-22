@@ -6,6 +6,8 @@ How multiple AI-agent sessions work together on Daedalus without stepping on eac
 
 **Every agent session runs in its own `git worktree`.** One branch per session. PRs coordinate between sessions. No session can wipe another's uncommitted edits because the working trees are physically separate.
 
+Since 2026-06-22, worktrees live **inside the repo at `.worktrees/<slug>/`** (gitignored) rather than as siblings of the main checkout. See [ADR-008 §Amendment](../governance/decisions/ADR-008-worktree-per-session.md#amendment--2026-06-22-in-repo-worktrees) for the rationale and migration note. The example paths below use the in-repo convention.
+
 ## Why worktrees, not shared working trees
 
 Before [ADR-008](../governance/decisions/ADR-008-worktree-per-session.md), every session shared one physical working tree. The branch-level protocol (\"one agent per branch\") was followed, but the working-tree level was unprotected. An auto-branch-switch + `git reset` could — and did — wipe uncommitted edits from any session. Two work-loss incidents in one day (2026-06-22) forced the change.
@@ -18,8 +20,8 @@ Worktrees fix the structural problem: a `git checkout` in one worktree cannot to
 # === Session A: ATLAS ratification ===
 # (start the session, the agent's first move)
 tools/scripts/new-session.sh 050 atlas-spec-ratify
-#   → creates /Users/hu/daedalus-atlas-spec-ratify on branch 050-atlas-spec-ratify
-cd /Users/hu/daedalus-atlas-spec-ratify
+#   → creates /Users/hu/daedalus/.worktrees/atlas-spec-ratify on branch 050-atlas-spec-ratify
+cd /Users/hu/daedalus/.worktrees/atlas-spec-ratify
 npm install   # workspace symlinks re-resolve from the new working tree
 
 # (work happens in this worktree, isolated from all other sessions)
@@ -33,15 +35,15 @@ gh pr create --base main --head 050-atlas-spec-ratify --title "..."
 
 # === Session B: Spec 004 impl (parallel, isolated) ===
 tools/scripts/new-session.sh 052 spec004-impl
-# → creates /Users/hu/daedalus-spec004-impl on branch 052-spec004-impl
-cd /Users/hu/daedalus-spec004-impl
+# → creates /Users/hu/daedalus/.worktrees/spec004-impl on branch 052-spec004-impl
+cd /Users/hu/daedalus/.worktrees/spec004-impl
 npm install
 # (independent work; session A's worktree is untouched)
 
 # === Session A: cleanup after PR merge ===
 # (when 050 merges, session A's worktree is no longer needed)
-cd /Users/hu/daedalus-atlas-spec-ratify
-git worktree remove /Users/hu/daedalus-atlas-spec-ratify
+cd /Users/hu/daedalus/.worktrees/atlas-spec-ratify
+git worktree remove /Users/hu/daedalus/.worktrees/atlas-spec-ratify
 # → done
 ```
 
@@ -60,6 +62,6 @@ git worktree remove /Users/hu/daedalus-atlas-spec-ratify
 
 ## Related
 
-- [ADR-008 — Worktree-per-session](../governance/decisions/ADR-008-worktree-per-session.md) — the decision and rationale.
+- [ADR-008 — Worktree-per-session](../governance/decisions/ADR-008-worktree-per-session.md) — the decision and rationale (amended 2026-06-22 to move worktrees in-repo).
 - [AGENTS.md §Git & collaboration protocol](../AGENTS.md) — the binding rules.
 - [tools/scripts/new-session.sh](../tools/scripts/new-session.sh) — the bootstrap.

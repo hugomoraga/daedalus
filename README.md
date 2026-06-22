@@ -83,6 +83,16 @@ Lead → Proposal → Approval → Project → Delivery → Invoice → Payment
 
 **Spec-Driven Development** with **GitHub Spec Kit** conventions (constitution at `memory/constitution.md`). Every capability starts as a spec in [`specs/`](specs/). Conceptual model draws on **Domain-Driven Design** and **Event Storming**; governance draws on **Policy-as-Code** practice.
 
+## Driving adapters & dev tools
+
+- **`apps/cli`** — the primary operator surface. State-changing actions live here. Wired as a composition root over the Core and modules.
+- **`apps/atlas`** — the read-only mission-control driving adapter. Renders the Core's value chain, the modules' projections, and the workflow engine's read-side surface. Per [Spec 007](../specs/007-atlas-ui/spec.md) and [ADR-005](../governance/decisions/ADR-005-atlas-driving-adapter.md). Zero external runtime dependencies.
+- **`tools/theia`** — a development tool. Read-only local visualizer of the repo's own state (specs, ADRs, code inventory, test results). Per [Spec 012](../specs/012-theia/spec.md) and [ADR-007](../governance/decisions/ADR-007-theia-as-tools-directory.md). Never imported by platform code.
+
+## Multi-agent workflow
+
+The repo supports multiple AI-agent sessions working in parallel. Per [ADR-008](../governance/decisions/ADR-008-worktree-per-session.md), every session runs in its own `git worktree` bound to one branch — a `git checkout` in one worktree cannot wipe another's working tree. Bootstrap a new session with [`tools/scripts/new-session.sh`](tools/scripts/new-session.sh). Worked example and conventions in [`docs/agent-orchestration.md`](docs/agent-orchestration.md).
+
 ---
 
 *A multi-decade project. The architecture is built to survive being wrong about specifics while staying right about principles.*

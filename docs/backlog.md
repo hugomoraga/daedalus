@@ -111,27 +111,55 @@ its projection. Pre-existing on main — not introduced by recent work.
 
 ## CHORE-001 — stale remote branches from merged PRs
 
-**Status:** open
+**Status:** done
 **Kind:** churn
 **Source:** session-end audit, 2026-06-22
 **Affects:** origin (remote branches)
 
-Remote branches whose PRs were merged but never deleted:
+Closed in PR #85. The original 6-branch audit was extended to the full
+set: **75 stale remote branches deleted** from `origin` (74 whose PRs
+were merged into `main` + `020-social-to-opportunity-mvp`, a closed PR
+whose work was absorbed into Spec 014 via ADR-009). Each branch was
+double-verified before deletion: `gh pr list --state merged --head <b>`
+returned a merged PR, and the merge commit was verified as an ancestor
+of `origin/main`. Active worktree branches were excluded.
 
-- `origin/013-atlas-demo-seeder` (merged via #73)
-- `origin/074-atlas-ui-polish` (merged via #75)
-- `origin/070-adr008-review-fixes` (merged via #69)
-- `origin/070-docs-cleanup` (merged via #71)
-- `origin/072-renumber-008-009` (merged via #72)
-- `origin/075-spec012-theia-impl-pr7-npm-test-runner` (merged via #76)
+After the prune, only `origin/main` and `origin/HEAD` remained on the
+remote. The follow-up stale *local* worktrees (see CHORE-002) are a
+separate concern tracked below.
 
-Cleanup:
+---
+
+## CHORE-002 — stale local worktrees left after merged PRs
+
+**Status:** open
+**Kind:** churn
+**Source:** observed during CHORE-001 close-out, 2026-06-22
+**Affects:** local worktrees (this machine)
+
+After PRs merge, the worktrees their sessions used are left behind on
+the local machine. They consume disk and clutter `git worktree list`,
+but they are not auto-removed. Per ADR-008 §3, worktree removal is part
+of session-end cleanup; in practice the previous session did not always
+run `git worktree remove`.
+
+Snapshot at close-out of #85 (5 stale worktrees, all bound to branches
+whose PRs are now on `main`):
+
+- `daedalus-athena-founder-cockpit` (→ `017-athena-founder-cockpit`, PR #84)
+- `daedalus-platform-api`           (→ `016-platform-api`, PR #83)
+- `daedalus-spec-file-convention`   (→ `015-spec-file-convention`, PR #80)
+- `daedalus-spec-file-convention-impl` (→ `081-spec-file-convention-impl`, PR #81)
+- `daedalus-spec015-t28-closure`    (→ `082-spec015-t28-closure`, PR #82)
+
+Cleanup (manual; non-urgent):
 
 ```
-git remote prune origin         # safe — only drops refs already gone
-# or, per branch:
-git push origin --delete <branch>
+git worktree remove /path/to/worktree
 ```
+
+Future prevention: extend the bootstrap script or the session-close
+checklist so removal is automatic once the bound branch's PR is merged.
 
 ---
 
@@ -156,6 +184,4 @@ which feels more "demo / showcase" than "production mission control."
 
 ---
 
-*Last updated: 2026-06-22. Seeded with 4 items from the close-out of the
-#73 / #75 session. Format designed for Theia parser consumption per
-the contract above; the parser itself is a Spec 012 follow-up.*
+*Last updated: 2026-06-22 (CHORE-001 → done via PR #85; CHORE-002 added).*

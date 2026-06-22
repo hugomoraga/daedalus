@@ -16,6 +16,8 @@ import { resolve } from "node:path";
 import type { ProjectState } from "./types.ts";
 import { parseSpecs, computeActivePhase } from "./parser/specs.ts";
 import { parseSpecCompletion } from "./parser/completion.ts";
+import { parseAdrs } from "./parser/adrs.ts";
+import { parsePhases } from "./parser/phases.ts";
 
 export function parseRepo(rootPath: string): ProjectState {
   const root = resolve(rootPath);
@@ -35,7 +37,9 @@ export function parseRepo(rootPath: string): ProjectState {
   }
   const activePhase = computeActivePhase(specs);
 
-  // TODO PR-3: read governance/decisions/ADR-NNN-*.md + docs/roadmap.md.
+  const adrs = parseAdrs(root);
+  const phases = parsePhases(root);
+
   // TODO PR-4: list apps/, packages/, tests/; regex apps/cli/src/index.ts.
   // TODO PR-5: compute blocker graph + next-unlocks ranking.
   // TODO PR-6: runGitDiff(root).
@@ -43,6 +47,8 @@ export function parseRepo(rootPath: string): ProjectState {
   return {
     ...emptyState(root, now),
     specs,
+    adrs,
+    phases,
     activePhase,
   };
 }

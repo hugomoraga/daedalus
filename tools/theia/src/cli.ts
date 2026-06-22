@@ -68,8 +68,8 @@ async function check(values: Record<string, string | undefined>): Promise<void> 
   const state = parseRepo(root);
   console.log(`theia check  root=${root}  computedAt=${state.computedAt}`);
   console.log(`  specs=${state.specs.length}  adrs=${state.adrs.length}  useCases=${state.useCases.length}`);
-  console.log(`  activePhase=${state.activePhase}  diffAvailable=${state.diff.available}`);
-  console.log("(stub — parser returns empty state; PR 2–7 fill it)");
+  console.log(`  phases=${state.phases.length}  activePhase=${state.activePhase}  diffAvailable=${state.diff.available}`);
+  console.log("(PRs 2–3 wired: specs + ADRs + phases. PRs 4–7 fill code/useCases/blockers/diff/tests.)");
 }
 
 export async function main(argv: readonly string[]): Promise<number> {

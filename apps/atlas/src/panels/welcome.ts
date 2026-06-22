@@ -13,6 +13,7 @@ import {
 import {
   deriveObligationStates,
   type ObligorState,
+  type ObligationState,
 } from "@daedalus/tax-compliance-guard";
 import { tokens } from "../tokens.ts";
 import { card, escapeHtml, metric, microLabel, tag } from "../templates/paper.ts";

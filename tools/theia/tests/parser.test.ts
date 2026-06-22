@@ -11,7 +11,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { parseRepo } from "../src/parser.ts";
 
 test("parseRepo returns a typed ProjectState shape", () => {
@@ -30,18 +31,18 @@ test("parseRepo returns a typed ProjectState shape", () => {
   assert.equal(typeof state.tests, "object");
 });
 
-test("parseRepo with the live repo surfaces specs (PR 2 wired parseSpecs)", () => {
-  const state = parseRepo(process.cwd());
-  // PR 2 wired parseSpecs + completion; the parser now reads the
-  // live repo's specs/NNN-* directories. The other collections
-  // (adrs, useCases, codeInventory, phases, blockers, nextUnlocks,
-  // diff, tests) remain placeholders until PRs 3–7 wire them.
+test("parseRepo with the live repo surfaces specs + ADRs + phases (PR 3)", () => {
+  // Resolve the repo root from THIS test file's location, not from
+  // process.cwd() — under `node --test` the runner's CWD can differ.
+  const repoRoot = dirname(dirname(dirname(dirname(fileURLToPath(import.meta.url)))));
+  const state = parseRepo(repoRoot);
+  // PR 2 wired parseSpecs + completion; PR 3 wired parseAdrs + parsePhases.
   assert.ok(state.specs.length > 0, "live repo has specs");
-  // PR 1 placeholder contracts still hold for the un-wired collections.
-  assert.equal(state.adrs.length, 0);
+  assert.ok(state.adrs.length > 0, "live repo has ADRs");
+  assert.ok(state.phases.length > 0, "live repo has phases");
+  // PRs 4–7 placeholder contracts still hold.
   assert.equal(state.useCases.length, 0);
   assert.equal(state.codeInventory.length, 0);
-  assert.equal(state.phases.length, 0);
   assert.equal(state.blockers.length, 0);
   assert.equal(state.nextUnlocks.length, 0);
   assert.equal(state.diff.available, false);

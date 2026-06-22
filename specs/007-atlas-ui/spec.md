@@ -1,6 +1,6 @@
 # Spec 007 — ATLAS (Mission Control driving adapter)
 
-**Status:** Ratified · **Phase 1 capability** · v0 + v1 + Phase 2 shipped (PRs #18, #19, #56, #57, #59) · build authorized
+**Status:** Ratified · **Phase 1 capability** · v0 + v1 + Phase 2 shipped (PRs #18, #19, #56, #57, #58, #59, #66) · build authorized
 **Type:** Driving adapter — **read-only** mission control over the Daedalus Core and modules
 **Owner:** Stewards
 **Version:** 1.3.0
@@ -14,9 +14,7 @@
 >
 > **Amendment (v1.2, 2026-06-22).** Enriches the **Welcome** panel (T-06) with workflow + compliance summary counts — the operator's first view now surfaces *what needs attention* at a glance. Adds **AC-12** for the enrichment. The drift between T-06's spec (which mentioned proposal/project/invoice counts and "friction-test status" that never shipped) and the actual implementation is corrected: the panel now reflects what the canon actually offers (workflow engine instances + tax compliance obligations). Wired in PR #59. No new Core / Module primitives; pure consumer-side work.
 >
-> **Amendment (v1.3, 2026-06-22).** Adds a **Navigate** grid to the Welcome panel (T-06) — a 2-column list of links to the 10 other panels (Events, Activity, Logs, System Health, Throughput, Monitoring, Active Processes, Queue Status, Workflow Metrics, Compliance). One click from the landing page to any other view; no URL memorization required. Adds **AC-13** for the link grid. Wired in PR #65. No new Core / Module primitives; pure consumer-side work.
->
-> **Amendment (v1.2, 2026-06-22).** Enriches the **Welcome** panel (T-06) with workflow + compliance summary counts — the operator's first view now surfaces *what needs attention* at a glance. Adds **AC-12** for the enrichment. The drift between T-06's spec (which mentioned proposal/project/invoice counts and "friction-test status" that never shipped) and the actual implementation is corrected: the panel now reflects what the canon actually offers (workflow engine instances + tax compliance obligations). Wired in PR #59. No new Core / Module primitives; pure consumer-side work.
+> **Amendment (v1.3, 2026-06-22).** Adds a **Navigate** grid to the Welcome panel (T-06) — a 2-column list of links to the 10 other panels (Events, Activity, Logs, System Health, Throughput, Monitoring, Active Processes, Queue Status, Workflow Metrics, Compliance). One click from the landing page to any other view; no URL memorization required. Adds **AC-13** for the link grid. Wired in PR #66. No new Core / Module primitives; pure consumer-side work.
 
 ---
 

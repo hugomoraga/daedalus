@@ -1,9 +1,9 @@
 # Spec 007 — ATLAS (Mission Control driving adapter)
 
-**Status:** Ratified · **Phase 1 capability** · v0 + v1 + Phase 2 shipped (PRs #18, #19, #56, #57, #58, #59, #66) · build authorized
+**Status:** Ratified · **Phase 1 capability** · v0 + v1 + Phase 2 shipped (PRs #18, #19, #56, #57, #58, #59, #66, #69) · build authorized
 **Type:** Driving adapter — **read-only** mission control over the Daedalus Core and modules
 **Owner:** Stewards
-**Version:** 1.3.0
+**Version:** 1.4.0
 **Last updated:** 2026-06-22
 
 > **Method.** Spec-first (Constitution, Principle 8). Defines *what* ATLAS is and *why*, not *how*. Conceptual — no schema, no API, no UI markup, no assets in this file.
@@ -15,6 +15,8 @@
 > **Amendment (v1.2, 2026-06-22).** Enriches the **Welcome** panel (T-06) with workflow + compliance summary counts — the operator's first view now surfaces *what needs attention* at a glance. Adds **AC-12** for the enrichment. The drift between T-06's spec (which mentioned proposal/project/invoice counts and "friction-test status" that never shipped) and the actual implementation is corrected: the panel now reflects what the canon actually offers (workflow engine instances + tax compliance obligations). Wired in PR #59. No new Core / Module primitives; pure consumer-side work.
 >
 > **Amendment (v1.3, 2026-06-22).** Adds a **Navigate** grid to the Welcome panel (T-06) — a 2-column list of links to the 10 other panels (Events, Activity, Logs, System Health, Throughput, Monitoring, Active Processes, Queue Status, Workflow Metrics, Compliance). One click from the landing page to any other view; no URL memorization required. Adds **AC-13** for the link grid. Wired in PR #66. No new Core / Module primitives; pure consumer-side work.
+>
+> **Amendment (v1.4, 2026-06-22).** **Consolidates the left rail** (T-03) with the panel registry. The rail previously hard-coded 7 of 11 panels (Welcome, Events, Activity, Logs, System Health, Throughput, Monitoring) and silently omitted the 4 Phase 2 + Compliance panels. After this change, the rail is **derived from `PANELS`** — adding a new panel entry auto-includes it in the rail. Adds **AC-14** for the rail-registry alignment. Wired in PR #69. No new Core / Module primitives; pure consumer-side work.
 
 ---
 
@@ -165,6 +167,14 @@ If a user interaction in ATLAS looks like a write (e.g. clicking "Approve" on a 
 - *And* the link copy is the panel's `label` (e.g. "Active Processes" → link to `active-processes`).
 - *And* the Welcome panel itself is **not** listed (no self-link).
 - *And* a dedicated test (`tests/atlas-welcome-quick-links.test.ts`) asserts (a) all 10 other panels appear, (b) the Welcome panel does not, (c) each link's path is correct for the operator's tenant, (d) the order is stable.
+
+**AC-14 (Left rail — registry alignment — v1.4).**
+- *Given* any page in ATLAS is rendered for a tenant,
+- *When* the SSR response is built,
+- *Then* the **left rail** lists one link per panel in the registry, in registry order: Welcome, Events, Activity, Logs, System Health, Throughput, Monitoring, Active Processes, Queue Status, Workflow Metrics, Compliance.
+- *And* the rail is **derived from `PANELS`** in `apps/atlas/src/panels/register.ts` — adding a new `Panel` entry auto-includes the link in the rail without further changes to `layout.ts`. The rail and the Navigate grid (AC-13) share the same registry source.
+- *And* the rail's "active panel" highlight continues to work (it was the original behavior, preserved by reading from the registry).
+- *And* a dedicated test (`tests/atlas-rail-registry.test.ts`) asserts (a) all 11 panels appear in the rail, (b) the rail order matches the registry order, (c) the active panel is highlighted correctly when navigating between pages.
 
 ---
 

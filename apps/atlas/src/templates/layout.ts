@@ -4,6 +4,7 @@
 import { tokens } from "../tokens.ts";
 import type { TenantContext } from "../tenant.ts";
 import { escapeHtml, pageStyles, tag } from "./paper.ts";
+import { PANELS } from "../panels/register.ts";
 
 export type LayoutProps = {
   tenant: TenantContext;
@@ -11,15 +12,12 @@ export type LayoutProps = {
   panelHtml: string;
 };
 
-const RAIL_ITEMS: ReadonlyArray<{ slug: string; label: string }> = [
-  { slug: "welcome", label: "Welcome" },
-  { slug: "events", label: "Events" },
-  { slug: "activity", label: "Activity" },
-  { slug: "logs", label: "Recent Logs" },
-  { slug: "health", label: "System Health" },
-  { slug: "throughput", label: "Throughput" },
-  { slug: "monitoring", label: "Monitoring" },
-];
+// AC-14: the rail is derived from the registry. Adding a new `Panel` entry
+// auto-includes the link here AND in the Welcome panel's Navigate grid
+// (AC-13). Same source of truth, no duplication.
+const RAIL_ITEMS: ReadonlyArray<{ slug: string; label: string }> = PANELS.map(
+  (p) => ({ slug: p.slug, label: p.label }),
+);
 
 export function renderLayout(props: LayoutProps): string {
   const { tenant, panelName, panelHtml } = props;

@@ -26,7 +26,7 @@ Each task maps to a Spec 007 AC and a Plan 007 build step.
 |---|---|---|---|
 | T-01 | `apps/atlas/` scaffolding: directory layout, `package.json` with workspace-only `dependencies`, `assets/` for fonts, `README.md` | AC-4 | ✅ |
 | T-02 | `tokens.ts` — color / type / spacing tokens as the only source of truth; export typed constants | AC-5 | ✅ |
-| T-03 | `templates/layout.ts` — mission-control layout (top nav + left rail + main + footer); `templates/paper.ts` — HTML primitives (Card, Label, Metric, Rule, Tag) | AC-4 | ✅ |
+| T-03 | `templates/layout.ts` — mission-control layout (top nav + left rail + main + footer); `templates/paper.ts` — HTML primitives (Card, Label, Metric, Rule, Tag). **Left rail derived from `PANELS` registry (v1.4).** | AC-4, AC-14 | ✅ |
 | T-04 | `server.ts` — Node 22 native http server, routing, SSR with embedded JSON-LD | AC-1, AC-4 | ✅ |
 | T-05 | `tenant.ts` — tenant resolver from URL path `/t/<tenantId>` or header; reject unknown with empty-state (never another tenant's data) | AC-2, AC-8 | ✅ |
 | T-06 | `panels/welcome.ts` — tenant summary + workflow counts (active / waiting human) + compliance counts (pending / missed) + last event + total events + Navigate grid to the other 10 panels | AC-7, AC-6, AC-12, AC-13 | ✅ |

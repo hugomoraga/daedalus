@@ -1,10 +1,12 @@
 # Tasks — Jurisdiction Model (Core)
 
-**Status:** Draft · **unlocks Spec 004 B1** · accompanies [Spec 008](./spec.md) and [Plan 008](./plan.md)
-**Version:** 0.1.0
+**Status:** Build **authorized** — Spec 008 v1.0.0 + Plan 008 v1.0.0 ratified 2026-06-21 (governance PR #33). J-01..J-18 ready to build in branch `031-spec008-jurisdiction-implementation`.
+**Derives from:** [Spec 008](./spec.md) + [Plan 008](./plan.md)
+**Conforms to:** [Technical Principles](../../memory/technical-principles.md), [ADR-002](../../governance/decisions/ADR-002-adopt-technical-framework.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md)
+**Version:** 1.0.0
 **Last updated:** 2026-06-21
 
-> Tasks map to Spec 008 acceptance. **No code in this file** — only the work units. Each task states what verifiable artifact it produces.
+> Tasks map to Spec 008 acceptance. Each task states what verifiable artifact it produces. The activation criteria are met (governance ratified; Spec 008 Build authorized); implementation is unblocked.
 
 ---
 

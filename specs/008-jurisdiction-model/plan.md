@@ -1,12 +1,12 @@
 # Plan 008 — Jurisdiction Model (Core)
 
-**Status:** Draft · **design plan** · accompanies [Spec 008](./spec.md)
+**Status:** Ratified · implementation plan for [Spec 008](./spec.md) v1.0.0
 **Derives from:** [Spec 008](./spec.md)
 **Conforms to:** [Technical Principles](../../memory/technical-principles.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md)
-**Version:** 0.1.0
+**Version:** 1.0.0
 **Last updated:** 2026-06-21
 
-> **Plan, not implementation.** Hexagonal layout per the canonical reference architecture. **Ports earn their place** — `JurisdictionPort` and `RuleSetLoaderPort` are introduced because they will have ≥2 plausible implementations (in-memory defaults + filesystem-backed; possibly more later). An "obligation evaluator" *is not* a Core port — it belongs in the Module.
+> **Plan, now authorized for build.** Hexagonal layout per the canonical reference architecture. **Ports earn their place** — `JurisdictionPort` and `RuleSetLoaderPort` are introduced because they will have ≥2 plausible implementations (in-memory defaults + filesystem-backed; possibly more later). An "obligation evaluator" *is not* a Core port — it belongs in the Module.
 
 ---
 

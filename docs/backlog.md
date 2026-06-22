@@ -132,10 +132,11 @@ separate concern tracked below.
 
 ## CHORE-002 — stale local worktrees left after merged PRs
 
-**Status:** open
+**Status:** done
 **Kind:** churn
 **Source:** observed during CHORE-001 close-out, 2026-06-22
 **Affects:** local worktrees (this machine)
+**Closed:** 2026-06-22 (immediately after ADR-008 amendment, PR #86)
 
 After PRs merge, the worktrees their sessions used are left behind on
 the local machine. They consume disk and clutter `git worktree list`,
@@ -158,8 +159,9 @@ Cleanup (manual; non-urgent):
 git worktree remove /path/to/worktree
 ```
 
-Future prevention: extend the bootstrap script or the session-close
-checklist so removal is automatic once the bound branch's PR is merged.
+**Resolution.** All 5 stale sibling worktrees were removed on 2026-06-22 via `git worktree remove <abs-path>` from the main checkout, immediately after PR #86 merged. `git worktree list --porcelain` post-cleanup shows only the main checkout and any in-flight session worktrees (in-repo at `.worktrees/<slug>/`).
+
+Future prevention: per the migration note in [ADR-008 §Amendment](../../governance/decisions/ADR-008-worktree-per-session.md#amendment--2026-06-22-in-repo-worktrees), the sibling-style worktrees that produced this backlog entry are no longer created — new sessions land in `.worktrees/<slug>/`, which keeps the parent directory (`~/Proyectos/`) free of stale project-named entries. So CHORE-002 is structurally unlikely to recur.
 
 ---
 
@@ -184,4 +186,4 @@ which feels more "demo / showcase" than "production mission control."
 
 ---
 
-*Last updated: 2026-06-22 (CHORE-001 → done via PR #85; CHORE-002 added).*
+*Last updated: 2026-06-22 (CHORE-001 → done via PR #85; CHORE-002 added → done after PR #86 amendment merged and sibling worktrees removed).*

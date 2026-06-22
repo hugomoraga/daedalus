@@ -3,7 +3,7 @@
 import { appendIntents, startLineage } from "@daedalus/core";
 import type { RevenueDeps } from "./deps.ts";
 import { receiveEstimate } from "../domain/estimate.ts";
-import { projectEstimate } from "./projections.ts";
+import { projectEstimate } from "./projections/estimate.ts";
 
 export type ReceiveRevenueCommand = {
   tenantId: string;

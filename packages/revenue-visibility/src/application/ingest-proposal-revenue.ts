@@ -16,7 +16,7 @@ import { enrich, followFrom, ProposalGenerated, ProposalApproved, PaymentReceive
 import type { CoreDeps, DomainEvent } from "@daedalus/core";
 import { RevenueEstimateCreated } from "../domain/events.ts";
 import { createEstimateFromProposal, confirmEstimate, receiveEstimate } from "../domain/estimate.ts";
-import { projectEstimate } from "./projections.ts";
+import { projectEstimate } from "./projections/estimate.ts";
 
 export type IngestProposalRevenueCommand = {
   tenantId: string;

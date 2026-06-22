@@ -4,7 +4,7 @@
 import { appendIntents, startLineage } from "@daedalus/core";
 import type { RevenueDeps } from "./deps.ts";
 import { confirmEstimate } from "../domain/estimate.ts";
-import { projectEstimate } from "./projections.ts";
+import { projectEstimate } from "./projections/estimate.ts";
 
 export type ConfirmRevenueCommand = {
   tenantId: string;

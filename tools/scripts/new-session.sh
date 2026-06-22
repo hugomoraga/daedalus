@@ -3,7 +3,12 @@
 #
 # Creates a git worktree bound to a new branch, isolated from any other
 # session's working tree. The session's edits, `.data/`, and `node_modules/`
-# are all physically separate from the main repo and from other sessions.
+# are physically separate from other sessions (different branch → different
+# files in `.worktrees/<slug>/`). The main checkout (the one on `main`) is
+# unaffected.
+#
+# Per ADR-008 (amended 2026-06-22), worktrees live at `.worktrees/<slug>/`
+# inside the repo (gitignored), not as siblings at `../daedalus-<slug>/`.
 #
 # Usage:
 #   tools/scripts/new-session.sh <NNN> <slug> [base-branch]
@@ -30,9 +35,7 @@ SLUG="$2"
 BASE="${3:-main}"
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
-REPO_NAME="$(basename "$REPO_ROOT")"
-WORKTREE_PARENT="$(dirname "$REPO_ROOT")"
-WORKTREE_PATH="${WORKTREE_PARENT}/${REPO_NAME}-${SLUG}"
+WORKTREE_PATH="${REPO_ROOT}/.worktrees/${SLUG}"
 BRANCH="${NNN}-${SLUG}"
 
 # Refuse to clobber an existing worktree or branch.

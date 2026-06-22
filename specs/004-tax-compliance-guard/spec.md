@@ -1,16 +1,16 @@
 # Spec 004 — Tax & Compliance Guard (Module)
 
-**Status:** Draft · **BLOCKED** (2 of 4 unblockers built · B3 still pending) · stub only
+**Status:** Draft · **BLOCKED** (3 of 4 unblockers built · B3 still pending) · stub only
 **Type:** Module specification (reusable capability over tenant-scoped data)
 **Owner:** Stewards
 **Tenant of origin:** [Tenant 0 — Founder Profile](../../blueprints/tenants/tenant-0-founder-profile.md)
 **Validation priority:** #4 (see [Roadmap](../../docs/roadmap.md)) · earliest buildable: **Phase 3** (policy-shaped)
-**Version:** 0.4.0
+**Version:** 0.5.0
 **Last updated:** 2026-06-22
 
 > **Method.** Spec-first (Constitution, Principle 8). **This is a stub, not a full spec.** It frames the problem, fixes the boundary, and records the blockers. It deliberately does **not** specify tax rules, rates, forms, or deadlines, because doing so would either be premature or jurisdiction-specific guesswork. No code, no schema, no real data, no PII.
 >
-> **Update (v0.4.0, 2026-06-22).** **B2 is CLOSED** — [Spec 009 — Policy Engine](../009-policy-engine/spec.md) shipped (PR #36 governance + PR #38 impl): Core types (`Policy`, `PolicyRef`, `PolicyDecision` 3-outcome), `PolicyEnginePort` + `PolicyStorePort`, default evaluator (first-match-wins, no-match → escalate), `evaluateAndRecordPolicy` use case, two adapters (`InMemoryPolicyStore`, `FilesystemPolicyStore`), `PolicyDecisionRecorded` event with full lineage, env-var pattern mirrored from Spec 008, conformance lint script wired into `npm test`. Spec 004's tax-compliance-policy bundle can now be authored and evaluated by the engine. **B3 (Authoritative Rule Source) is the only remaining blocker.**
+> **Update (v0.5.0, 2026-06-22).** **B3 is CLOSED** — [Spec 010 — Authoritative Rule Source](../010-authoritative-rule-source/spec.md) shipped (PR #48 governance + PR #50 impl): 4 Core events (`RuleSetRegistered`, `RuleSetSuperseded`, `RuleSetStale`, `ObligationCoverageGap`) with full lineage, 4 use cases (register, supersede, sweep, list), default staleness config (env-var-driven 12/6/3 months per sourceKind), 3 CLI commands (`rules:register` / `rules:list` / `rules:sweep`), 7 unit tests + CLI integration, lint script wired into `npm test`. The founder's process is documented (§9 Process for the founder). Spec 004's tax-compliance Module can now consume the four events and author the tax-compliance-policy bundle. **No remaining blockers** — Spec 004 itself becomes buildable.
 
 ---
 
@@ -50,7 +50,7 @@ This boundary is consistent with Revenue Visibility (#2), which is explicitly *n
 |---|---|---|---|
 | **B1** | **Jurisdiction model.** How a tenant declares its jurisdiction and supplies its rule set generically (so the Module stays jurisdiction-agnostic). | [Spec 008 — Jurisdiction Model](../008-jurisdiction-model/spec.md) shipped (PR #35) — Core types, ports, adapters, lint scripts, env-var pattern all live. | ✅ **Closed** |
 | **B2** | **Policy engine (Phase 3).** Must exist; this module is policy-shaped. | [Spec 009 — Policy Engine](../009-policy-engine/spec.md) shipped (governance PR #37 + impl PR #38) — Core types, 3-outcome verdict, default evaluator, use case, two adapters, `PolicyDecisionRecorded` event, lint script. The tax-compliance-policy bundle can be authored and evaluated. | ✅ **Closed** |
-| **B3** | **Authoritative rule source.** Tax rules must come from an authoritative, dated source per tenant — **never invented by the system or by an agent.** | [Spec 010 — Authoritative Rule Source](../010-authoritative-rule-source/spec.md) (stub; awaits human process design — how the founder sources, validates, and refreshes the rule set over time). | 🟡 Stubbed |
+| **B3** | **Authoritative rule source.** Tax rules must come from an authoritative, dated source per tenant — **never invented by the system or by an agent.** | [Spec 010 — Authoritative Rule Source](../010-authoritative-rule-source/spec.md) shipped (governance PR #48 + impl PR #50) — 4 Core events with full lineage, 4 use cases, default staleness config (12/6/3 months per sourceKind, env-var-overridable), 3 CLI commands, 7 unit tests, lint script. Founder's 14-step process documented. | ✅ **Closed** |
 | **B4** | **Revenue Visibility lifecycle.** `confirmed`/`received` revenue must exist for obligations to compute against. | Shipped in [Spec 001 v1 (PR #13)](../001-revenue-visibility/tasks.md) — `RevenueConfirmed`, `RevenueReceived`, `ExpenseRegistered`, `FinancialSummary` all live. | ✅ **Closed** |
 
 **Net:** the only remaining path to a buildable Spec 004 is **B2 → Phase 3**, with B1 ready to build today and B3 awaiting a human-authored process. Spec 004 itself stays a stub until Phase 3 begins.

@@ -44,6 +44,9 @@ export const HELP = [
   "  revenue:alerts   --tenant <id>",
   "  human:approve   --tenant <id> --workflow <w> --instance <corr>",
   "  human:reject    --tenant <id> --workflow <w> --instance <corr> --reason <r>",
+  "  rules:register  --tenant <id> --ruleset <id>@<ver> --file <path>",
+  "  rules:list      --tenant <id>",
+  "  rules:sweep     --tenant <id>",
   "  events          --tenant <id> [--limit <n>] [--tail]",
 ].join("\n");
 

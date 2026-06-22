@@ -4,7 +4,7 @@
 // import from a single entry point. Views, runners, and the server
 // are added in later PRs; the barrel is curated as the surface grows.
 
-export { parseRepo } from "./parser.ts";
+export { parseRepo, type ParseRepoResult } from "./parser.ts";
 export { parseSpecs, computeActivePhase } from "./parser/specs.ts";
 export {
   parseSpecCompletion,
@@ -28,6 +28,13 @@ export {
   parseGitDiffStat,
   type RunGitResult,
 } from "./runners/git.ts";
+export {
+  runNpmTest,
+  runNpmTestSync,
+  parseNodeTestOutput,
+  RUNNING_PLACEHOLDER,
+  type NpmTestController,
+} from "./runners/tests.ts";
 export type {
   ProjectState,
   SpecCard,

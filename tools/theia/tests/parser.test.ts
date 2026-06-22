@@ -19,7 +19,7 @@ import { fileURLToPath } from "node:url";
 import { parseRepo } from "../src/parser.ts";
 
 test("parseRepo returns a typed ProjectState shape", async () => {
-  const state = await parseRepo(process.cwd());
+  const { state } = await parseRepo(process.cwd());
   assert.equal(typeof state.rootPath, "string");
   assert.equal(typeof state.computedAt, "string");
   assert.ok(Array.isArray(state.specs));
@@ -38,7 +38,7 @@ test("parseRepo with the live repo surfaces specs + ADRs + phases + inventory + 
   // Resolve the repo root from THIS test file's location, not from
   // process.cwd() — under `node --test` the runner's CWD can differ.
   const repoRoot = dirname(dirname(dirname(dirname(fileURLToPath(import.meta.url)))));
-  const state = await parseRepo(repoRoot);
+  const { state } = await parseRepo(repoRoot);
   // PRs 2–5 wired: specs, completion, ADRs, phases, inventory,
   // useCases, blockers (live repo has no BLOCKED specs today).
   assert.ok(state.specs.length > 0, "live repo has specs");
@@ -46,12 +46,14 @@ test("parseRepo with the live repo surfaces specs + ADRs + phases + inventory + 
   assert.ok(state.phases.length > 0, "live repo has phases");
   assert.ok(state.codeInventory.length > 0, "live repo has apps + packages");
   assert.ok(state.useCases.length > 0, "live repo has CLI commands");
-  // PRs 6–7: git diff is wired (PR 6) but the test runner's CWD may
-  // not be a git worktree with a divergence; we only require that
-  // the diff surface is present (typed shape).
+  // PRs 6–7: git diff + test runner are both wired. The test runner
+  // starts npm test in the background; the parser returns the
+  // running-placeholder immediately.
   assert.equal(typeof state.diff.available, "boolean");
-  // Test runner (PR 7) is the last un-wired surface.
-  assert.equal(state.tests.running, false);
+  assert.equal(state.tests.running, true);
+  // Awaiting the pendingTests promise resolves to the final result.
+  // (Skipped here — Node ≥ 22 detects the recursive spawn inside a
+  // test runner; the integration check is via `npm run theia check`.)
 });
 
 test("parseRepo with a non-existent root returns empty state without throwing", async () => {
@@ -60,7 +62,7 @@ test("parseRepo with a non-existent root returns empty state without throwing", 
   // state with the requested rootPath echoed back.
   const baseDir = mkdtempSync(join(tmpdir(), "theia-parser-"));
   const ghost = join(baseDir, "does-not-exist");
-  const state = await parseRepo(ghost);
+  const { state } = await parseRepo(ghost);
   assert.equal(state.rootPath, ghost);
   assert.equal(state.specs.length, 0);
   // The computedAt is still set (deterministic within a single call).
@@ -69,26 +71,26 @@ test("parseRepo with a non-existent root returns empty state without throwing", 
 
 test("AC-14 (skeleton): two parser calls produce identical JSON", async () => {
   // AC-14 requires the parser be deterministic for a fixed repo state.
-  // The skeleton returns an empty state with `computedAt` set at call
-  // time, so we snapshot the value of computedAt across two calls by
-  // reading the same state first, then asserting equality of the
-  // JSON-serializable parts (specs, adrs, etc.) — `computedAt` is
-  // intentionally excluded since it varies per call.
-  const a = await parseRepo(process.cwd());
-  const b = await parseRepo(process.cwd());
-  const stripComputedAt = (s: typeof a): Omit<typeof a, "computedAt"> => {
+  // `computedAt` + `tests.startedAt` + `tests.completedAt` vary per
+  // call (they're real timestamps). Strip them before comparing.
+  const { state: a } = await parseRepo(process.cwd());
+  const { state: b } = await parseRepo(process.cwd());
+  const stripTimestamps = (s: typeof a): Omit<typeof a, "computedAt"> => {
     const { computedAt: _omit, ...rest } = s;
     void _omit;
-    return rest;
+    const { startedAt: _sa, completedAt: _ca, ...testRest } = rest.tests;
+    void _sa;
+    void _ca;
+    return { ...rest, tests: testRest };
   };
-  assert.deepEqual(stripComputedAt(a), stripComputedAt(b));
+  assert.deepEqual(stripTimestamps(a), stripTimestamps(b));
 });
 
 test("AC-14 (skeleton): two parser calls on a non-existent root are deterministic too", async () => {
   const baseDir = mkdtempSync(join(tmpdir(), "theia-parser-"));
   const ghost = join(baseDir, "ghost");
-  const a = await parseRepo(ghost);
-  const b = await parseRepo(ghost);
+  const { state: a } = await parseRepo(ghost);
+  const { state: b } = await parseRepo(ghost);
   const stripComputedAt = (s: typeof a): Omit<typeof a, "computedAt"> => {
     const { computedAt: _omit, ...rest } = s;
     void _omit;

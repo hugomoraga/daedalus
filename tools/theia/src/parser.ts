@@ -13,7 +13,7 @@
 
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
-import type { ProjectState } from "./types.ts";
+import type { ProjectState, TestResult } from "./types.ts";
 import { parseSpecs, computeActivePhase } from "./parser/specs.ts";
 import { parseSpecCompletion } from "./parser/completion.ts";
 import { parseAdrs } from "./parser/adrs.ts";
@@ -22,13 +22,24 @@ import { parseCodeInventory } from "./parser/inventory.ts";
 import { parseUseCases } from "./parser/use-cases.ts";
 import { parseBlockers, computeNextUnlocks } from "./parser/blockers.ts";
 import { runGitDiff } from "./runners/git.ts";
+import { runNpmTest } from "./runners/tests.ts";
 
-export async function parseRepo(rootPath: string): Promise<ProjectState> {
+// Returned alongside the ProjectState. `pendingTests` is the npm-test
+// promise (fire-and-forget; resolves when the subprocess closes).
+// Callers can `await pendingTests` to get the final TestResult, or
+// ignore it and render the `running: true` placeholder.
+export type ParseRepoResult = {
+  state: ProjectState;
+  pendingTests: Promise<TestResult>;
+};
+
+export async function parseRepo(rootPath: string): Promise<ParseRepoResult> {
   const root = resolve(rootPath);
   const exists = existsSync(root) && statSync(root).isDirectory();
   const now = new Date().toISOString();
   if (!exists) {
-    return emptyState(root, now);
+    const pending = Promise.resolve(emptyTestResult("not in a git repo or path missing"));
+    return { state: emptyState(root, now), pendingTests: pending };
   }
 
   const specs = parseSpecs(root);
@@ -46,9 +57,7 @@ export async function parseRepo(rootPath: string): Promise<ProjectState> {
   const codeInventory = parseCodeInventory(root);
   const useCases = parseUseCases(root);
 
-  // PR 5: blocker graph + next-unlocks. parseSpecs already populated
-  // card.blockers as `[]`; we re-read the spec contents to fill the
-  // unblocker lists.
+  // PR 5: blocker graph + next-unlocks.
   const specContents = new Map<string, string>();
   for (const card of specs) {
     const path = join(root, "specs", card.slug, "spec.md");
@@ -60,25 +69,41 @@ export async function parseRepo(rootPath: string): Promise<ProjectState> {
     .filter((s) => s.status === "Blocked" && s.blockers.length > 0)
     .map((s) => ({ blockedSlug: s.slug, unblockers: s.blockers }));
 
-  // PR 6: git diff runner (AC-9). Errors collapse to
-  // { available: false, reason } — the runner never throws.
+  // PR 6: git diff runner (AC-9).
   const diffResult = await runGitDiff(root);
-  const diff = diffResult.ok
-    ? diffResult.summary
-    : { ...emptyDiff(), reason: diffResult.reason };
+  const diff = diffResult.ok ? diffResult.summary : { ...emptyDiff(), reason: diffResult.reason };
 
-  // TODO PR-7: runNpmTest(root).
+  // PR 7: npm test runner (AC-8). Fire-and-forget: the parser
+  // returns immediately with `running: true`; the server (PR 8) or
+  // any caller can `await pendingTests` to get the final result.
+  const controller = runNpmTest(root);
+  const tests: TestResult = {
+    running: true,
+    total: null,
+    pass: null,
+    fail: null,
+    failingNames: [],
+    startedAt: new Date().toISOString(),
+    completedAt: null,
+    reason: null,
+  };
+
   return {
-    ...emptyState(root, now),
-    specs,
-    adrs,
-    phases,
-    codeInventory,
-    useCases,
-    blockers,
-    nextUnlocks,
-    diff,
-    activePhase,
+    state: {
+      rootPath: root,
+      computedAt: now,
+      specs,
+      adrs,
+      phases,
+      codeInventory,
+      useCases,
+      blockers,
+      nextUnlocks,
+      diff,
+      tests,
+      activePhase,
+    },
+    pendingTests: controller.result,
   };
 }
 
@@ -95,16 +120,20 @@ function emptyState(rootPath: string, computedAt: string): ProjectState {
     blockers: [],
     nextUnlocks: [],
     diff: emptyDiff(),
-    tests: {
-      running: false,
-      total: null,
-      pass: null,
-      fail: null,
-      failingNames: [],
-      startedAt: null,
-      completedAt: null,
-      reason: "test runner not yet wired (PR 7 pending)",
-    },
+    tests: emptyTestResult("parser not yet wired (PR 7 pending)"),
+  };
+}
+
+function emptyTestResult(reason: string): TestResult {
+  return {
+    running: false,
+    total: null,
+    pass: null,
+    fail: null,
+    failingNames: [],
+    startedAt: null,
+    completedAt: null,
+    reason,
   };
 }
 

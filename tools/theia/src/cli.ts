@@ -63,13 +63,15 @@ async function serve(values: Record<string, string | undefined>): Promise<void> 
 
 async function check(values: Record<string, string | undefined>): Promise<void> {
   const root = readRoot(values);
-  // TODO PR-8: replace with parseRepo(root) + pretty summary render.
+  // TODO PR-8: replace with pretty summary render + waiting on pendingTests.
   const { parseRepo } = await import("./parser.ts");
-  const state = parseRepo(root);
+  const result = await parseRepo(root);
+  const state = result.state;
   console.log(`theia check  root=${root}  computedAt=${state.computedAt}`);
   console.log(`  specs=${state.specs.length}  adrs=${state.adrs.length}  useCases=${state.useCases.length}`);
   console.log(`  codeInventory=${state.codeInventory.length}  phases=${state.phases.length}  activePhase=${state.activePhase}`);
-  console.log("(PRs 2–4 wired: specs + ADRs + phases + inventory + useCases. PRs 5–7 fill blockers/diff/tests.)");
+  console.log(`  diffAvailable=${state.diff.available}  testsRunning=${state.tests.running}`);
+  console.log("(PRs 2–7 wired: specs + ADRs + phases + inventory + useCases + blockers + diff + test runner.)");
 }
 
 export async function main(argv: readonly string[]): Promise<number> {

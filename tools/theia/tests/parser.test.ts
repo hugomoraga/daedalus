@@ -31,20 +31,19 @@ test("parseRepo returns a typed ProjectState shape", () => {
   assert.equal(typeof state.tests, "object");
 });
 
-test("parseRepo with the live repo surfaces specs + ADRs + phases (PR 3)", () => {
+test("parseRepo with the live repo surfaces specs + ADRs + phases + inventory + useCases (PR 5)", () => {
   // Resolve the repo root from THIS test file's location, not from
   // process.cwd() — under `node --test` the runner's CWD can differ.
   const repoRoot = dirname(dirname(dirname(dirname(fileURLToPath(import.meta.url)))));
   const state = parseRepo(repoRoot);
-  // PR 2 wired parseSpecs + completion; PR 3 wired parseAdrs + parsePhases.
+  // PRs 2–5 wired: specs, completion, ADRs, phases, inventory,
+  // useCases, blockers (live repo has no BLOCKED specs today).
   assert.ok(state.specs.length > 0, "live repo has specs");
   assert.ok(state.adrs.length > 0, "live repo has ADRs");
   assert.ok(state.phases.length > 0, "live repo has phases");
-  // PRs 4–7 placeholder contracts still hold.
-  assert.equal(state.useCases.length, 0);
-  assert.equal(state.codeInventory.length, 0);
-  assert.equal(state.blockers.length, 0);
-  assert.equal(state.nextUnlocks.length, 0);
+  assert.ok(state.codeInventory.length > 0, "live repo has apps + packages");
+  assert.ok(state.useCases.length > 0, "live repo has CLI commands");
+  // PRs 6–7 placeholder contracts still hold.
   assert.equal(state.diff.available, false);
   assert.equal(state.tests.running, false);
 });

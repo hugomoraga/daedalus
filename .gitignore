@@ -2,6 +2,12 @@
 # Never committed: no real tenant data / PII in version control (Technical Principles).
 .data/
 
+# Per-session agent worktrees (ADR-008 §1, amended 2026-06-22).
+# Each worktree under .worktrees/ has its own .data/ and node_modules/;
+# none of it is committed. The directory itself is a parent for session
+# checkouts, not a tracked folder.
+.worktrees/
+
 # Local environment — real tenant values (currency overrides, jurisdiction
 # profile fields, provenance verifiedBy identity). NEVER commit (PII risk).
 .env

@@ -1,6 +1,6 @@
 # Tasks — Spec File Convention
 
-**Status:** Planning (spec artefacts shipped; code + migration pending)
+**Status:** Ratified (PR #80 merged 2026-06-22; implementation PR follows)
 **Derives from:** [Spec 015](./spec.md) + [Plan 015](./plan.md)
 **Conforms to:** [Conventions](../../tools/theia/CONVENTIONS.md) (forthcoming — added by T-03)
 **Version:** 0.1.0

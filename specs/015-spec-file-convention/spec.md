@@ -1,9 +1,9 @@
 # Spec 015 — Spec File Convention
 
-**Status:** Draft · Tooling-adjacent · not a platform capability (not on the [Roadmap](../../docs/roadmap.md))
+**Status:** Ratified · Tooling-adjacent · not a platform capability (not on the [Roadmap](../../docs/roadmap.md))
 **Type:** Process + tooling convention · consumed by [Spec 012 — Theia](../012-theia/spec.md)
 **Owner:** Stewards
-**Version:** 0.1.0
+**Version:** 1.0.0
 **Last updated:** 2026-06-22
 
 > **Method.** Spec-first (Constitution, Principle 8). Codifies a single convention for `tasks.md` so Theia can accurately report per-spec completion, and so future specs cannot drift silently.

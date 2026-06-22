@@ -6,12 +6,15 @@ If anything here conflicts with the canon below, the canon wins.
 
 ## Read first (the canon — source of truth)
 
-1. [`memory/constitution.md`](memory/constitution.md) — supreme governing doc (10 principles, decision hierarchy).
-2. [`memory/technical-principles.md`](memory/technical-principles.md) — how we build (hexagonal, event-first, export discipline). **Binds every plan.**
-3. [`docs/identity.md`](docs/identity.md) — platform/tenant boundary (Core vs Modules vs Tenants).
-4. [`docs/repository-structure.md`](docs/repository-structure.md) — the modular-monorepo layout.
+These files are **not** auto-loaded every turn (to keep fixed context small).
+Load them **on demand** with `@<path>` when the task requires it:
+
+1. `@memory/constitution.md` — supreme governing doc (10 principles, decision hierarchy). **Load when:** writing/reviewing a spec, ADR, or anything that touches governance, tenants, or agent authority.
+2. `@memory/technical-principles.md` — how we build (hexagonal, event-first, export discipline). **Binds every plan.** **Load when:** designing a module, writing a `plan.md`, or proposing a structural change.
+3. [`docs/identity.md`](docs/identity.md) — platform/tenant boundary (Core vs Modules vs Tenants). **Load when:** placement of new code is ambiguous.
+4. [`docs/repository-structure.md`](docs/repository-structure.md) — the modular-monorepo layout. **Load when:** creating packages, moving code, or wiring adapters.
 5. [`governance/decisions/`](governance/decisions/) — ADRs (the accumulated architectural decisions). Read them before proposing structural changes.
-6. [`specs/`](specs/) — one `spec.md` (+ `plan.md`) per capability.
+6. [`specs/`](specs/) — one `spec.md` (+ `plan.md`) per capability. **Load when:** the work belongs to an existing spec.
 
 Decisions live in the repo, not in any agent's chat memory. Agents coordinate **through artifacts** (commits, PRs, ADRs, `docs/reviews/`), not by talking to each other.
 

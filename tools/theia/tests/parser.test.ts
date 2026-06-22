@@ -30,17 +30,18 @@ test("parseRepo returns a typed ProjectState shape", () => {
   assert.equal(typeof state.tests, "object");
 });
 
-test("parseRepo with the live repo returns empty collections (skeleton PR 1)", () => {
+test("parseRepo with the live repo surfaces specs (PR 2 wired parseSpecs)", () => {
   const state = parseRepo(process.cwd());
-  // PR 1 is the skeleton: every collection is empty, diff + tests are
-  // placeholders. Later PRs fill them. The point of this test is to
-  // pin the contract: the shape is stable, the values are honest.
-  assert.equal(state.specs.length, 0);
+  // PR 2 wired parseSpecs + completion; the parser now reads the
+  // live repo's specs/NNN-* directories. The other collections
+  // (adrs, useCases, codeInventory, phases, blockers, nextUnlocks,
+  // diff, tests) remain placeholders until PRs 3–7 wire them.
+  assert.ok(state.specs.length > 0, "live repo has specs");
+  // PR 1 placeholder contracts still hold for the un-wired collections.
   assert.equal(state.adrs.length, 0);
   assert.equal(state.useCases.length, 0);
   assert.equal(state.codeInventory.length, 0);
   assert.equal(state.phases.length, 0);
-  assert.equal(state.activePhase, 0);
   assert.equal(state.blockers.length, 0);
   assert.equal(state.nextUnlocks.length, 0);
   assert.equal(state.diff.available, false);

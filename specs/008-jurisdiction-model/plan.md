@@ -79,14 +79,61 @@ The Core never reaches *into* the Module. The Module never reaches *into* Core i
 ```
 config/
   tenants/
-    tenant-0.jurisdiction.ts           # the values (concrete country, calendar, rule refs)
+    tenant-0.jurisdiction.ts           # committed; shape + env-var-driven values (see below)
   rulesets/
     tenant-0/
       .gitkeep                          # placeholders, NOT real rules
       README.md                         # explains "no real rules in repo" + how Tenant 0 adds them
+.env                                      # gitignored; real values per-environment
+.env.example                              # committed; documents every env var the system reads
 ```
 
 The Core types live in `packages/core/src/domain/jurisdiction/`. The Tenant values live in `config/`. The boundary is **mechanical** — `config/` is git-tracked; `packages/core/` cannot import from it.
+
+### 4.1 Env-var-driven tenant values (binding for v1)
+
+Tenant-specific values (Tenant 0's actual country, currency, fiscal calendar, rule-set references, provenance `verifiedBy` identity) are **PII risk** and must not be hardcoded in committed `.ts` files. The pattern:
+
+- **`config/tenants/tenant-0.jurisdiction.ts`** is committed and contains:
+  - The **shape** (typed `TenantConfig` / `JurisdictionProfile` etc.).
+  - Reads from `process.env.X` for every field, with a sensible default fallback.
+- **`.env`** is **gitignored** (added to `.gitignore` in J-13.1 of the impl PR). Holds the real values per machine.
+- **`.env.example`** is committed and documents every env var the system reads, with safe placeholder values (no real PII).
+- **No `dotenv` dependency** — pure `process.env` access. Node 22+ is sufficient. Simplicity First.
+
+Example shape (illustrative, the actual file is the founder's task):
+
+```ts
+// config/tenants/tenant-0.jurisdiction.ts (committed)
+const env = (key: string, fallback?: string): string | undefined =>
+  process.env[key] ?? fallback;
+
+export const tenant0Jurisdiction = {
+  jurisdiction: {
+    countryCode: env("TENANT_0_JURISDICTION_COUNTRY_CODE", "CL") ?? "CL",
+    subdivisionCode: env("TENANT_0_JURISDICTION_SUBDIVISION_CODE"),
+  },
+  calendar: {
+    fiscalYearStart: {
+      month: Number(env("TENANT_0_FY_START_MONTH", "1")),
+      day: Number(env("TENANT_0_FY_START_DAY", "1")),
+    },
+    filingCadence: (env("TENANT_0_FILING_CADENCE", "monthly") ?? "monthly") as
+      | "monthly" | "quarterly" | "annual" | "custom",
+  },
+  currency: env("TENANT_0_CURRENCY", "CLP") ?? "CLP",
+  ruleSets: [], // populated by the founder when rules are sourced (Spec 010)
+  effectiveFrom: env("TENANT_0_PROFILE_EFFECTIVE_FROM"),
+};
+```
+
+**The Core stays generic** — it reads the profile through `JurisdictionPort`, never `process.env`. Env-var reading happens **only at the Tenant layer** (composition root, when the profile is loaded).
+
+### 4.2 Why this matters (Principle 10 + AGENTS.md)
+
+- Constitution Principle 10: tenant-specific data lives in the Tenant profile, never in Core. Env vars at the Tenant layer reinforce the boundary.
+- AGENTS.md: "Never commit: Real tenant data or PII of any kind." The provenance `verifiedBy` (human identity vouching for the rules) is PII. Env vars keep it out of git history.
+- Reproducibility: `.env.example` documents the schema; a new machine can `.env.example` → `.env` → fill in values and run.
 
 ## 5. Test strategy (small, no framework, no fixtures)
 

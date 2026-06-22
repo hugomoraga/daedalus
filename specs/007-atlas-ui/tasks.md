@@ -6,7 +6,7 @@
 **Version:** 1.0.0
 **Last updated:** 2026-06-22
 
-> The `/tasks` step for ATLAS. Tasks map 1:1 to Spec 007 acceptance criteria and Plan 007 build steps. v0 (T-01..T-16) shipped in PR #18; v1 (T-17..T-19) shipped in PR #19. Phase 2 (T-20..T-22) and Phase 5 (T-23..T-26) tasks remain blocked on their respective engines.
+> The `/tasks` step for ATLAS. Tasks map 1:1 to Spec 007 acceptance criteria and Plan 007 build steps. v0 (T-01..T-16) shipped in PR #18; v1 (T-17..T-19) shipped in PR #19. T-20..T-22 (Phase 2) shipped in PR #56. T-23 (Compliance panel) shipped in PR #58. Phase 5 (T-24..T-27) remains blocked on the agent runtime + multi-tenant ops + auth.
 
 ---
 
@@ -72,10 +72,10 @@ The workflow engine projections ATLAS needed were defined in Spec 011 and shippe
 
 | ID | Task | Blocked by | Status |
 |---|---|---|---|
-| T-23 | `panels/integrations.ts` — Integrations registry backing model | Phase 5 not started | ⛔ |
-| T-24 | Multi-tenant view (multi-pane) | Phase 5 not started | ⛔ |
-| T-25 | Real authentication | Phase 5 not started | ⛔ |
-| T-26 | Real-time SSE updates | Phase 5 not started | ⛔ |
+| T-24 | `panels/integrations.ts` — Integrations registry backing model | Phase 5 not started | ⛔ |
+| T-25 | Multi-tenant view (multi-pane) | Phase 5 not started | ⛔ |
+| T-26 | Real authentication | Phase 5 not started | ⛔ |
+| T-27 | Real-time SSE updates | Phase 5 not started | ⛔ |
 
 ---
 

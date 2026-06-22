@@ -44,15 +44,11 @@ export async function seedTenant(tenantId: string, events: readonly SeedEvent[])
 export async function clearTenant(tenantId: string): Promise<void> {
   const base = activeDataDir();
   await rm(join(base, "tenants", tenantId), { recursive: true, force: true });
-  await rm(join(base, ".data", "tenants", tenantId), { recursive: true, force: true });
 }
 
 export async function clearAll(): Promise<void> {
   const base = activeDataDir();
   await rm(join(base, "tenants"), { recursive: true, force: true });
-  // The instance store adapter prepends `.data/`, so its data lives under
-  // `<baseDir>/.data/tenants/...` — must clear both to avoid cross-test leaks.
-  await rm(join(base, ".data", "tenants"), { recursive: true, force: true });
 }
 
 export function makeFlow(tenantId: string, correlationId: string, types: readonly string[]): SeedEvent[] {
@@ -70,8 +66,8 @@ export function makeFlow(tenantId: string, correlationId: string, types: readonl
 
 // Seed workflow instances directly into the per-tenant JSONL file.
 // Mirrors JsonlInstanceStoreAdapter's save format: one JSON per line.
-// The adapter appends `.data/` internally, so the resolved path is
-// `<activeDir>/.data/tenants/<id>/workflow-instances.jsonl`.
+// Path matches the adapter's resolved file (no `.data/` prefix — both stores
+// treat `baseDir` as the data root, so `getDataDir()` IS the `.data/` root).
 export type SeedInstance = {
   id: string;
   workflowName: string;
@@ -95,7 +91,7 @@ export type SeedInstance = {
 
 export async function seedInstances(tenantId: string, instances: readonly SeedInstance[]): Promise<void> {
   const base = activeDataDir();
-  const dir = join(base, ".data", "tenants", tenantId);
+  const dir = join(base, "tenants", tenantId);
   await mkdir(dir, { recursive: true });
   const path = join(dir, "workflow-instances.jsonl");
   const body = instances.map((i) => JSON.stringify(i)).join("\n") + "\n";

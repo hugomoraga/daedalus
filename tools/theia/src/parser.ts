@@ -18,6 +18,8 @@ import { parseSpecs, computeActivePhase } from "./parser/specs.ts";
 import { parseSpecCompletion } from "./parser/completion.ts";
 import { parseAdrs } from "./parser/adrs.ts";
 import { parsePhases } from "./parser/phases.ts";
+import { parseCodeInventory } from "./parser/inventory.ts";
+import { parseUseCases } from "./parser/use-cases.ts";
 
 export function parseRepo(rootPath: string): ProjectState {
   const root = resolve(rootPath);
@@ -39,8 +41,9 @@ export function parseRepo(rootPath: string): ProjectState {
 
   const adrs = parseAdrs(root);
   const phases = parsePhases(root);
+  const codeInventory = parseCodeInventory(root);
+  const useCases = parseUseCases(root);
 
-  // TODO PR-4: list apps/, packages/, tests/; regex apps/cli/src/index.ts.
   // TODO PR-5: compute blocker graph + next-unlocks ranking.
   // TODO PR-6: runGitDiff(root).
   // TODO PR-7: runNpmTest(root).
@@ -49,6 +52,8 @@ export function parseRepo(rootPath: string): ProjectState {
     specs,
     adrs,
     phases,
+    codeInventory,
+    useCases,
     activePhase,
   };
 }

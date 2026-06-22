@@ -96,16 +96,50 @@ Unrelated to Atlas / seeder / ADR-008 work — fix in its own PR.
 
 ## TEST-001 — flaky "evidence run" in value-chain-cli
 
-**Status:** open
+**Status:** wontfix
 **Kind:** bug
 **Source:** intermittent across multiple test runs in #73 / #75 sessions
-**Affects:** apps/cli/tests/value-chain-cli.test.ts
+**Affects:** tests/engine-evidence-run.test.ts (likely; see below)
 
-The test that walks Lead → Payment with a human gate at `paid → closed`
-fails intermittently. ~440 ms when it passes; crashes almost
-immediately when it fails. The shape of the failure suggests timing
-sensitivity in how the test sets up the workflow instance or awaits
-its projection. Pre-existing on main — not introduced by recent work.
+Closed in PR #89 as wontfix — the underlying flake was already fixed
+before the entry was authored, and the `Affects:` path was stale.
+
+**Why wontfix, not done.** The fix landed in a separate stream and is
+not attributable to TEST-001. Marking `done` here would mis-attribute
+work that was done out-of-band.
+
+**What the entry got wrong.**
+- *Path.* `apps/cli/tests/value-chain-cli.test.ts` does not exist.
+  The CLI was refactored into per-command modules by `refactor(cli):
+  split monolith index.ts into per-command modules` (PR #34, commit
+  `31edee46`, 2026-06-21 22:59), and CLI tests now live at the repo
+  root in `tests/`. The most likely test the author meant is
+  `tests/engine-evidence-run.test.ts` ("evidence run: full lead-to-
+  payment walk with human gate at paid → closed"), which exercises
+  exactly the flow described.
+
+**Underlying flake — already fixed.** The flake (engine polling race
+in `runFor`) was fixed in commit `4aa75fa` (`test(workflow-engine):
+stabilize runFor helper against engine polling race`, 2026-06-21
+23:54, shipped via PR #46) — *about 26 hours before the TEST-001 entry
+was authored.* The fix replaced fixed-time `setTimeout` with a
+"stable-stream" poll (wait until the event stream stops growing for
+150 ms, with a hard `maxMs` ceiling). Same commit also bumped
+`runFor` ceilings in `engine-declarative.test.ts`, `engine-human-
+gate.test.ts`, and `engine-multi-tenant.test.ts` for buffer.
+
+**Verification done in PR #89.** With Node 22 (the project's required
+runtime, `engines.node >=22.6.0`), 5 full-suite runs each surfaced
+the same 2 consistent failures (both fixed by the BUG-001 fixture
+expansion in PR #88) and no flakes. The suspect test
+`tests/engine-evidence-run.test.ts` was also run 20× back-to-back
+with no failures. No active flake attributed to the original TEST-001
+description exists on `main`.
+
+**Recommended follow-up (out of TEST-001 scope).** The Theia
+backlog parser (Spec 012 follow-up) could optionally validate the
+`Affects:` path on entry creation so stale paths cannot survive into
+the parser's index. Tracked separately; not addressed here.
 
 ---
 

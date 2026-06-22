@@ -65,7 +65,7 @@ These convert the 13 existing specs that are not in canonical format. Each prese
 - [x] T-25: Run `npm test` — 304 pass + 2 pre-existing fixture failures (no new regressions)
 - [x] T-26: Run `npm run theia -- check` — per-spec counts match hand counts (verify-spec-counts.mjs confirms: 166/376 done/total across 16 specs, 0 drift)
 - [x] T-27: Run `npm run theia -- serve` — drift widget would render for any spec without `tasks.md` / with empty checkboxes / with Unknown status; current repo: 0 specs need attention
-- [ ] T-28: Open PR; spec ratified via the Spec-Driven gate ([Constitution](../../memory/constitution.md) Article II) and `**Status:**` flipped to `Ratified` (in-flight; status flips on merge)
+- [x] T-28: Open PR; spec ratified via the Spec-Driven gate ([Constitution](../../memory/constitution.md) Article II) and `**Status:**` flipped to `Ratified` (closed via PR #81, merged 2026-06-22)
 
 ---
 

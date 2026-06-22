@@ -1,9 +1,15 @@
 // Driven adapter: persists workflow instances + the engine's polling cursor.
-//   <baseDir>/.data/tenants/<tenant>/workflow-instances.jsonl
-//   <baseDir>/.data/tenants/<tenant>/.engine-cursor
+//   <baseDir>/tenants/<tenant>/workflow-instances.jsonl
+//   <baseDir>/tenants/<tenant>/.engine-cursor
 // Gitignored. One file per tenant. Append-only on save (immutability is not
 // required for instance state — instances evolve — but a single linear write
 // per save keeps the format simple and replayable).
+//
+// `baseDir` is the data root (e.g. `.data` in production, a temp dir in tests).
+// Callers that previously wrote via `<cwd>/.data/tenants/...` (when the adapter
+// appended `.data/` internally) must now pass `join(process.cwd(), ".data")` —
+// this convention matches `JsonlEventStoreAdapter` so the two stores agree on
+// the data root.
 
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
@@ -42,7 +48,7 @@ export class JsonlInstanceStoreAdapter implements InstanceStorePort {
 
   #file(tenantId: string): string {
     assertSafeSegment(tenantId, "tenantId");
-    const file = join(this.#baseDir, ".data", "tenants", tenantId, "workflow-instances.jsonl");
+    const file = join(this.#baseDir, "tenants", tenantId, "workflow-instances.jsonl");
     const resolved = resolve(file);
     const baseResolved = resolve(this.#baseDir);
     if (!resolved.startsWith(baseResolved + "/") && resolved !== baseResolved) {
@@ -53,7 +59,7 @@ export class JsonlInstanceStoreAdapter implements InstanceStorePort {
 
   #cursorFile(tenantId: string): string {
     assertSafeSegment(tenantId, "tenantId");
-    return join(this.#baseDir, ".data", "tenants", tenantId, ".engine-cursor");
+    return join(this.#baseDir, "tenants", tenantId, ".engine-cursor");
   }
 
   async findByCorrelationId(

@@ -8,12 +8,11 @@
 // We do NOT import the proposal-generation or opportunity-discovery adapters
 // here — ATLAS does not invoke those use cases; it only reads their projections.
 //
-// Path asymmetry note: the event store treats `baseDir` as the data dir
-// directly (e.g. baseDir=".data" → ".data/tenants/<id>/events.jsonl"); the
-// instance store adapter appends `.data/` internally (see Spec 011 §4.1 /
-// jsonl-instance-store.ts). To read instances written by the workflow engine
-// CLI (which uses `JsonlInstanceStoreAdapter(process.cwd())`), ATLAS must
-// also pass `process.cwd()` so the resolved path is `<cwd>/.data/tenants/<id>/...`.
+// Path convention: both JSONL stores treat `baseDir` as the data root
+// (e.g. baseDir=".data" → ".data/tenants/<id>/..."). The CLI sets DATA_DIR=".data"
+// explicitly; tests override `getDataDir()` via `setDataDir(tempDir)`. The
+// convention is unified across event store, instance store, and the test
+// helpers (no `.data/` prefix anywhere except as the value of `getDataDir()`).
 
 import { randomUUID } from "node:crypto";
 import type { CoreDeps } from "@daedalus/core";
@@ -25,8 +24,9 @@ import { JsonlInstanceStoreAdapter } from "@daedalus/workflow-engine/adapters";
 import { getDataDir } from "./projections.ts";
 
 export function buildAtlasDeps(): AtlasDeps {
-  const eventStore = new JsonlEventStoreAdapter(getDataDir());
-  const instanceStore = new JsonlInstanceStoreAdapter(process.cwd());
+  const dataDir = getDataDir();
+  const eventStore = new JsonlEventStoreAdapter(dataDir);
+  const instanceStore = new JsonlInstanceStoreAdapter(dataDir);
   return {
     eventStore,
     instanceStore,

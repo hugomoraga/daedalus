@@ -7,6 +7,7 @@
 // The CLI is intentionally tiny: argument parsing, composition, run. No
 // business logic (per Technical Principles §First-Phase).
 
+import { join } from "node:path";
 import type { CoreDeps } from "@daedalus/core";
 import { JsonlEventStoreAdapter } from "@daedalus/jsonl-event-store";
 import { JsonFileDraftStoreAdapter } from "@daedalus/proposal-generation/adapters";
@@ -54,7 +55,10 @@ function engineDeps(core: CoreDeps, _tenantId: string): EngineDeps {
     ...core,
     policy: noOpPolicy,
     workflowStore: new JsonlWorkflowStoreAdapter(process.cwd()),
-    instanceStore: new JsonlInstanceStoreAdapter(process.cwd()),
+    // Match the JSONL event store's `.data` convention: instance files live at
+    // `<cwd>/.data/tenants/<id>/workflow-instances.jsonl`. The instance store
+    // adapter itself no longer appends `.data/` — callers pass the data root.
+    instanceStore: new JsonlInstanceStoreAdapter(join(process.cwd(), ".data")),
     useCases: {
       ...coreUseCases(core),
       ...proposalGenerationUseCases({

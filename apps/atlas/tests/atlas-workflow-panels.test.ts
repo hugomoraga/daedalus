@@ -8,13 +8,11 @@ import { request } from "node:http";
 import type { Server } from "node:http";
 import { createAtlasServer } from "../src/server.ts";
 import { buildAtlasDeps } from "../src/deps.ts";
-import { JsonlInstanceStoreAdapter } from "@daedalus/workflow-engine/adapters";
 import {
   seedTenant,
   seedInstances,
   clearAll,
   useTempDataDir,
-  activeDataDir,
 } from "./helpers.ts";
 
 before(async () => {
@@ -38,15 +36,6 @@ function get(server: Server, path: string): Promise<{ status: number; body: stri
     req.on("error", reject);
     req.end();
   });
-}
-
-// Tests run in a temp dir; the production Atlas deps use `process.cwd()` for
-// the instance store (to align with the engine CLI's write path). Override it
-// here so tests read from the same temp dir as `seedInstances`.
-function depsForTest(): ReturnType<typeof buildAtlasDeps> {
-  const deps = buildAtlasDeps();
-  deps.instanceStore = new JsonlInstanceStoreAdapter(activeDataDir());
-  return deps;
 }
 
 function liveInstances(): Parameters<typeof seedInstances>[1] {
@@ -108,7 +97,7 @@ function liveInstances(): Parameters<typeof seedInstances>[1] {
 test("T-20 active processes: renders live instances only, sorted by age desc", async () => {
   await clearAll();
   await seedInstances("tenant-0", liveInstances());
-  const { server } = createAtlasServer({ port: 0, deps: depsForTest() });
+  const { server } = createAtlasServer({ port: 0, deps: buildAtlasDeps() });
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", () => r()));
   try {
     const res = await get(server, "/t/tenant-0/active-processes");
@@ -131,7 +120,7 @@ test("T-20 active processes: renders live instances only, sorted by age desc", a
 test("T-20 active processes: empty state when no instances", async () => {
   await clearAll();
   await seedTenant("tenant-0", []);
-  const { server } = createAtlasServer({ port: 0, deps: depsForTest() });
+  const { server } = createAtlasServer({ port: 0, deps: buildAtlasDeps() });
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", () => r()));
   try {
     const res = await get(server, "/t/tenant-0/active-processes");
@@ -145,7 +134,7 @@ test("T-20 active processes: empty state when no instances", async () => {
 test("T-21 queue status: per-workflow counts + totals, ordered by waiting desc", async () => {
   await clearAll();
   await seedInstances("tenant-0", liveInstances());
-  const { server } = createAtlasServer({ port: 0, deps: depsForTest() });
+  const { server } = createAtlasServer({ port: 0, deps: buildAtlasDeps() });
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", () => r()));
   try {
     const res = await get(server, "/t/tenant-0/queue-status");
@@ -166,7 +155,7 @@ test("T-21 queue status: per-workflow counts + totals, ordered by waiting desc",
 test("T-22 workflow metrics: 24h window, per-workflow + totals", async () => {
   await clearAll();
   await seedInstances("tenant-0", liveInstances());
-  const { server } = createAtlasServer({ port: 0, deps: depsForTest() });
+  const { server } = createAtlasServer({ port: 0, deps: buildAtlasDeps() });
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", () => r()));
   try {
     const res = await get(server, "/t/tenant-0/workflow-metrics");
@@ -216,7 +205,7 @@ test("T-20..T-22 tenant isolation: tenant-other's panel never renders tenant-0's
     },
   ]);
 
-  const { server } = createAtlasServer({ port: 0, deps: depsForTest() });
+  const { server } = createAtlasServer({ port: 0, deps: buildAtlasDeps() });
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", () => r()));
   try {
     const t0Active = await get(server, "/t/tenant-0/active-processes");
@@ -237,7 +226,7 @@ test("T-20..T-22 tenant isolation: tenant-other's panel never renders tenant-0's
 
 test("T-20..T-22 absent for unknown tenant (no cross-tenant rendering)", async () => {
   await clearAll();
-  const { server } = createAtlasServer({ port: 0, deps: depsForTest() });
+  const { server } = createAtlasServer({ port: 0, deps: buildAtlasDeps() });
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", () => r()));
   try {
     // Unknown tenant → server returns 4xx (empty state, never another tenant's data).

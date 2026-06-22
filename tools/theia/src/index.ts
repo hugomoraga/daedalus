@@ -5,6 +5,16 @@
 // are added in later PRs; the barrel is curated as the surface grows.
 
 export { parseRepo } from "./parser.ts";
+export { parseSpecs, computeActivePhase } from "./parser/specs.ts";
+export {
+  parseSpecCompletion,
+  countCheckboxes,
+  mergeCompletion,
+  type CompletionCounts,
+  type SpecCompletion,
+} from "./parser/completion.ts";
+export { parseAdrs } from "./parser/adrs.ts";
+export { parsePhases } from "./parser/phases.ts";
 export type {
   ProjectState,
   SpecCard,

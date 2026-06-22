@@ -1,0 +1,111 @@
+{
+  "name": "lead-to-payment",
+  "version": "0.2.0",
+  "initial": "draft",
+  "terminal": ["closed", "rejected"],
+  "contexts": {
+    "correlationKey": "LeadQualified"
+  },
+  "states": {
+    "draft": {
+      "on": {
+        "LeadQualified": [
+          {
+            "id": "draft-to-qualified",
+            "target": "qualified",
+            "actions": [
+              {
+                "useCase": "startDraftUseCase",
+                "args": {
+                  "tenantId": "$.tenantId",
+                  "leadId": "$.payload.leadId",
+                  "template": "standard"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "qualified": {
+      "on": {
+        "ProposalGenerated": [
+          { "id": "qualified-to-proposed", "target": "proposed" }
+        ]
+      }
+    },
+    "proposed": {
+      "on": {
+        "ProposalSubmitted": [
+          { "id": "proposed-to-submitted", "target": "submitted" }
+        ],
+        "ProposalRejected": [
+          { "id": "proposed-to-rejected", "target": "rejected" }
+        ]
+      }
+    },
+    "submitted": {
+      "on": {
+        "ProposalApproved": [
+          {
+            "id": "submitted-to-approved",
+            "target": "approved",
+            "actions": [
+              {
+                "useCase": "createProjectUseCase",
+                "args": {
+                  "tenantId": "$.tenantId",
+                  "proposalId": "$.payload.proposalId"
+                }
+              }
+            ]
+          }
+        ],
+        "ProposalRejected": [
+          { "id": "submitted-to-rejected", "target": "rejected" }
+        ]
+      }
+    },
+    "approved": {
+      "on": {
+        "ProjectCreated": [
+          { "id": "approved-to-projected", "target": "projected" }
+        ]
+      }
+    },
+    "projected": {
+      "on": {
+        "ProjectDelivered": [
+          { "id": "projected-to-delivered", "target": "delivered" }
+        ]
+      }
+    },
+    "delivered": {
+      "on": {
+        "InvoiceIssued": [
+          { "id": "delivered-to-invoiced", "target": "invoiced" }
+        ]
+      }
+    },
+    "invoiced": {
+      "on": {
+        "InvoicePaid": [
+          { "id": "invoiced-to-paid", "target": "paid" }
+        ]
+      }
+    },
+    "paid": {
+      "on": {
+        "ProjectClosed": [
+          {
+            "id": "paid-to-closed",
+            "target": "closed",
+            "requiresHuman": true
+          }
+        ]
+      }
+    },
+    "rejected": {},
+    "closed": {}
+  }
+}

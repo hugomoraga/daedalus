@@ -25,6 +25,7 @@ import {
   sendInvoiceUseCase,
   submitProposalUseCase,
 } from "@daedalus/core";
+import { startDraftUseCase } from "@daedalus/proposal-generation";
 
 export type UseCaseInvoker = (
   command: Record<string, unknown>,
@@ -90,4 +91,36 @@ export function assertRegistryClosed(registry: UseCaseRegistry, required: string
   if (missing.length > 0) {
     throw new Error(`use-case registry missing required names: ${missing.join(", ")}`);
   }
+}
+
+// Build the module-specific use cases the workflow engine can invoke. The
+// returned registry is meant to be merged with `coreUseCases(coreDeps)`.
+//
+// Spec 002 v1 enables `LeadQualified` → auto-start-draft via this registry.
+// Future spec increments (Revenue Visibility v2, Opportunity Discovery v1)
+// will append here with their own module deps.
+//
+// Invokers close over the module-specific deps (e.g. `draftStore`) at
+// factory time but accept the engine's runtime `CoreDeps` per call, so the
+// CapturingEventStore wrap is honored.
+import type { DraftStorePort } from "@daedalus/proposal-generation";
+
+export type ProposalGenerationModuleDeps = {
+  draftStore: DraftStorePort;
+};
+
+export function proposalGenerationUseCases(
+  moduleDeps: ProposalGenerationModuleDeps,
+): UseCaseRegistry {
+  return {
+    startDraftUseCase: (cmd, runtime) => {
+      // Compose Core + module deps at call time so the engine's capturing
+      // event store is honored.
+      const composed = { ...runtime, ...moduleDeps };
+      return startDraftUseCase(
+        composed as Parameters<typeof startDraftUseCase>[0],
+        cmd as Parameters<typeof startDraftUseCase>[1],
+      ).then(() => undefined);
+    },
+  };
 }

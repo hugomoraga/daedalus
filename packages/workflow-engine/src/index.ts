@@ -38,7 +38,12 @@ export type { EngineOptions, EngineHandle } from "./application/engine.ts";
 export { noOpPolicy, denyAllPolicy } from "./application/ports/policy.ts";
 
 // Use-case registry factory (builds the registry for Core use cases)
-export { coreUseCases, assertRegistryClosed } from "./application/use-cases.ts";
+export {
+  coreUseCases,
+  proposalGenerationUseCases,
+  assertRegistryClosed,
+  type ProposalGenerationModuleDeps,
+} from "./application/use-cases.ts";
 
 // Capturing event store (lets the engine observe events emitted by actions)
 export { capturingEventStore, type CapturingEventStore } from "./application/capturing-store.ts";

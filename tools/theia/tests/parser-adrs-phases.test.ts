@@ -91,7 +91,7 @@ test("missing roadmap.md → empty array (does not throw)", () => {
 test("parseRepo on the live repo surfaces ADRs and phases (PR 3 wired)", async () => {
   const { parseRepo } = await import("../src/parser.ts");
   const repoRoot = dirname(dirname(dirname(dirname(fileURLToPath(import.meta.url)))));
-  const state = await parseRepo(repoRoot);
+  const { state } = await parseRepo(repoRoot);
   assert.ok(state.adrs.length >= 5);
   assert.ok(state.phases.length >= 5);
 });

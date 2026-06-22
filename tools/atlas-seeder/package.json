@@ -1,0 +1,15 @@
+{
+  "name": "@daedalus/atlas-seeder",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Atlas demo seeder — populates a tenant JSONL with a deterministic, audit-grade event narrative so Atlas panels render with content during development (Spec 013). Not a platform capability; lives in tools/ and is never imported by apps/ or packages/.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./seed": "./src/seed.ts"
+  },
+  "dependencies": {
+    "@daedalus/core": "*",
+    "@daedalus/jsonl-event-store": "*"
+  }
+}

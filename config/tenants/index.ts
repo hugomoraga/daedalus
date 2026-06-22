@@ -4,11 +4,13 @@
 
 import { tenant0 } from "./tenant-0.ts";
 import { tenantOther } from "./tenant-other.ts";
+import { tenantDemo } from "./tenant-demo.ts";
 import type { TenantConfig } from "./tenant-0.ts";
 
 const registry: Record<string, TenantConfig> = {
   [tenant0.id]: tenant0,
   [tenantOther.id]: tenantOther,
+  [tenantDemo.id]: tenantDemo,
 };
 
 export const defaultTenantId = tenant0.id;

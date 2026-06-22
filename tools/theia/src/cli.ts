@@ -68,8 +68,8 @@ async function check(values: Record<string, string | undefined>): Promise<void> 
   const state = parseRepo(root);
   console.log(`theia check  root=${root}  computedAt=${state.computedAt}`);
   console.log(`  specs=${state.specs.length}  adrs=${state.adrs.length}  useCases=${state.useCases.length}`);
-  console.log(`  phases=${state.phases.length}  activePhase=${state.activePhase}  diffAvailable=${state.diff.available}`);
-  console.log("(PRs 2–3 wired: specs + ADRs + phases. PRs 4–7 fill code/useCases/blockers/diff/tests.)");
+  console.log(`  codeInventory=${state.codeInventory.length}  phases=${state.phases.length}  activePhase=${state.activePhase}`);
+  console.log("(PRs 2–4 wired: specs + ADRs + phases + inventory + useCases. PRs 5–7 fill blockers/diff/tests.)");
 }
 
 export async function main(argv: readonly string[]): Promise<number> {

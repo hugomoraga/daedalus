@@ -74,6 +74,8 @@ The Constitution, the domain model, the event vocabulary, and the policy/workflo
 
 **Policy before Agent is now mechanically enforced.** Phase 3 ships the [Policy Engine](../specs/009-policy-engine/spec.md) as a Core capability: every governed action goes through `evaluateAndRecordPolicy`, which records a `PolicyDecisionRecorded` event with full lineage. The engine's three outcomes are `allow`, `deny`, `escalate` — `escalate` is terminal (Constitution §II.3, Default Deny). The Core stays generic (the engine is a platform substrate); Modules own policies (e.g. Spec 004's tax-compliance-policy bundle); Tenants own parameters via env vars. Policy before Agent is no longer "we agreed" — it's the system enforcing.
 
+**The Tax & Compliance Guard has shipped (Phase 3 capability, Spec 004 v1.0).** The Module — `@daedalus/tax-compliance-guard` — is a **guard, not an engine**. It watches financial events, computes deadlines, and emits the obligation lifecycle (`ObligationDue` / `ObligationMet` / `ObligationMissed` / `ObligationEvaluationRecorded`). It owns no jurisdiction-specific content; that lives in Tenant RuleSets (Spec 010 process) and the tax-compliance-policy bundle. The system **guards**; the human claims compliance. See [Spec 004](../specs/004-tax-compliance-guard/spec.md) §13 (🚩 Compliance Flag).
+
 > The `Lead → Payment` value chain is the **first reference workflow** for validation, **not** the universal lifecycle of every organization. The universal root entity is deliberately deferred — see [ADR-001](../governance/decisions/ADR-001-defer-root-entity-selection.md).
 
 ### Modules — reusable

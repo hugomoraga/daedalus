@@ -1,6 +1,6 @@
 # Tasks — Tax & Compliance Guard (Module)
 
-**Status:** Build **authorized** — Spec 004 v1.0.0 + Plan 004 v1.0.0 ratified 2026-06-22 (governance PR #51, branch `051-spec004-tax-compliance-ratify-pack`). All 4 unblockers (B1, B2, B3, B4) built. T-01..T-20 ready to build in branch `052-spec004-tax-compliance-implementation`.
+**Status:** ✅ **SHIPPED** — Spec 004 v1.0.0 + Plan 004 v1.0.0 ratified 2026-06-22 (governance PR #52, branch `051-spec004-tax-compliance-ratify-pack`). T-01..T-20 implemented 2026-06-22 (impl PR #53, branch `052-spec004-tax-compliance-implementation`). All 4 unblockers built; 164/164 tests + 4 lint scripts green.
 **Derives from:** [Spec 004](./spec.md) + [Plan 004](./plan.md)
 **Conforms to:** [Technical Principles](../../memory/technical-principles.md), [ADR-002](../../governance/decisions/ADR-002-adopt-technical-framework.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md), [Spec 008](../008-jurisdiction-model/spec.md), [Spec 009](../009-policy-engine/spec.md), [Spec 010](../010-authoritative-rule-source/spec.md)
 **Version:** 1.0.0

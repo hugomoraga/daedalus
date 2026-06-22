@@ -51,19 +51,23 @@ If a task legitimately needs one of these (e.g. "triage the open architecture re
 ## Git & collaboration protocol
 
 - **One agent per branch at a time.** Coordinate via PRs, never edit the same branch concurrently.
-- Branch names: `NNN-short-slug` (e.g. `006-revenue-visibility`).
+- **One worktree per session** ([ADR-008](governance/decisions/ADR-008-worktree-per-session.md)). Every agent session runs in its own `git worktree` bound to one branch — a `git checkout` in one worktree cannot wipe another's working tree. Bootstrap with [`tools/scripts/new-session.sh`](tools/scripts/new-session.sh). Detailed worked example: [`docs/agent-orchestration.md`](docs/agent-orchestration.md).
+- Branch names: `NNN-short-slug` (e.g. `006-revenue-visibility`). Optional `-<agent-tag>` suffix for provenance (e.g. `050-atlas-spec-ratify-claude`).
 - **A PR for every change.** Direct pushes to `main` are not allowed; `main` is the default branch.
 - **An ADR** (`governance/decisions/ADR-NNN-*.md`) for any structural/architectural decision or deviation from these principles.
 - PR descriptions are the async handoff: state *what changed*, *acceptance results*, and *open decisions*.
+- **Before any in-worktree checkout** (rare with the worktree pattern, but possible for cross-branch reads), commit or stash first. Git's `pre-checkout` hook fires *after* the worktree update and cannot prevent loss of uncommitted edits (verified empirically on git 2.53 — see [ADR-008 §4](governance/decisions/ADR-008-worktree-per-session.md)).
 
 ## Never commit
 
-- `.data/` (runtime event logs / work-areas) — gitignored.
+- `.data/` (runtime event logs / work-areas) — gitignored. Each worktree has its own `.data/`; tests are isolated by `mkdtemp` per the existing helpers.
 - Secrets / API keys / tokens (use env vars or a secret manager).
 - Real tenant data or PII of any kind.
 
 ## Using multiple agents
 
-Pick the agent per task (e.g. opencode for fast local iteration, Claude Code for spec/ADR-driven slices, a reviewer agent for adversarial review). They stay consistent because they all read this file + the canon. Tool-specific config:
+Pick the agent per task (e.g. opencode for fast local iteration, Claude Code for spec/ADR-driven slices, a reviewer agent for adversarial review). They stay consistent because they all read this file + the canon. **Each agent session runs in its own `git worktree`** (per [ADR-008](governance/decisions/ADR-008-worktree-per-session.md)) so multiple agents can work in parallel without stepping on each other. Tool-specific config:
 - **opencode:** reads `AGENTS.md` automatically; see [`opencode.json`](opencode.json) for shared instructions. Define custom agents/modes per opencode docs.
 - **Claude Code:** `CLAUDE.md` imports this file.
+
+Worked example of the multi-agent flow (open new session → bootstrap worktree → commit → push → PR → cleanup): [`docs/agent-orchestration.md`](docs/agent-orchestration.md).

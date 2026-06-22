@@ -1,7 +1,7 @@
 # ADR-008 — Worktree-per-session for parallel agents + branch-ownership protocol
 
-**Status:** Accepted
-**Date:** 2026-06-22
+**Status:** Accepted; Amended 2026-06-22 — §1 worktree location moved from sibling (`../daedalus-<slug>/`) to in-repo (`.worktrees/<slug>/`). See [Amendment](#amendment--2026-06-22-in-repo-worktrees) below.
+**Date:** 2026-06-22 (amended same day)
 **Deciders:** Stewards
 **Trigger:** Two work-loss incidents in a single session (2026-06-22): a Spec 007 ratification commit was nearly lost to a `git reset` after an auto-branch-switch; a path-cleanup set of uncommitted edits was wiped by the same pattern.
 **Related:** [AGENTS.md](../../AGENTS.md), [Constitution](../../memory/constitution.md) (Principle 4 — *Auditability by Default*), [ADR-003](./ADR-003-modular-monorepo.md) (workspace layout), [ADR-004](./ADR-004-export-discipline-and-lineage.md) (commit-as-contract), [ADR-007](./ADR-007-theia-as-tools-directory.md) (recent parallel-session precedent).
@@ -48,15 +48,15 @@ The cost of the status quo is **lost work + redo cycles** in the very workflow t
 Every agent session runs in its **own** `git worktree` — a separate physical checkout bound to one branch.
 
 ```bash
-# Setup (one time per session)
-git worktree add ../daedalus-atlas   -b 050-atlas-spec-ratify   main
-git worktree add ../daedalus-spec004 -b 052-spec004-impl        main
-git worktree add ../daedalus-theia   -b 058-spec012-impl-pr1    main
+# Setup (one time per session, from the main checkout)
+git worktree add .worktrees/atlas   -b 050-atlas-spec-ratify   main
+git worktree add .worktrees/spec004 -b 052-spec004-impl        main
+git worktree add .worktrees/theia   -b 058-spec012-impl-pr1    main
 ```
 
 - Each worktree has its **own** working tree, **own** `.data/`, **own** `node_modules/` (via npm workspaces).
 - A `git checkout` in one worktree does **not** touch the others. Sessions cannot wipe each other.
-- `.git/worktrees/<name>/` tracks the binding; cleanup is `git worktree remove`.
+- `.git/worktrees/<name>/` tracks the binding; cleanup is `git worktree remove .worktrees/<slug>`. The `.worktrees/` directory itself is gitignored — it is a parent for session checkouts, not a tracked folder.
 
 ### 2. **Branch ownership is one-session-at-a-time**
 
@@ -114,9 +114,8 @@ A single shell script does the worktree setup + initial `npm install`:
 
 ```bash
 tools/scripts/new-session.sh 056 atlas-path-cleanup
-# → creates worktree ../daedalus-atlas-path-cleanup on branch 056-atlas-path-cleanup
+# → creates worktree .worktrees/atlas-path-cleanup on branch 056-atlas-path-cleanup
 # → prints "Next steps" instructions
-# → exits 0 on success, non-zero with explanation on conflict
 ```
 
 It refuses to clobber an existing worktree or branch (uses `git worktree list --porcelain` to detect collisions). The script is the **operational** counterpart of the ADR's structural decision.
@@ -150,17 +149,17 @@ This ADR does **not** amend the Constitution, Technical Principles, or Identity.
 ## Migration
 
 **Immediate (no ceremony):**
-- A one-line script `tools/scripts/new-session.sh` (or alias) that does `git worktree add ../daedalus-<name> -b <branch> main` and `cd`s into it.
+- A one-line script `tools/scripts/new-session.sh` (or alias) that does `git worktree add .worktrees/<slug> -b <branch> main` and `cd`s into it.
 - Each new session calls this script before starting work.
-- Existing branches (without a worktree) remain valid; the user can `git worktree add <path> <existing-branch>` to bind them when convenient.
+- Existing branches (without a worktree) remain valid; the user can `git worktree add .worktrees/<slug> <existing-branch>` to bind them when convenient.
 
 **CI / scripts:**
 - `npm install` in each worktree (npm workspaces handles symlinks across worktrees, but a fresh `npm install` per worktree is the safe default).
 - The `npm test` and lint scripts are unchanged; they operate on the working tree they're invoked from.
 
 **Cleanup on session close:**
-- `git worktree remove <path>` once the PR is merged (or when the session is abandoned).
-- Stale worktrees are listed by `git worktree list` and pruned periodically.
+- `git worktree remove .worktrees/<slug>` once the PR is merged (or when the session is abandoned).
+- Stale worktrees are listed by `git worktree list` and pruned periodically. The `.worktrees/` directory itself is gitignored and never enters version control, so a `git worktree remove` is the only cleanup needed.
 
 ---
 
@@ -194,6 +193,48 @@ This ADR does **not** amend the Constitution, Technical Principles, or Identity.
 - [x] **Decision 5 contradiction resolved.** The original §5 proposed a `.data/agents/<session-id>/branch.json` log, which is structurally broken because `.data/` is per-worktree (§6) — a per-worktree log cannot communicate across sessions. Replaced with `git worktree list --porcelain` (git's built-in bookkeeping) as the coordination mechanism. `tools/scripts/new-session.sh` already uses this for collision detection.
 - [x] **Stale `pre-checkout` reference removed from Consequences.** The original draft mentioned a "pre-checkout hook that auto-commits"; Decision 4 explicitly ships no such hook. Rewrite clarifies that the worktree is the structural fix and no automated save is provided.
 - [x] **Branch-ownership rule clarified as convention-enforced** (Decision 2 now states: enforced by `tools/scripts/new-session.sh` collision check + git's own per-branch worktree invariant, **not** by a pre-commit hook — the rule is social, not tool-enforced).
+
+---
+
+## Amendment — 2026-06-22 (in-repo worktrees)
+
+**What changed.** §1, §7, and the *Migration* section now specify that worktrees live **inside the main repo** at `.worktrees/<slug>/` instead of as siblings at `../daedalus-<slug>/`. The bootstrap script `tools/scripts/new-session.sh` was updated; `.gitignore` now excludes `.worktrees/`.
+
+**Why.**
+1. **Sibling worktrees polluted the user's `Proyectos/` folder.** Every new session spawned a `daedalus-<slug>` directory next to the main repo, and pruning fell on the user. With several parallel sessions, the parent folder accumulates fast and obscures which directories are real projects vs transient session artifacts.
+2. **Bootstrap asked for permission unnecessarily.** Because the sibling path crossed into "the user's filesystem outside the repo", agents bootstrapping a new worktree defaulted to confirming with the user before running the script. An in-repo, gitignored path is structurally self-contained — no filesystem boundary crossed — so the bootstrap becomes a one-line, no-ask operation.
+3. **Precedent.** Large repos (Linux kernel, git itself, GitHub monorepo tooling) keep worktrees under a gitignored subdirectory of the main checkout precisely for this reason.
+
+**Tradeoffs accepted.**
+- Tools that walk the repo tree (`find`, lint, snapshot tests, anything that lists files) must skip `.worktrees/`. The audit accompanying this amendment verified that **no code path walks from the repo root**: every existing walker is scoped to a specific subdirectory (`packages/core/src`, `config/rulesets`, `specs`, `governance/decisions`, `tools/theia/src`, etc.). All of those are siblings of `.worktrees/`, not parents of it, so none can descend into a worktree. **No walker code changes were required.**
+- The main checkout is co-located with worktrees; the convention is "the root of the repo is the main checkout, anything under `.worktrees/<slug>/` is a session." `git status` from the root shows only the main checkout's working tree (worktrees have their own status).
+- A worktree path that lives inside the same physical repo can confuse newcomers. Mitigation: the bootstrap script prints the absolute worktree path on success, and `AGENTS.md` is the entry point for any agent reading the protocol.
+
+**Migration of existing worktrees.** None. Sibling worktrees already on disk (e.g. `../daedalus-atlas-path-cleanup`) stay where they are and are pruned through the existing `git worktree remove <abs-path>` flow when their PR merges. Only **new** worktrees go to `.worktrees/<slug>/`. There is no script to move old worktrees; the cost is negligible (each is one branch, will be deleted at PR merge), and the alternative — moving worktrees mid-session — risks losing uncommitted edits.
+
+**Bootstrap script change.** `tools/scripts/new-session.sh` replaces
+
+```bash
+WORKTREE_PATH="${WORKTREE_PARENT}/${REPO_NAME}-${SLUG}"
+```
+
+with
+
+```bash
+WORKTREE_PATH="${REPO_ROOT}/.worktrees/${SLUG}"
+```
+
+The unused `REPO_NAME` and `WORKTREE_PARENT` variables were removed.
+
+**.gitignore.** Added a section excluding `.worktrees/` (with a reference back to this ADR), placed next to the existing `.data/` rule because both serve the same purpose: per-session, never-tracked state.
+
+**Acceptance (this amendment).**
+- [x] §1, §7, and *Migration* updated to reference `.worktrees/<slug>/`.
+- [x] `tools/scripts/new-session.sh` creates worktrees at `.worktrees/<slug>/` and refuses to clobber.
+- [x] `.gitignore` excludes `.worktrees/`.
+- [x] Repo-tree walkers audited (none walk from root; no code changes required — see "Tradeoffs accepted" above).
+- [x] `npm test` green from the main checkout with `.worktrees/` present and empty.
+- [x] No change to Constitution, Technical Principles, or Identity — this amendment is operational governance only, same as the original.
 
 ---
 

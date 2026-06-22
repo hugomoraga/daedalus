@@ -2,9 +2,9 @@
 
 **Status:** v0 composition slice **shipped & green** · v1 lifecycle **shipped & green** (PR #13 — `011-revenue-visibility-v1`, merged `ead20b9`)
 **Derives from:** [Spec 001](./spec.md) + [Plan 001](./plan.md) (v0.2.0, full slice)
-**Conforms to:** [Technical Principles](../../memory/technical-principles.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md)
-**Version:** 0.3.0
-**Last updated:** 2026-06-15
+**Conforms to:** [Conventions](../../tools/theia/CONVENTIONS.md), [Technical Principles](../../memory/technical-principles.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md)
+**Version:** 1.0.0
+**Last updated:** 2026-06-22
 
 > The `/tasks` step for Revenue Visibility. Tasks map to Spec 001 acceptance criteria. **Both v0 and v1 are shipped.** No task currently pending within Spec 001 scope; the remaining items in this file are forward-planning, not a build authorization.
 
@@ -19,13 +19,11 @@
 
 ## 2. v0 composition slice — DONE
 
-| ID | Task | Spec AC | Status |
-|---|---|---|---|
-| T-01 | React to `ProposalGenerated`; emit derived `RevenueEstimateCreated` (`expected`) with `followFrom()` lineage | AC-2 | ✅ |
-| T-02 | Idempotency: a `ProposalGenerated` whose `proposalId` already has an estimate is skipped (no double-count) | AC-3 (R1) | ✅ |
-| T-03 | Read-model `projectExpectedRevenue(events)` — total + count, reconstructable by replay; viewing emits no event | AC-5, AC-8 | ✅ |
-| T-04 | Tenant isolation of estimates | AC-9 | ✅ |
-| T-05 | CLI wiring `revenue:ingest` as an explicit, replayable reactor (no event bus) | — | ✅ |
+- [x] T-01: React to `ProposalGenerated`; emit derived `RevenueEstimateCreated` (`expected`) with `followFrom()` lineage (AC-2)
+- [x] T-02: Idempotency: a `ProposalGenerated` whose `proposalId` already has an estimate is skipped (no double-count) (AC-3, R1)
+- [x] T-03: Read-model `projectExpectedRevenue(events)` — total + count, reconstructable by replay; viewing emits no event (AC-5, AC-8)
+- [x] T-04: Tenant isolation of estimates (AC-9)
+- [x] T-05: CLI wiring `revenue:ingest` as an explicit, replayable reactor (no event bus)
 
 ---
 
@@ -33,19 +31,17 @@
 
 Spec 001's full module: expected → confirmed → received lifecycle, expenses, financial summary, alerts, snapshots. Shipped in PR #13.
 
-| ID | Task | Spec AC | Status |
-|---|---|---|---|
-| T-06 | Manual revenue: standalone `RevenueEstimateCreated` (no Core link) + `RevenueEstimateUpdated` | AC-1 | ✅ |
-| T-07 | Lifecycle: `RevenueConfirmed` (manual) + reactor from Core `ProposalApproved`; `RevenueReceived` (manual) + reactor from Core `PaymentReceived`. Single-owner rule (no double-count) | AC-3, R1 | ✅ |
-| T-08 | `ExpenseRegistered`; expenses reduce margin and runway | AC-4 | ✅ |
-| T-09 | `FinancialSummary` projection: expected/confirmed/received separated + margin + basic state | AC-5 | ✅ |
-| T-10 | Simple runway: `runway_months = received_total / max(expenses_per_month, 1)` over trailing period (Q3 resolved) | AC-5 | ✅ |
-| T-11 | Alert rules: `low_runway`, `revenue_concentration`, `negative_cashflow` (emit-once-until-clear, thresholds tenant-injected) | AC-6 | ✅ |
-| T-12 | `RevenueSnapshotGenerated` (manual snapshot carrying current summary in payload) | AC-7 | ✅ |
-| T-13 | **Core additions (required for T-07):** add `ProposalApproved` + `PaymentReceived` event types and minimal use cases (`approve-proposal`, `record-payment`) | — | ✅ |
-| T-14 | AlertThresholdsPort + TenantConfigThresholdsAdapter (tenant injects thresholds via `config/tenants/`) | — | ✅ |
-| T-15 | CLI v1 commands: `revenue:update`, `revenue:confirm`, `revenue:receive`, `revenue:summary`, `revenue:snapshot`, `revenue:alerts`, `expense:register`, `proposal:approve`, `payment:record` | — | ✅ |
-| T-16 | Tests: AC-1..AC-9 of Spec 001 + Core additions (replay reconstruction, no double-count, alerts emit-once-until-clear) | AC-1..AC-9 | ✅ |
+- [x] T-06: Manual revenue: standalone `RevenueEstimateCreated` (no Core link) + `RevenueEstimateUpdated` (AC-1)
+- [x] T-07: Lifecycle: `RevenueConfirmed` (manual) + reactor from Core `ProposalApproved`; `RevenueReceived` (manual) + reactor from Core `PaymentReceived`. Single-owner rule (no double-count) (AC-3, R1)
+- [x] T-08: `ExpenseRegistered`; expenses reduce margin and runway (AC-4)
+- [x] T-09: `FinancialSummary` projection: expected/confirmed/received separated + margin + basic state (AC-5)
+- [x] T-10: Simple runway: `runway_months = received_total / max(expenses_per_month, 1)` over trailing period (Q3 resolved) (AC-5)
+- [x] T-11: Alert rules: `low_runway`, `revenue_concentration`, `negative_cashflow` (emit-once-until-clear, thresholds tenant-injected) (AC-6)
+- [x] T-12: `RevenueSnapshotGenerated` (manual snapshot carrying current summary in payload) (AC-7)
+- [x] T-13: **Core additions (required for T-07):** add `ProposalApproved` + `PaymentReceived` event types and minimal use cases (`approve-proposal`, `record-payment`)
+- [x] T-14: AlertThresholdsPort + TenantConfigThresholdsAdapter (tenant injects thresholds via `config/tenants/`)
+- [x] T-15: CLI v1 commands: `revenue:update`, `revenue:confirm`, `revenue:receive`, `revenue:summary`, `revenue:snapshot`, `revenue:alerts`, `expense:register`, `proposal:approve`, `payment:record`
+- [x] T-16: Tests: AC-1..AC-9 of Spec 001 + Core additions (replay reconstruction, no double-count, alerts emit-once-until-clear) (AC-1..AC-9)
 
 ### v1 evidence run (executed)
 

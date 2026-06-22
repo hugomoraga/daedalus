@@ -44,7 +44,7 @@ export const HELP = [
   "  revenue:alerts   --tenant <id>",
   "  human:approve   --tenant <id> --workflow <w> --instance <corr>",
   "  human:reject    --tenant <id> --workflow <w> --instance <corr> --reason <r>",
-  "  events          --tenant <id>",
+  "  events          --tenant <id> [--limit <n>] [--tail]",
 ].join("\n");
 
 export function renderHelp(): void {

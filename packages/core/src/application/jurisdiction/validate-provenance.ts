@@ -9,7 +9,7 @@ import { RuleSetProvenanceMissing } from "./ports/rule-set-loader-port.ts";
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}/;
 
 export function validateProvenance(ruleSet: RuleSet): void {
-  checkOne(ruleSet.ref.source, `RuleSet(${ruleSet.ref.ruleSetId}@${ruleSet.ref.version}).ref.source`);
+  checkOne(ruleSet.ref.provenance, `RuleSet(${ruleSet.ref.ruleSetId}@${ruleSet.ref.version}).ref.provenance`);
   for (const obligation of ruleSet.obligations) {
     checkOne(
       obligation.provenance,

@@ -6,3 +6,4 @@ export { InMemoryJurisdictionAdapter } from "./jurisdiction/in-memory-jurisdicti
 export { FilesystemRuleSetLoaderAdapter } from "./jurisdiction/filesystem-rule-set-loader.ts";
 export { InMemoryPolicyStore } from "./policy/in-memory-policy-store.ts";
 export { FilesystemPolicyStore } from "./policy/filesystem-policy-store.ts";
+export { defaultStalenessConfig } from "./rule-source/default-staleness-config.ts";

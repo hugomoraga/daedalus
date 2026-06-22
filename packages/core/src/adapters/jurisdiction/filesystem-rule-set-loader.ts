@@ -49,7 +49,7 @@ function isRuleSetFile(value: unknown): value is RuleSetFile {
     typeof r["ruleSetId"] === "string" &&
     typeof r["version"] === "string" &&
     typeof r["effectiveFrom"] === "string" &&
-    typeof r["source"] === "object" &&
+    typeof r["provenance"] === "object" &&
     Array.isArray(v["obligations"])
   );
 }
@@ -98,7 +98,7 @@ export class FilesystemRuleSetLoaderAdapter implements RuleSetLoaderPort {
         ruleSetId: parsed.ref.ruleSetId,
         version: parsed.ref.version,
         effectiveFrom: parsed.ref.effectiveFrom,
-        source: parsed.ref.source,
+        provenance: parsed.ref.provenance,
         obligationsUri: ruleSetRef.obligationsUri,
       },
       obligations: parsed.obligations,

@@ -147,3 +147,48 @@ export {
   type EvaluateAndRecordInput,
   type EvaluateAndRecordResult,
 } from "./application/policy/evaluate-and-record-policy.ts";
+
+// Authoritative Rule Source (Spec 010) — process + 4 events. The
+// mechanical guard (refuse-to-load without provenance) shipped in Spec 008;
+// this v1.0 ratifies the process, the 4 events, and the staleness sweep.
+
+// Domain types
+export { RuleSetRegistered } from "./domain/rule-source/rule-set-registered.ts";
+export type { RuleSetRegisteredPayload } from "./domain/rule-source/rule-set-registered.ts";
+export { RuleSetSuperseded } from "./domain/rule-source/rule-set-superseded.ts";
+export type { RuleSetSupersededPayload } from "./domain/rule-source/rule-set-superseded.ts";
+export { RuleSetStale } from "./domain/rule-source/rule-set-stale.ts";
+export type { RuleSetStalePayload } from "./domain/rule-source/rule-set-stale.ts";
+export { ObligationCoverageGap } from "./domain/rule-source/obligation-coverage-gap.ts";
+export type {
+  ObligationCoverageGapPayload,
+  ObligationCoverageGapReason,
+  CandidateRuleSet,
+} from "./domain/rule-source/obligation-coverage-gap.ts";
+export {
+  DEFAULT_STALENESS_THRESHOLDS_MONTHS,
+  ageInMonths,
+  isStale,
+  type StalenessConfig,
+} from "./domain/rule-source/staleness.ts";
+
+// Application — use cases
+export {
+  registerRuleSetUseCase,
+  type RegisterRuleSetInput,
+} from "./application/rule-source/register-rule-set.ts";
+export {
+  supersedeRuleSetUseCase,
+  type SupersedeRuleSetInput,
+} from "./application/rule-source/supersede-rule-set.ts";
+export {
+  sweepStalenessUseCase,
+  type SweepStalenessInput,
+  type SweepStalenessResult,
+} from "./application/rule-source/sweep-staleness.ts";
+export {
+  listRuleSourcesUseCase,
+  type ListRuleSourcesResult,
+  type RuleSourceRow,
+  type RuleSourceStatus,
+} from "./application/rule-source/list-rule-sources.ts";

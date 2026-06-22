@@ -18,6 +18,7 @@ import { handlers as opportunityHandlers } from "./commands/opportunity.ts";
 import { handlers as revenueHandlers } from "./commands/revenue.ts";
 import { handlers as workflowHandlers } from "./commands/workflow.ts";
 import { handlers as eventsHandlers } from "./commands/events.ts";
+import { handlers as rulesHandlers } from "./commands/rules.ts";
 import type { CommandHandler, Deps } from "./commands/types.ts";
 
 const DATA_DIR = ".data";
@@ -44,6 +45,7 @@ const HANDLERS = new Map<string, CommandHandler>(
     ...revenueHandlers,
     ...workflowHandlers,
     ...eventsHandlers,
+    ...rulesHandlers,
   ],
 );
 
@@ -72,6 +74,8 @@ async function main(): Promise<void> {
       notes: { type: "string" },
       workflow: { type: "string" },
       instance: { type: "string" },
+      ruleset: { type: "string" },
+      file: { type: "string" },
       limit: { type: "string" },
       tail: { type: "boolean" },
     },

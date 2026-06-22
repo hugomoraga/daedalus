@@ -23,6 +23,9 @@ Then open `http://localhost:8788/t/tenant-0/welcome`.
 | `GET`  | `/t/<tenantId>/health` | System Health — event count, type distribution, SHA-256 replay integrity |
 | `GET`  | `/t/<tenantId>/throughput` | Throughput — events-per-day with hand-drawn SVG bars |
 | `GET`  | `/t/<tenantId>/monitoring` | Monitoring — FinancialSummary (Revenue Visibility v1) + alerts |
+| `GET`  | `/t/<tenantId>/active-processes` | Active Processes — live workflow instances, sorted by age desc (Spec 011) |
+| `GET`  | `/t/<tenantId>/queue-status` | Queue Status — per-workflow active/waiting counts + 24h totals (Spec 011) |
+| `GET`  | `/t/<tenantId>/workflow-metrics` | Workflow Metrics — completion/compensation + avg time-to-complete, 24h window (Spec 011) |
 | Other | any | `405` with the equivalent CLI command |
 
 Panels whose backing model doesn't exist (e.g. `processes`, `queue`, `integrations`) return 404 (Spec 007 AC-6 — absent, not empty).

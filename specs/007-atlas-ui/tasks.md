@@ -55,15 +55,15 @@ Activates when v0 ships and Revenue Visibility v1 projections are stable.
 
 ---
 
-## 4. Phase 2 — ⛔ BLOCKED (workflow engine shipped; ATLAS projections not yet exposed)
+## 4. Phase 2 — ✅ SHIPPED (PR #56, branch `054-atlas-workflow-panels`)
 
-The workflow engine (Spec 008) shipped in PR #40. The projections ATLAS needs (`active-processes`, `queue-status`, `workflow-metrics`) are not yet exposed through the engine's public contract; that follow-on work is its own spec, not part of this one.
+The workflow engine projections ATLAS needed were defined in Spec 011 and shipped via PR #54. ATLAS's T-20..T-22 wire-up landed in PR #56: three new panels, registered in `apps/atlas/src/panels/register.ts`, backed by `JsonlInstanceStoreAdapter` + the three pure projection functions from `@daedalus/workflow-engine`.
 
-| ID | Task | Blocked by | Status |
+| ID | Task | Spec AC | Status |
 |---|---|---|---|
-| T-20 | `panels/active-processes.ts` — Workflow engine backing model | Workflow engine projections for ATLAS not yet spec'd | ⛔ |
-| T-21 | `panels/queue-status.ts` — Event bus backing model | Workflow engine projections for ATLAS not yet spec'd | ⛔ |
-| T-22 | `panels/workflow-metrics.ts` — Workflow execution metrics | Workflow engine projections for ATLAS not yet spec'd | ⛔ |
+| T-20 | `panels/active-processes.ts` — Workflow engine backing model | live instances sorted by ageMs desc | ✅ |
+| T-21 | `panels/queue-status.ts` — Event bus backing model | per-workflow counts + 24h totals | ✅ |
+| T-22 | `panels/workflow-metrics.ts` — Workflow execution metrics | windowed completion/compensation + avg | ✅ |
 
 ---
 

@@ -11,6 +11,9 @@ import { renderLogsPanel } from "./logs.ts";
 import { renderHealthPanel } from "./health.ts";
 import { renderThroughputPanel } from "./throughput.ts";
 import { renderMonitoringPanel } from "./monitoring.ts";
+import { renderActiveProcessesPanel } from "./active-processes.ts";
+import { renderQueueStatusPanel } from "./queue-status.ts";
+import { renderWorkflowMetricsPanel } from "./workflow-metrics.ts";
 
 export type PanelContext = {
   tenant: TenantContext;
@@ -67,6 +70,24 @@ export const PANELS: ReadonlyArray<Panel> = [
     label: "Monitoring",
     backingModel: "revenue-visibility.projectFinancialSummary + alerts",
     render: async (ctx) => renderMonitoringPanel(ctx, ctx.deps),
+  },
+  {
+    slug: "active-processes",
+    label: "Active Processes",
+    backingModel: "workflow-engine.instanceStore.list + projectActiveProcesses",
+    render: async (ctx) => renderActiveProcessesPanel(ctx, ctx.deps),
+  },
+  {
+    slug: "queue-status",
+    label: "Queue Status",
+    backingModel: "workflow-engine.instanceStore.list + projectQueueStatus",
+    render: async (ctx) => renderQueueStatusPanel(ctx, ctx.deps),
+  },
+  {
+    slug: "workflow-metrics",
+    label: "Workflow Metrics",
+    backingModel: "workflow-engine.instanceStore.list + projectWorkflowMetrics (24h window)",
+    render: async (ctx) => renderWorkflowMetricsPanel(ctx, ctx.deps),
   },
 ];
 

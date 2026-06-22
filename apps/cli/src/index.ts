@@ -72,6 +72,8 @@ async function main(): Promise<void> {
       notes: { type: "string" },
       workflow: { type: "string" },
       instance: { type: "string" },
+      limit: { type: "string" },
+      tail: { type: "boolean" },
     },
   });
 

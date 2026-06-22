@@ -2,6 +2,10 @@
 # Never committed: no real tenant data / PII in version control (Technical Principles).
 .data/
 
+# Local environment — real tenant values (currency overrides, jurisdiction
+# profile fields, provenance verifiedBy identity). NEVER commit (PII risk).
+.env
+
 # Node
 node_modules/
 npm-debug.log*

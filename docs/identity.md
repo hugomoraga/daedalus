@@ -80,6 +80,17 @@ Capabilities that solve a class of pain. A module may be **born** from Tenant 0'
 ### Tenants — specific
 A concrete organization Daedalus operates. A tenant supplies a **profile** (which modules it uses, its parameters, its context) and its own isolated data. **Tenant 0** is the founder's independent activity — see the [Tenant 0 Profile](../blueprints/tenants/tenant-0-founder-profile.md).
 
+#### Tenant values: env-var pattern (binding)
+
+Tenant-specific values — currency, enabled modules, alert thresholds, and (for [Spec 008](../specs/008-jurisdiction-model/spec.md)) the jurisdiction profile — are **parametrizable, not hardcoded**:
+
+- The committed TypeScript module (`config/tenants/tenant-0.ts` or `tenant-0.jurisdiction.ts`) declares the **shape** and reads from `process.env` with sensible defaults. Without a `.env`, the defaults reproduce pre-env behavior.
+- Real values live in `.env` (gitignored — PII risk; never commit).
+- `.env.example` is committed and documents the schema.
+- No `dotenv` dependency — pure `process.env`.
+
+This keeps PII (`verifiedBy`, identity-bearing provenance) out of git history and lets a new machine clone, copy `.env.example` → `.env`, fill in values, and run. See Spec 008 Plan §4.1 + §4.2.
+
 ---
 
 ## 6. The Litmus Test for "Where Does This Belong?"

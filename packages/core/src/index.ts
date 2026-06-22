@@ -70,3 +70,45 @@ export { issueInvoiceUseCase } from "./application/issue-invoice.ts";
 export { sendInvoiceUseCase } from "./application/send-invoice.ts";
 export { payInvoiceUseCase } from "./application/pay-invoice.ts";
 export { markInvoiceOverdueUseCase } from "./application/overdue-invoice.ts";
+
+// Jurisdiction Model (Spec 008) — Core capability, tenant-agnostic shape.
+// The Core defines the shape; the Tenant supplies values via env vars
+// (see config/tenants/tenant-0.jurisdiction.ts and Plan 008 §4.1).
+
+// Domain types
+export type {
+  JurisdictionRef,
+  FiscalCalendar,
+  JurisdictionProfile,
+} from "./domain/jurisdiction/jurisdiction-profile.ts";
+export type { RuleSourceKind, RuleProvenance } from "./domain/jurisdiction/rule-provenance.ts";
+export type {
+  RuleSetRef,
+  ObligationTrigger,
+  ObligationDeadline,
+  ObligationSpec,
+  RuleSet,
+} from "./domain/jurisdiction/rule-set.ts";
+export { JurisdictionProfileChanged } from "./domain/jurisdiction/jurisdiction-profile-changed.ts";
+export type { JurisdictionProfileChangedPayload } from "./domain/jurisdiction/jurisdiction-profile-changed.ts";
+
+// Application — ports, pure functions, use case
+export type { JurisdictionPort } from "./application/jurisdiction/ports/jurisdiction-port.ts";
+export type { RuleSetLoaderPort } from "./application/jurisdiction/ports/rule-set-loader-port.ts";
+export {
+  RuleSetProvenanceMissing,
+  RuleSetNotFound,
+  RuleSetVersionMismatch,
+} from "./application/jurisdiction/ports/rule-set-loader-port.ts";
+export { validateProvenance } from "./application/jurisdiction/validate-provenance.ts";
+export {
+  resolveJurisdiction,
+  profileRef,
+  type ResolvedJurisdiction,
+} from "./application/jurisdiction/resolve-jurisdiction.ts";
+export { recordProfileChange } from "./application/jurisdiction/record-profile-change.ts";
+
+// Adapters — in-memory (default + tests) and filesystem (ruleset content).
+// Imported via the `./adapters` subpath (ADR-004) by composition roots.
+export { InMemoryJurisdictionAdapter } from "./adapters/jurisdiction/in-memory-jurisdiction.ts";
+export { FilesystemRuleSetLoaderAdapter } from "./adapters/jurisdiction/filesystem-rule-set-loader.ts";

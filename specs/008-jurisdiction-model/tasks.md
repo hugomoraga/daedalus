@@ -1,12 +1,82 @@
 # Tasks — Jurisdiction Model (Core)
 
-**Status:** Build **authorized** — Spec 008 v1.0.0 + Plan 008 v1.0.0 ratified 2026-06-21 (governance PR #33). J-01..J-18 ready to build in branch `031-spec008-jurisdiction-implementation`.
+**Status:** v1 **SHIPPED** — Spec 008 v1.0.0 + Plan 008 v1.0.0 + 19 tasks ✅ (PR #35, branch `031-spec008-jurisdiction-implementation`).
 **Derives from:** [Spec 008](./spec.md) + [Plan 008](./plan.md)
 **Conforms to:** [Technical Principles](../../memory/technical-principles.md), [ADR-002](../../governance/decisions/ADR-002-adopt-technical-framework.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md)
-**Version:** 1.0.0
+**Version:** 1.1.0
 **Last updated:** 2026-06-21
 
-> Tasks map to Spec 008 acceptance. Each task states what verifiable artifact it produces. The activation criteria are met (governance ratified; Spec 008 Build authorized); implementation is unblocked.
+> Tasks map to Spec 008 acceptance. v1 is shipped; Spec 004's B1 row marked closed. Phase 3 follow-on (Policy Engine integration into the workflow engine's policy seam) is forward-planning only.
+
+---
+
+## Phase A — Types and contracts ✅
+
+| ID | Task | Status |
+|---|---|---|
+| J-01 | `RuleProvenance` type | ✅ |
+| J-02 | `ObligationSpec`, `RuleSet`, `RuleSetRef` types | ✅ |
+| J-03 | `JurisdictionProfile`, `FiscalCalendar`, `JurisdictionRef` | ✅ |
+| J-04 | `JurisdictionPort` interface | ✅ |
+| J-05 | `RuleSetLoaderPort` interface + error classes | ✅ |
+
+## Phase B — Core resolution and provenance enforcement ✅
+
+| ID | Task | Status |
+|---|---|---|
+| J-06 | `validateProvenance(ruleSet)` pure function | ✅ |
+| J-07 | `resolveJurisdiction(...)` pure function | ✅ |
+| J-08 | `JurisdictionProfileChanged` domain event + `recordProfileChange` use case | ✅ |
+
+## Phase C — Default adapters ✅
+
+| ID | Task | Status |
+|---|---|---|
+| J-09 | `InMemoryJurisdictionAdapter` | ✅ |
+| J-10 | `FilesystemRuleSetLoaderAdapter` | ✅ |
+
+## Phase D — Tenant layer ✅
+
+| ID | Task | Status |
+|---|---|---|
+| J-11 | `config/rulesets/tenant-0/` placeholder + README | ✅ |
+| J-12 | `config/jurisdiction/keywords.txt` | ✅ |
+| J-13 | No `config/tenants/tenant-0.jurisdiction.ts` in this phase (founder's task, env-var pattern) | ⏭️ (intentional non-task) |
+| J-13.1 | `.gitignore .env` + `.env.example` schema | ✅ |
+
+## Phase E — Conformance & tests ✅
+
+| ID | Task | Status |
+|---|---|---|
+| J-14 | `tests/jurisdiction-model.test.ts` — 8 cases | ✅ |
+| J-15 | `scripts/check-core-jurisdiction-agnostic.mjs` wired into `npm test` | ✅ |
+| J-16 | `scripts/check-rulesets-have-provenance.mjs` wired into `npm test` | ✅ |
+
+## Phase F — Documentation & unblock ✅
+
+| ID | Task | Status |
+|---|---|---|
+| J-17 | Spec 004 §4 B1 marked ✅ Closed | ✅ |
+| J-18 | `config/tenants/tenant-0.ts` refactored to env vars | ✅ |
+| J-19 | `docs/identity.md` records env-var pattern as binding | ✅ |
+
+---
+
+## Done criteria (all met)
+
+- ✅ `npm test` green (138/138 tests pass + 2 lint scripts).
+- ✅ Adding the string "Chile" to any file under `packages/core/src/**` causes `npm test` to fail (lint).
+- ✅ A tenant with no `JurisdictionProfile` continues to work for all existing modules (Revenue Visibility, Proposal Generation, etc.).
+- ✅ Spec 004's B1 row marked ✅ Closed.
+- ✅ The Core has zero jurisdiction-specific content; the Tenant layer has zero business logic.
+- ✅ Tenant values driven by `process.env`; PII stays in `.env` (gitignored).
+
+## Out of scope (still)
+
+- The Tax & Compliance Module itself (Spec 004) — still a stub until B2 (Policy Engine) ships.
+- The Policy Engine (Spec 009 stub).
+- The authoritative-source acquisition process (Spec 010 stub).
+- Migrating Tenant 0 from "no profile" to "real profile" — that is the founder's task (Tenant 0 Profile §1).
 
 ---
 

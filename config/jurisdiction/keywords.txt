@@ -1,0 +1,45 @@
+# Jurisdiction-specific keywords (Spec 008 §6 Conformance + Plan 008 §6).
+# This file is a fixture, not a Core file. The lint script
+# scripts/check-core-jurisdiction-agnostic.mjs reads this list and walks
+# packages/core/src/**, failing the build if any keyword appears there.
+#
+# The list below is curated to catch direct jurisdiction leakage into Core.
+# Add terms as new jurisdictions come into scope; never remove terms without
+# a spec amendment.
+
+# Country names (English)
+Chile
+Chilean
+Argentina
+Brazil
+Mexico
+United States
+
+# ISO country codes that should never appear in Core
+CL
+AR
+BR
+MX
+US
+
+# Tax / fiscal authorities
+SII
+IRS
+AFIP
+SAT
+
+# Currency symbols that should never appear in Core
+CLP
+ARS
+BRL
+MXN
+USD
+
+# Tax concepts (specific)
+IVA
+ISR
+
+# Subdivisions
+Region Metropolitana
+Sao Paulo
+California

@@ -1,16 +1,16 @@
 # Spec 004 — Tax & Compliance Guard (Module)
 
-**Status:** Draft · **BLOCKED** (3 of 4 unblockers now have specs) · stub only
+**Status:** Draft · **BLOCKED** (1 of 4 unblockers built · B2/B3 still pending) · stub only
 **Type:** Module specification (reusable capability over tenant-scoped data)
 **Owner:** Stewards
 **Tenant of origin:** [Tenant 0 — Founder Profile](../../blueprints/tenants/tenant-0-founder-profile.md)
 **Validation priority:** #4 (see [Roadmap](../../docs/roadmap.md)) · earliest buildable: **Phase 3** (policy-shaped)
-**Version:** 0.2.0
+**Version:** 0.3.0
 **Last updated:** 2026-06-21
 
 > **Method.** Spec-first (Constitution, Principle 8). **This is a stub, not a full spec.** It frames the problem, fixes the boundary, and records the blockers. It deliberately does **not** specify tax rules, rates, forms, or deadlines, because doing so would either be premature or jurisdiction-specific guesswork. No code, no schema, no real data, no PII.
 >
-> **Update (v0.2.0, 2026-06-21).** Three follow-on specs now exist to clear the blockers: [Spec 008](../008-jurisdiction-model/spec.md) (foundational, ready to build), [Spec 009](../009-policy-engine/spec.md) (Phase 3 stub), [Spec 010](../010-authoritative-rule-source/spec.md) (process stub). **B4 is closed** — Spec 001 v1 (PR #13) shipped the revenue lifecycle. Spec 004 remains a stub until Phase 3 begins; the unblockers' specs are now the load-bearing artifacts.
+> **Update (v0.3.0, 2026-06-21).** **B1 is CLOSED** — [Spec 008 — Jurisdiction Model](../008-jurisdiction-model/spec.md) shipped in PR #31: Core types, ports, pure functions, two adapters (`InMemoryJurisdictionAdapter`, `FilesystemRuleSetLoaderAdapter`), the `JurisdictionProfileChanged` event, env-var-driven Tenant 0 values (per Plan §4.1), two conformance lint scripts wired into `npm test`. The Core stays jurisdiction-agnostic (verified by `npm run lint:core-jurisdiction-agnostic`). Spec 004 remains a stub until Phase 3 begins; B2 (Policy Engine) and B3 (Authoritative Rule Source) are still pending.
 
 ---
 
@@ -48,8 +48,8 @@ This boundary is consistent with Revenue Visibility (#2), which is explicitly *n
 
 | # | Blocker | Unblocker | Status |
 |---|---|---|---|
-| **B1** | **Jurisdiction model.** How a tenant declares its jurisdiction and supplies its rule set generically (so the Module stays jurisdiction-agnostic). | [Spec 008 — Jurisdiction Model](../008-jurisdiction-model/spec.md) (spec + plan + tasks shipped; ready to build) | 🟢 Spec'd |
-| **B2** | **Policy engine (Phase 3).** Must exist; this module is policy-shaped. | [Spec 009 — Policy Engine](../009-policy-engine/spec.md) (stub; awaiting Phase 2 evidence) | 🟡 Stubbed |
+| **B1** | **Jurisdiction model.** How a tenant declares its jurisdiction and supplies its rule set generically (so the Module stays jurisdiction-agnostic). | [Spec 008 — Jurisdiction Model](../008-jurisdiction-model/spec.md) shipped (PR #31) — Core types, ports, adapters, lint scripts, env-var pattern all live. | ✅ **Closed** |
+| **B2** | **Policy engine (Phase 3).** Must exist; this module is policy-shaped. | [Spec 009 — Policy Engine](../009-policy-engine/spec.md) (stub; awaiting Phase 2 evidence — the Workflow Engine is now shipped, so Phase 3 may proceed) | 🟡 Stubbed |
 | **B3** | **Authoritative rule source.** Tax rules must come from an authoritative, dated source per tenant — **never invented by the system or by an agent.** | [Spec 010 — Authoritative Rule Source](../010-authoritative-rule-source/spec.md) (stub; awaits human process design) | 🟡 Stubbed |
 | **B4** | **Revenue Visibility lifecycle.** `confirmed`/`received` revenue must exist for obligations to compute against. | Shipped in [Spec 001 v1 (PR #13)](../001-revenue-visibility/tasks.md) — `RevenueConfirmed`, `RevenueReceived`, `ExpenseRegistered`, `FinancialSummary` all live. | ✅ **Closed** |
 

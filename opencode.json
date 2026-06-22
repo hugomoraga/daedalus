@@ -2,5 +2,25 @@
   "$schema": "https://opencode.ai/config.json",
   "instructions": [
     "AGENTS.md"
-  ]
+  ],
+  "compaction": {
+    "auto": true,
+    "prune": true,
+    "reserved": 20000
+  },
+  "watcher": {
+    "ignore": [
+      "node_modules/**",
+      ".git/**",
+      ".data/**",
+      "docs/reviews/**",
+      "blueprints/agents/**",
+      "blueprints/domains/**",
+      "blueprints/events/**",
+      "blueprints/knowledge/**",
+      "blueprints/policies/**",
+      "blueprints/modules/**",
+      "infrastructure/**"
+    ]
+  }
 }

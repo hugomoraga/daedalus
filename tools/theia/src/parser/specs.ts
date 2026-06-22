@@ -31,6 +31,8 @@ const KNOWN_STATUSES: ReadonlySet<SpecStatus> = new Set<SpecStatus>([
   "Ratified",
   "Blocked",
   "Superseded",
+  "Planning",
+  "Shipped",
   "Unknown",
 ]);
 
@@ -121,8 +123,36 @@ function parseOne(rootPath: string, slug: string): SpecCard {
     },
     unknownReason,
     blockers: [],
+    conventionIssues: computeConventionIssues({
+      status,
+      unknownReason,
+      tasksPath,
+      tasksTotal: completion.tasks.total,
+    }),
   };
   return card;
+}
+
+// Spec 015 §6 AC-4 — surface drift signals so the overview widget can
+// render them. Pure function: given the inputs the parser already has,
+// returns a list of human-readable issues (empty when the spec is in
+// canonical form). Used by the "Specs needing attention" widget.
+function computeConventionIssues(args: {
+  status: SpecStatus;
+  unknownReason: string | null;
+  tasksPath: string;
+  tasksTotal: number;
+}): string[] {
+  const issues: string[] = [];
+  if (!existsSync(args.tasksPath)) {
+    issues.push("tasks.md missing");
+  } else if (args.tasksTotal === 0 && args.status !== "Draft") {
+    issues.push("tasks.md has 0 checkboxes");
+  }
+  if (args.status === "Unknown") {
+    issues.push(`Unknown status: ${args.unknownReason ?? "unparsed"}`);
+  }
+  return issues;
 }
 
 // First H1 line: `# Spec NNN — Title` or `# Spec NNN: Title`.

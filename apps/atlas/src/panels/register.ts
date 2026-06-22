@@ -14,6 +14,7 @@ import { renderMonitoringPanel } from "./monitoring.ts";
 import { renderActiveProcessesPanel } from "./active-processes.ts";
 import { renderQueueStatusPanel } from "./queue-status.ts";
 import { renderWorkflowMetricsPanel } from "./workflow-metrics.ts";
+import { renderCompliancePanel } from "./compliance.ts";
 
 export type PanelContext = {
   tenant: TenantContext;
@@ -88,6 +89,12 @@ export const PANELS: ReadonlyArray<Panel> = [
     label: "Workflow Metrics",
     backingModel: "workflow-engine.instanceStore.list + projectWorkflowMetrics (24h window)",
     render: async (ctx) => renderWorkflowMetricsPanel(ctx, ctx.deps),
+  },
+  {
+    slug: "compliance",
+    label: "Compliance",
+    backingModel: "tax-compliance-guard.deriveObligationStates (pure over event stream)",
+    render: async (ctx) => renderCompliancePanel(ctx),
   },
 ];
 

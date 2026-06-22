@@ -26,6 +26,7 @@ Then open `http://localhost:8788/t/tenant-0/welcome`.
 | `GET`  | `/t/<tenantId>/active-processes` | Active Processes — live workflow instances, sorted by age desc (Spec 011) |
 | `GET`  | `/t/<tenantId>/queue-status` | Queue Status — per-workflow active/waiting counts + 24h totals (Spec 011) |
 | `GET`  | `/t/<tenantId>/workflow-metrics` | Workflow Metrics — completion/compensation + avg time-to-complete, 24h window (Spec 011) |
+| `GET`  | `/t/<tenantId>/compliance` | Compliance — obligation states (pending / met / missed), last policy evaluation (Spec 004) |
 | Other | any | `405` with the equivalent CLI command |
 
 Panels whose backing model doesn't exist (e.g. `processes`, `queue`, `integrations`) return 404 (Spec 007 AC-6 — absent, not empty).

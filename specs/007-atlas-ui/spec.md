@@ -1,16 +1,16 @@
 # Spec 007 — ATLAS (Mission Control driving adapter)
 
-**Status:** Draft · Phase 0/1 transition (planning; not authorized to build)
+**Status:** Ratified · **Phase 1 capability** · v0 + v1 + Phase 2 shipped (PRs #18, #19, #56, #57) · build authorized
 **Type:** Driving adapter — **read-only** mission control over the Daedalus Core and modules
 **Owner:** Stewards
-**Version:** 0.1.0
-**Last updated:** 2026-06-20
+**Version:** 1.1.0
+**Last updated:** 2026-06-22
 
 > **Method.** Spec-first (Constitution, Principle 8). Defines *what* ATLAS is and *why*, not *how*. Conceptual — no schema, no API, no UI markup, no assets in this file.
 
-> **Context.** Daedalus's value chain `Lead → Payment` is closed in Core (Spec 006), three modules ship projections (Spec 001 v0+v1, Spec 002, Spec 003), and the event stream is auditable per tenant. What is missing is a **mission-control view**: a calm, editorial, multi-tenant surface that makes the chain, the events, and the system health visible to a human operator. ATLAS is that view. It is deliberately **not** a writing tool — writes continue to flow through the CLI until Phase 4.
-
-> **Naming.** The visible product is **ATLAS** (mission control). The platform underneath is **Daedalus**. ATLAS is *Powered by Daedalus Platform*.
+> **Ratification note (v1.0, 2026-06-22).** This ratification brings the spec into alignment with shipped reality. `apps/atlas/` (composition root) is live on `main`. **v0** (PR #16 + #18) shipped: scaffolding, tokens, layout, SSR server, tenant resolver, Welcome panel, Events, Activity, Logs, System Health, full AC test suite for AC-1..AC-8. **v1** (PR #19) shipped: Throughput and Monitoring panels backed by Revenue Visibility v1 projections; AC-7 perf target met at the 10k-event scale.
+>
+> **Amendment (v1.1, 2026-06-22).** Adds the **Compliance** panel (T-23) — the read-side surface for [Spec 004](../004-tax-compliance-guard/spec.md). Backed by `deriveObligationStates` + `ObligorState` already exported from `@daedalus/tax-compliance-guard`. Adds **AC-9, AC-10, AC-11** for shape, pure derivation, and empty-state behaviour. Wired in PR #57. No new Core / Module primitives; pure consumer-side work.
 
 ---
 
@@ -41,7 +41,7 @@ Visual identity is encoded as **design tokens**, not screenshots. Tokens are con
 
 1. **Make the value chain visible.** Render `Lead → Proposal → Approval → Project → Delivery → Invoice → Payment` per tenant, replayable from the event stream.
 2. **Make the audit trail visible.** Every event with full lineage (`eventId`, `correlationId`, `causationId`, `actor`, `occurredAt`, `payload`) is browseable.
-3. **Make the read-models visible.** `FinancialSummary`, expected/confirmed/received lifecycle, alerts, qualified leads, system health — without having to run CLI commands.
+3. **Make the read-models visible.** `FinancialSummary`, expected/confirmed/received lifecycle, alerts, qualified leads, system health, **compliance obligations** — without having to run CLI commands.
 4. **Make the platform's multi-tenancy tangible.** Tenant switching is one click from the top nav; isolation is enforced on every read.
 5. **Make the system honest.** ATLAS surfaces *what is actually there* — not aspirational sections. Sections without backing models are absent.
 6. **Render without external dependencies.** No npm UI deps, no font CDNs, no charts libraries. Vanilla HTML + native CSS + Node 22 SSR.
@@ -53,7 +53,7 @@ Visual identity is encoded as **design tokens**, not screenshots. Tokens are con
 | Layer | What lives there (this spec) |
 |---|---|
 | **Core** | No changes. ATLAS consumes existing `EventStorePort` and existing projections (`projectProposal`, `projectProject`, `projectInvoice`). |
-| **Modules** | No changes required. Modules already expose their read models via their `application` barrels (e.g. `@daedalus/revenue-visibility` exposes `FinancialSummary`, alerts). |
+| **Modules** | No changes required. Modules already expose their read models via their `application` barrels (e.g. `@daedalus/revenue-visibility` exposes `FinancialSummary`, alerts; `@daedalus/tax-compliance-guard` exposes `ObligorState` + the pure `deriveObligationStates`). |
 | **Driving adapter — ATLAS** | `apps/atlas/` (NEW). Composition root. Zero domain. HTTP server (Node 22 native). SSR with embedded JSON-LD. Tokens, templates, panels. |
 | **Tenant** | Tenant 0 profile names which modules are active for the tenant; ATLAS shows only panels whose module is active. No PII lives in ATLAS — it renders events and projections, which are themselves tenant-scoped by Core Policy. |
 
@@ -123,6 +123,26 @@ If a user interaction in ATLAS looks like a write (e.g. clicking "Approve" on a 
 
 **AC-8 (Tenant switch).**
 - *Given* a session in `tenant-A`, *when* the operator switches to `tenant-B`, *then* all cached projections are discarded, the new projections are computed, and no UI state from `tenant-A` persists (selected event, expanded rows, time window — all reset).
+
+**AC-9 (Compliance panel — Spec 004 backing model).**
+- *Given* a tenant's event stream contains `ObligationDue`, `ObligationMet`, `ObligationMissed`, and `ObligationEvaluationRecorded` events (any subset),
+- *When* the operator opens `/t/<tenantId>/compliance`,
+- *Then* the panel renders the tenant's live obligations grouped by status (`pending` / `met` / `missed`), with each row showing the obligation's human name, due date, originating rule set + version, and the last policy evaluation's outcome + reason (when present).
+- *And* the panel shows totals at the top (pending count, met count, missed count).
+- *And* the panel is absent (404) when the tenant has no obligation events — never another tenant's data.
+- *And* a dedicated test (`tests/atlas-compliance-panel.test.ts`) seeds obligation events for two tenants and asserts (a) shape + grouping, (b) totals match the seeded data, (c) tenant isolation.
+
+**AC-10 (Compliance panel — pure derivation).**
+- *Given* the events are already in `ctx.events` (server-side, loaded once per request),
+- *When* the Compliance panel renders,
+- *Then* it calls `deriveObligationStates(ctx.events, asOf)` directly (pure function from `@daedalus/tax-compliance-guard`), not `listObligationsUseCase` (which would re-read the JSONL).
+- *And* the panel imports only the projection-side surface (`ObligorState`, `ObligationState`, `deriveObligationStates`) from the module's public contract; it does not depend on the module's rule-set or policy adapters.
+
+**AC-11 (Compliance panel — empty state + absent panel).**
+- *Given* a tenant with zero obligation events,
+- *When* the operator opens `/t/<tenantId>/compliance`,
+- *Then* the panel renders an explicit empty state ("no obligations tracked") — not a blank tile, not an error.
+- *And* for a tenant that has activated the Tax & Compliance Guard but has not yet seen any obligation events, the panel still renders (the module is active; the tenant just has no obligations yet).
 
 ---
 

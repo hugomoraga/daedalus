@@ -64,6 +64,7 @@ The workflow engine projections ATLAS needed were defined in Spec 011 and shippe
 | T-20 | `panels/active-processes.ts` — Workflow engine backing model | live instances sorted by ageMs desc | ✅ |
 | T-21 | `panels/queue-status.ts` — Event bus backing model | per-workflow counts + 24h totals | ✅ |
 | T-22 | `panels/workflow-metrics.ts` — Workflow execution metrics | windowed completion/compensation + avg | ✅ |
+| T-23 | `panels/compliance.ts` — Tax & Compliance obligations (Spec 004 backing model) | obligation grouping + totals + last evaluation | ✅ |
 
 ---
 

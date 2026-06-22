@@ -207,8 +207,8 @@ Single token: `1px solid var(--rule)`. No double borders, no thick rules.
 
 ## 14. Companion artifacts
 
-- **`plan.md`** — implementation plan, structure of `apps/atlas/`, read-models consumed, build phases (v0, v1, Phase 2, Phase 5), evidence run, definition of done.
-- **`tasks.md`** — task breakdown (T-01…T-13), forward-planning, not a build authorization.
+- **`plan.md`** — implementation plan, structure of `apps/atlas/`, read-models consumed, build phases (v0, v1, Phase 2, Phase 5), evidence run, definition of done. **v1.0** marks v0 and v1 phases as shipped (PRs #18, #19); Phase 2 and Phase 5 phases remain blocked on their respective engines.
+- **`tasks.md`** — task breakdown (T-01…T-26). **v1.0** marks T-01..T-19 as shipped (v0: T-01..T-16 in PR #18; v1: T-17..T-19 in PR #19); T-20..T-26 remain blocked on Phase 2 / Phase 5 engines.
 
 ---
 

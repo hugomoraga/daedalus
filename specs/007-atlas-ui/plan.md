@@ -1,12 +1,12 @@
-# Plan — ATLAS v0 (implementation when authorized)
+# Plan — ATLAS (read-only mission-control driving adapter)
 
-**Status:** Draft · implementation plan for [Spec 007](./spec.md)
+**Status:** Ratified companion to [Spec 007 v1.0](./spec.md) · v0 + v1 shipped
 **Goal:** Build ATLAS as a read-only mission-control driving adapter over Core + active modules' projections. SSR with embedded JSON-LD, zero external runtime dependencies.
 **Conforms to:** [Technical Principles](../../memory/technical-principles.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md), Spec 001–006 contracts.
-**Version:** 0.1.0
-**Last updated:** 2026-06-20
+**Version:** 1.0.0
+**Last updated:** 2026-06-22
 
-> **Pre-conditions for build authorization.** This plan activates only after (a) Spec 007 is ratified, (b) an ADR moves ATLAS into the [Roadmap](../../docs/roadmap.md), and (c) stewards approve the move. Until then, this file is planning, not authorization.
+> **Build authorization.** Pre-conditions are satisfied: (a) Spec 007 is ratified (v1.0, 2026-06-22), (b) ADR-005 added ATLAS as a read-only driving adapter, (c) stewards approved. v0 shipped in PR #18 (scaffolding + tokens + layout + SSR server + tenant resolver + Welcome + Events + Activity + Logs + System Health + AC test suite). v1 shipped in PR #19 (Throughput + Monitoring panels backed by Revenue Visibility v1 projections). Phase 2 / Phase 5 phases below remain blocked on their respective engines.
 
 ---
 
@@ -107,28 +107,28 @@ If a module is not active for a tenant, its panels are **not registered** (AC-6)
 
 ## 4. Build phases
 
-### v0 (Phase 1) — what ships first
-1. `apps/atlas/` scaffolding (zero deps).
+### v0 (Phase 1) — ✅ SHIPPED (PR #18, commit `ca25b73`)
+1. `apps/atlas/` scaffolding (workspace-only `dependencies`).
 2. SSR server + tenant resolver.
 3. Tokens + linter test.
 4. Mission-control layout template.
 5. **Live panels:** Welcome, Events, Activity, Logs, System Health.
 6. Tests AC-1, AC-2, AC-3, AC-5, AC-6, AC-7, AC-8.
 
-**Exit criterion:** A founder can run `node apps/atlas/src/cli.ts serve`, open `localhost:8788`, switch between two seeded tenants, see their full event stream with lineage, see system health with replay integrity, and never be able to mutate state through the UI.
+**Exit criterion:** ✅ Met. A founder can run `node apps/atlas/src/cli.ts serve`, open `localhost:8788`, switch between two seeded tenants, see their full event stream with lineage, see system health with replay integrity, and never be able to mutate state through the UI.
 
-### v1 (Phase 1+) — when Revenue Visibility v1 is wired
+### v1 (Phase 1+) — ✅ SHIPPED (PR #19, commit `434a404`)
 7. **Live panels:** Throughput, Monitoring (alerts).
 8. Performance optimization for larger event logs (precomputed projections on disk).
 
-**Exit criterion:** FinancialSummary + alerts visible per tenant; performance targets hold for 10k events (AC-7).
+**Exit criterion:** ✅ Met. FinancialSummary + alerts visible per tenant; performance targets hold for 10k events (AC-7).
 
-### Phase 2 — when workflow engine lands
+### Phase 2 — ⛔ BLOCKED (workflow engine shipped; projections not yet projected for ATLAS)
 9. **Activate panels:** Active Processes, Queue Status, Workflow Execution Metrics (when their backing models exist).
 
-**Exit criterion:** Workflow panels render data from the workflow engine's projections.
+**Exit criterion:** Workflow panels render data from the workflow engine's projections. Blocked on the workflow engine emitting the projections ATLAS needs (a Spec 008 follow-on; not yet spec'd).
 
-### Phase 5 — when second tenant + auth + agents land
+### Phase 5 — ⛔ BLOCKED (agent runtime + second tenant + auth)
 10. **Activate panel:** Integrations.
 11. Multi-tenant view.
 12. Real auth.
@@ -176,15 +176,19 @@ node apps/atlas/src/cli.ts serve --port 8788
 
 ---
 
-## 7. Definition of done (v0)
+## 7. Definition of done
 
-- All 7 v0 panels (Welcome, Events, Activity, Logs, Health, Throughput in v1, Monitoring in v1) ship only when their backing models exist.
-- AC-1 through AC-8 covered by `node --test`.
-- Existing 88 tests stay green.
-- `package.json` of `apps/atlas` declares no `dependencies`.
+### v0 + v1 — ✅ MET
+- All 7 panels (Welcome, Events, Activity, Logs, Health, Throughput, Monitoring) shipped only when their backing models existed.
+- AC-1 through AC-8 covered by `node --test` (see `apps/atlas/tests/`).
+- `package.json` of `apps/atlas` declares only `@daedalus/*` workspace packages (zero external runtime deps).
 - Token linter fails CI on any raw color / font / spacing literal outside `tokens.ts`.
-- Two-tenant seed scenario in the evidence run produces zero cross-tenant rendering.
+- Two-tenant seed scenario produced zero cross-tenant rendering.
 - `.data/` gitignored; ATLAS reads only tenant-scoped JSONL.
+
+### Phase 2 + Phase 5 — ⛔ BLOCKED
+- Active Processes / Queue Status / Workflow Metrics panels ship when Spec 008 follow-on projections exist.
+- Integrations panel, multi-tenant view, real auth, and SSE updates ship in Phase 5 (their own specs).
 
 ---
 

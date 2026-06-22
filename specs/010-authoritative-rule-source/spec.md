@@ -3,11 +3,11 @@
 **Status:** Ratified · **process + structural pattern** · build authorized
 **Type:** Cross-cutting specification (governance process + Core structural support)
 **Owner:** Stewards + tenant (human accountable)
-**Validation priority:** unblocks Module #4; required before [Spec 008's](../008-jurisdiction-model/spec.md) `RuleProvenance` carries real weight
+**Validation priority:** unblocks Module #4; required before [Spec 013's](../013-jurisdiction-model/spec.md) `RuleProvenance` carries real weight
 **Version:** 1.0.0
 **Last updated:** 2026-06-22
 
-> **Method.** Spec-first (Constitution, Principle 8). Upgraded from STUB to Ratified v1.0. The **mechanical** parts (refuse to load rules without provenance; version mismatch; `validateProvenance` + `FilesystemRuleSetLoaderAdapter`) shipped in PR #35 (Spec 008 J-06 / J-10). This v1.0 ratifies the **process** (R1), the **source artifact format** (R2), the **default staleness policy** (R3), and the **conflict resolution rule** (R4), plus four Core events (`RuleSetRegistered`, `RuleSetSuperseded`, `RuleSetStale`, `ObligationCoverageGap`) that surface gaps and supersedes to Module + Tenant. The process is still human; the system can only enforce provenance mechanics and surface gaps. No rule is invented or auto-acquired.
+> **Method.** Spec-first (Constitution, Principle 8). Upgraded from STUB to Ratified v1.0. The **mechanical** parts (refuse to load rules without provenance; version mismatch; `validateProvenance` + `FilesystemRuleSetLoaderAdapter`) shipped in PR #35 (Spec 013 J-06 / J-10). This v1.0 ratifies the **process** (R1), the **source artifact format** (R2), the **default staleness policy** (R3), and the **conflict resolution rule** (R4), plus four Core events (`RuleSetRegistered`, `RuleSetSuperseded`, `RuleSetStale`, `ObligationCoverageGap`) that surface gaps and supersedes to Module + Tenant. The process is still human; the system can only enforce provenance mechanics and surface gaps. No rule is invented or auto-acquired.
 
 ---
 
@@ -15,7 +15,7 @@
 
 [Spec 004](../004-tax-compliance-guard/spec.md) §4 B3 names this as a blocker: *"Authoritative rule source. Tax rules must come from an authoritative, dated source per tenant — never invented by the system or by an agent."*
 
-[Spec 008](../008-jurisdiction-model/spec.md) §3.3 gives the rule a **type** (`RuleProvenance`) and a **mandatory** field set, but the *process* by which a Tenant acquires, verifies, and updates rule content is not designed here. That process is what this spec is about — and it is **not** something the system can design alone:
+[Spec 013](../013-jurisdiction-model/spec.md) §3.3 gives the rule a **type** (`RuleProvenance`) and a **mandatory** field set, but the *process* by which a Tenant acquires, verifies, and updates rule content is not designed here. That process is what this spec is about — and it is **not** something the system can design alone:
 
 - **Who counts as "authoritative"?** A government gazette? A licensed advisor's opinion? A tenant's own interpretation of public law? Each tenant may answer differently.
 - **How is staleness detected?** Rules drift. The system can flag dates; the human must decide when a rule needs refresh.
@@ -49,9 +49,9 @@ The system **never** imports rule content from the internet, a scraping service,
 
 ## 4. What the system MUST do (binding, even at stub level)
 
-- **Refuse to load** any `RuleSet` whose obligations lack `provenance` (covered by [Spec 008](../008-jurisdiction-model/spec.md) J-06).
-- **Refuse to load** any `RuleSet` whose version in the file does not match the version in `RuleSetRef` (Spec 008 J-10).
-- **Emit `RuleSetRegistered`** with full lineage when a Tenant registers a new RuleSet (covers Spec 008 §5).
+- **Refuse to load** any `RuleSet` whose obligations lack `provenance` (covered by [Spec 013](../013-jurisdiction-model/spec.md) J-06).
+- **Refuse to load** any `RuleSet` whose version in the file does not match the version in `RuleSetRef` (Spec 013 J-10).
+- **Emit `RuleSetRegistered`** with full lineage when a Tenant registers a new RuleSet (covers Spec 013 §5).
 - **Emit `RuleSetSuperseded`** when a Tenant activates a new version; the old version remains queryable (audit).
 - **Surface `RuleSetStale`** as a *notification* (not a block) when `retrievedAt` exceeds a Tenant-supplied staleness threshold. The Tenant decides what to do.
 - **Never silently change** a Tenant's active RuleSet on the Tenant's behalf.
@@ -76,7 +76,7 @@ The system **never** imports rule content from the internet, a scraping service,
 
 - A full spec, design, or implementation.
 - A scraping/integration pipeline of any kind. The system does not acquire rules.
-- A marketplace, registry, or shared rule library across tenants. Each Tenant's rules are its own; shared *mechanism* lives in [Spec 008](../008-jurisdiction-model/spec.md).
+- A marketplace, registry, or shared rule library across tenants. Each Tenant's rules are its own; shared *mechanism* lives in [Spec 013](../013-jurisdiction-model/spec.md).
 - LLM-assisted rule interpretation. The system records what the human supplies.
 
 ## 8. Relation to canon
@@ -86,7 +86,7 @@ The system **never** imports rule content from the internet, a scraping service,
 | [Constitution Principle 4](../../memory/constitution.md) | Auditability by Default: every rule has a named human + dated source. |
 | [Constitution §V](../../memory/constitution.md) | Humans are accountable: the system surfaces what they verified; they decide compliance. |
 | [Spec 004 §5](../004-tax-compliance-guard/spec.md) | The 🚩 compliance flag — rule provenance is authoritative-source-only. This spec operationalizes that flag. |
-| [Spec 008](../008-jurisdiction-model/spec.md) | Provides the `RuleProvenance` type and the mechanical guard against invention. This spec governs the *process* by which provenance is acquired. |
+| [Spec 013](../013-jurisdiction-model/spec.md) | Provides the `RuleProvenance` type and the mechanical guard against invention. This spec governs the *process* by which provenance is acquired. |
 | [Spec 009](../009-policy-engine/spec.md) | Eventually, the Policy Engine will evaluate obligation policies; those policies' *content* comes from RuleSets governed by this spec. |
 
 ---
@@ -107,12 +107,12 @@ This is the recommended process the founder follows to acquire, verify, and regi
 
 ### 9.2 Formatting
 
-4. **Translate the source into rule shape.** The founder (or their advisor) writes the rule as an `ObligationSpec` per [Spec 008 §3.2](../008-jurisdiction-model/spec.md). The shape is fixed; richer languages (a DSL) are explicit future.
+4. **Translate the source into rule shape.** The founder (or their advisor) writes the rule as an `ObligationSpec` per [Spec 013 §3.2](../013-jurisdiction-model/spec.md). The shape is fixed; richer languages (a DSL) are explicit future.
 5. **Wrap the rule(s) in a `RuleSet`.** A `RuleSet` is a versioned, named bundle of one or more `ObligationSpec`s. The founder chooses the `version` (semver or date), the `effectiveFrom` date, the `obligationsUri` (a file path the system can read), and the `RuleProvenance` describing who verified it.
 
 ### 9.3 Verification
 
-6. **Verify by a named human.** The founder (or the founder's advisor) sets `verifiedBy` to their own name (or the advisor's name). This is a human identity; the system never invents it. The `verifiedBy` field is **PII** and lives in `.env` (gitignored) per [Spec 008 Plan §4.1](../008-jurisdiction-model/plan.md). The default placeholder is `"<founder>"`; the real value comes from `process.env.TENANT_0_VERIFIED_BY` (and analogous for advisors).
+6. **Verify by a named human.** The founder (or the founder's advisor) sets `verifiedBy` to their own name (or the advisor's name). This is a human identity; the system never invents it. The `verifiedBy` field is **PII** and lives in `.env` (gitignored) per [Spec 013 Plan §4.1](../013-jurisdiction-model/plan.md). The default placeholder is `"<founder>"`; the real value comes from `process.env.TENANT_0_VERIFIED_BY` (and analogous for advisors).
 7. **Record the source's `retrievedAt` date.** This is the date the founder (or advisor) *acquired* the source, not the date the source was published. A 2018 regulation retrieved in 2026 has `retrievedAt: "2026-XX-XX"`.
 8. **Set `sourceId` to a stable reference.** See §10 for the format.
 
@@ -151,7 +151,7 @@ The system emits `RuleSetStale` (a notification, not a block) when a RuleSet's `
 | `legal-advisor-opinion` | 6 months |
 | `tenant-declared` | 3 months |
 
-The thresholds are **Tenant-overridable** via env vars (per [Spec 008 Plan §4.1](../008-jurisdiction-model/plan.md)):
+The thresholds are **Tenant-overridable** via env vars (per [Spec 013 Plan §4.1](../013-jurisdiction-model/plan.md)):
 
 - `TENANT_0_STALENESS_OFFICIAL_PUBLICATION_MONTHS` (default 12)
 - `TENANT_0_STALENESS_LEGAL_ADVISOR_OPINION_MONTHS` (default 6)
@@ -244,7 +244,7 @@ This rule is mechanical and auditable. The founder (or advisor) resolves by eith
 
 ## 14. Conformance (binding)
 
-- ✅ Every RuleSet's `provenance` is mandatory and validated (Spec 008 §3.3 + §12).
+- ✅ Every RuleSet's `provenance` is mandatory and validated (Spec 013 §3.3 + §12).
 - ✅ The system **never** invents a rule. If no rule matches, `ObligationCoverageGap` is emitted.
 - ✅ The system **never** auto-fetches rule content. Acquisition is a human act.
 - ✅ The system **never** auto-updates a rule. A refresh is a new `RuleSetRegistered`.
@@ -256,16 +256,16 @@ This rule is mechanical and auditable. The founder (or advisor) resolves by eith
 - A scraping/integration pipeline of any kind.
 - A marketplace, registry, or shared rule library across tenants.
 - LLM-assisted rule interpretation.
-- A DSL for rules (Spec 008 §6 already defers; this spec inherits that deferral).
+- A DSL for rules (Spec 013 §6 already defers; this spec inherits that deferral).
 - A visual rule-authoring UI. RuleSet JSON files are the contract.
 - A built-in advisor / tax-counsel marketplace.
 
 ## 16. Out of scope (deferred)
 
 - A live advisor integration (e.g. fetching a tax opinion from a 3rd party) — explicit future Spec.
-- A per-jurisdiction rule template library (e.g. "starter pack for Chile IVA") — the founder writes their own; we ship a stub-by-default pattern via the `placeholder content` design (Spec 008 §3.2 + §4) but do not curate templates.
+- A per-jurisdiction rule template library (e.g. "starter pack for Chile IVA") — the founder writes their own; we ship a stub-by-default pattern via the `placeholder content` design (Spec 013 §3.2 + §4) but do not curate templates.
 - A "diff between rule versions" UI — a future Spec, gated on richer rule histories.
 
 ---
 
-*Subordinate to the [Constitution](../../memory/constitution.md), [Spec 008](../008-jurisdiction-model/spec.md) (provenance), and [Spec 004](../004-tax-compliance-guard/spec.md) (consumer). The process is human; the system enforces provenance mechanics and surfaces gaps. No rule is invented or auto-acquired.*
+*Subordinate to the [Constitution](../../memory/constitution.md), [Spec 013](../013-jurisdiction-model/spec.md) (provenance), and [Spec 004](../004-tax-compliance-guard/spec.md) (consumer). The process is human; the system enforces provenance mechanics and surfaces gaps. No rule is invented or auto-acquired.*

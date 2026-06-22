@@ -2,7 +2,7 @@
 
 **Status:** v1 **SHIPPED** — Spec 009 v1.0.0 + Plan 009 v1.0.0 + 20 tasks ✅ (impl PR #38, branch `034-spec009-policy-engine-implementation`).
 **Derives from:** [Spec 009](./spec.md) + [Plan 009](./plan.md)
-**Conforms to:** [Technical Principles](../../memory/technical-principles.md), [ADR-002](../../governance/decisions/ADR-002-adopt-technical-framework.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md), [Spec 008](../008-jurisdiction-model/spec.md) (mirrors provenance + env-var patterns)
+**Conforms to:** [Technical Principles](../../memory/technical-principles.md), [ADR-002](../../governance/decisions/ADR-002-adopt-technical-framework.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md), [Spec 008](../013-jurisdiction-model/spec.md) (mirrors provenance + env-var patterns)
 **Version:** 1.1.0
 **Last updated:** 2026-06-22
 

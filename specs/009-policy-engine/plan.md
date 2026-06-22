@@ -2,7 +2,7 @@
 
 **Status:** Ratified · implementation plan for [Spec 009](./spec.md) v1.0.0
 **Derives from:** [Spec 009](./spec.md)
-**Conforms to:** [Technical Principles](../../memory/technical-principles.md), [ADR-002](../../governance/decisions/ADR-002-adopt-technical-framework.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md), [Spec 008](../008-jurisdiction-model/spec.md) (mirrors provenance + env-var patterns)
+**Conforms to:** [Technical Principles](../../memory/technical-principles.md), [ADR-002](../../governance/decisions/ADR-002-adopt-technical-framework.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md), [Spec 008](../013-jurisdiction-model/spec.md) (mirrors provenance + env-var patterns)
 **Version:** 1.0.0
 **Last updated:** 2026-06-21
 

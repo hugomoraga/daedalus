@@ -1,4 +1,4 @@
-# Spec 008 — Jurisdiction Model (Core capability)
+# Spec 013 — Jurisdiction Model (Core capability)
 
 **Status:** Ratified · **foundational** · unlocks [Spec 004](../004-tax-compliance-guard/spec.md) B1 · build authorized
 **Type:** Core capability specification (tenant-agnostic mechanism; tenant content lives in the Tenant layer)
@@ -6,8 +6,6 @@
 **Validation priority:** unblocks Module #4 ([Spec 004](../004-tax-compliance-guard/spec.md))
 **Version:** 1.0.0
 **Last updated:** 2026-06-21
-
-> **Numbering note.** This spec shares the `008` prefix with [Spec 008 — Workflow Engine](../008-workflow-engine/spec.md) (the latter was merged first; both specs existed in draft concurrently). The directory paths are the canonical identifiers; the shared prefix is a known naming oddity documented here for traceability, not a conflict (the two specs cover unrelated capabilities).
 
 > **Method.** Spec-first (Constitution, Principle 8). Defines *how a tenant declares a jurisdiction and a rule set* in a way that the **Core stays jurisdiction-agnostic** (Constitution, Principle 10). No real jurisdiction, no real rules, no PII, no invented rates.
 

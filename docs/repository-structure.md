@@ -39,13 +39,13 @@ daedalus/
 │   ├── 005-administrative-shield/
 │   ├── 006-core-value-chain-completion/
 │   ├── 007-atlas-ui/
-│   ├── 008-jurisdiction-model/
-│   ├── 008-workflow-engine/        #   shares prefix with 008-jurisdiction-model; known naming oddity
+│   ├── 008-workflow-engine/
 │   ├── 009-policy-engine/
-│   ├── 009-social-to-opportunity-mvp/  # shares prefix with 009-policy-engine; known
 │   ├── 010-authoritative-rule-source/
 │   ├── 011-workflow-engine-projections/
-│   └── 012-theia/
+│   ├── 012-theia/
+│   ├── 013-jurisdiction-model/    #   was 008-...; renumbered per ADR-009
+│   └── 014-social-to-opportunity-mvp/  # was 009-...; renumbered per ADR-009
 │
 ├── governance/                     # Decisions & amendments
 │   ├── decisions/                  #   ADRs (ADR-001 through ADR-008)

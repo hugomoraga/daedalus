@@ -1,12 +1,12 @@
 # Tasks — Jurisdiction Model (Core)
 
-**Status:** v1 **SHIPPED** — Spec 008 v1.0.0 + Plan 008 v1.0.0 + 19 tasks ✅ (PR #35, branch `031-spec008-jurisdiction-implementation`).
-**Derives from:** [Spec 008](./spec.md) + [Plan 008](./plan.md)
+**Status:** v1 **SHIPPED** — Spec 013 v1.0.0 + Plan 013 v1.0.0 + 19 tasks ✅ (PR #35, branch `031-spec008-jurisdiction-implementation`).
+**Derives from:** [Spec 013](./spec.md) + [Plan 008](./plan.md)
 **Conforms to:** [Technical Principles](../../memory/technical-principles.md), [ADR-002](../../governance/decisions/ADR-002-adopt-technical-framework.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md)
 **Version:** 1.1.0
 **Last updated:** 2026-06-21
 
-> Tasks map to Spec 008 acceptance. v1 is shipped; Spec 004's B1 row marked closed. Phase 3 follow-on (Policy Engine integration into the workflow engine's policy seam) is forward-planning only.
+> Tasks map to Spec 013 acceptance. v1 is shipped; Spec 004's B1 row marked closed. Phase 3 follow-on (Policy Engine integration into the workflow engine's policy seam) is forward-planning only.
 
 ---
 
@@ -126,7 +126,7 @@
 
 | ID | Task | Produces | Spec ref |
 |---|---|---|---|
-| **J-17** | Update `specs/004-tax-compliance-guard/spec.md` §4 to mark **B1** as resolved by this spec (with link), and re-prioritize remaining blockers (B2, B3) against the new specs. | edited spec 004 | §1, §8 (Spec 008) |
+| **J-17** | Update `specs/004-tax-compliance-guard/spec.md` §4 to mark **B1** as resolved by this spec (with link), and re-prioritize remaining blockers (B2, B3) against the new specs. | edited spec 004 | §1, §8 (Spec 013) |
 | **J-18** | Refactor `config/tenants/tenant-0.ts` to read parametrizable fields from `process.env` with sensible defaults (currency, enabledModules, alertThresholds). Keep structural fields (id, templates) in code. JSDoc note points to the future `tenant-0.jurisdiction.ts` and confirms **for now** tenant-0 has no jurisdiction profile (opt-out). | edited tenant config | §3.1, Plan §4.1 |
 | **J-19** | Update `docs/identity.md` (or equivalent) to record the env-var pattern as the binding mechanism for tenant-specific values, with `.env.example` as the canonical schema reference. | doc update | Plan §4.1, §4.2 |
 
@@ -156,4 +156,4 @@
 
 ---
 
-*Subordinate to [Spec 008](./spec.md) and [Plan 008](./plan.md). Spec-Driven; no implementation outside these tasks.*
+*Subordinate to [Spec 013](./spec.md) and [Plan 008](./plan.md). Spec-Driven; no implementation outside these tasks.*

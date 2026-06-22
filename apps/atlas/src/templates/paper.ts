@@ -49,7 +49,8 @@ export function pageStyles(): string {
     .rule { border-top: 1px solid var(--rule); }
     code, .micro { font-family: var(--mono); font-size: 12px; }
     /* Navigate marquee (Welcome panel). The track contains the cards twice so
-       a -50% translateX loops seamlessly. Pauses on hover so a click lands.
+       a -50% translateX loops seamlessly. Starts paused so the page-load view
+       doesn't compete with the metrics above; hover the rail to play.
        Card width is set via the --card-width custom property so the spacing
        linter's 'width:' context substring exempts the literal from the
        canonical-scale rule (see apps/atlas/tests/atlas-token-linter.test.ts). */
@@ -61,8 +62,9 @@ export function pageStyles(): string {
       gap: 12px;
       width: max-content;
       animation: navigate-scroll 40s linear infinite;
+      animation-play-state: paused;
     }
-    .navigate-rail:hover .navigate-track { animation-play-state: paused; }
+    .navigate-rail:hover .navigate-track { animation-play-state: running; }
     .navigate-card {
       flex: 0 0 var(--card-width);
       display: flex;

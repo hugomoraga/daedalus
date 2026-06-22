@@ -11,8 +11,8 @@
 // only time-varying field; it varies per call and is therefore
 // stripped in AC-14 tests.
 
-import { existsSync, statSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, readFileSync, statSync } from "node:fs";
+import { join, resolve } from "node:path";
 import type { ProjectState } from "./types.ts";
 import { parseSpecs, computeActivePhase } from "./parser/specs.ts";
 import { parseSpecCompletion } from "./parser/completion.ts";
@@ -20,6 +20,7 @@ import { parseAdrs } from "./parser/adrs.ts";
 import { parsePhases } from "./parser/phases.ts";
 import { parseCodeInventory } from "./parser/inventory.ts";
 import { parseUseCases } from "./parser/use-cases.ts";
+import { parseBlockers, computeNextUnlocks } from "./parser/blockers.ts";
 
 export function parseRepo(rootPath: string): ProjectState {
   const root = resolve(rootPath);
@@ -44,7 +45,20 @@ export function parseRepo(rootPath: string): ProjectState {
   const codeInventory = parseCodeInventory(root);
   const useCases = parseUseCases(root);
 
-  // TODO PR-5: compute blocker graph + next-unlocks ranking.
+  // PR 5: blocker graph + next-unlocks. parseSpecs already populated
+  // card.blockers as `[]`; we re-read the spec contents to fill the
+  // unblocker lists.
+  const specContents = new Map<string, string>();
+  for (const card of specs) {
+    const path = join(root, "specs", card.slug, "spec.md");
+    if (existsSync(path)) specContents.set(card.slug, readFileSync(path, "utf8"));
+  }
+  parseBlockers(specs, specContents);
+  const nextUnlocks = computeNextUnlocks(specs);
+  const blockers = specs
+    .filter((s) => s.status === "Blocked" && s.blockers.length > 0)
+    .map((s) => ({ blockedSlug: s.slug, unblockers: s.blockers }));
+
   // TODO PR-6: runGitDiff(root).
   // TODO PR-7: runNpmTest(root).
   return {
@@ -54,6 +68,8 @@ export function parseRepo(rootPath: string): ProjectState {
     phases,
     codeInventory,
     useCases,
+    blockers,
+    nextUnlocks,
     activePhase,
   };
 }

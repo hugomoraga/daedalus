@@ -17,6 +17,11 @@ export { parseAdrs } from "./parser/adrs.ts";
 export { parsePhases } from "./parser/phases.ts";
 export { parseCodeInventory } from "./parser/inventory.ts";
 export { parseUseCases } from "./parser/use-cases.ts";
+export {
+  parseBlockers,
+  computeNextUnlocks,
+  type NextUnlock,
+} from "./parser/blockers.ts";
 export type {
   ProjectState,
   SpecCard,

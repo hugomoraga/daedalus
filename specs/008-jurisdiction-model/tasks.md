@@ -41,7 +41,8 @@
 |---|---|---|---|
 | **J-11** | `config/rulesets/` directory created with `.gitkeep` and a `README.md` explaining "no real rules in repo; placeholders are `tenant-declared` provenance with empty obligation arrays". | directory + README | §4 (Plan) |
 | **J-12** | `config/jurisdiction/keywords.txt` — curated list of jurisdiction-specific terms that must NOT appear in `packages/core/src/**`. Used by J-15. | text file | §6 (Plan) |
-| **J-13** | **Do NOT create `config/tenants/tenant-0.jurisdiction.ts` in this phase.** Tenant 0's jurisdiction content is for the human to provide (Tenant 0 Profile §1 marks it `[founder to confirm]`). The Core must function with `null` profile for tenant-0 (Tenant simply opts out of Tax & Compliance until profile lands). | nothing | §7 (Spec) |
+| **J-13** | **Do NOT create `config/tenants/tenant-0.jurisdiction.ts` in this phase.** Tenant 0's jurisdiction content is for the human to provide (Tenant 0 Profile §1 marks it `[founder to confirm]`). The Core must function with `null` profile for tenant-0 (Tenant simply opts out of Tax & Compliance until profile lands). When the founder adds the file, it MUST follow the env-var pattern in Plan §4.1 (read from `process.env`, no hardcoded PII). | nothing | §7 (Spec), Plan §4.1 |
+| **J-13.1** | Add `.env` to `.gitignore` so real tenant values never land in the repo. Add `.env.example` (committed) documenting every env var the system reads (current + future tenant-related ones). No `dotenv` dep — pure `process.env`. | `.gitignore` line + `.env.example` file | Plan §4.1, §4.2 |
 
 ## Phase E — Conformance & tests
 
@@ -56,7 +57,8 @@
 | ID | Task | Produces | Spec ref |
 |---|---|---|---|
 | **J-17** | Update `specs/004-tax-compliance-guard/spec.md` §4 to mark **B1** as resolved by this spec (with link), and re-prioritize remaining blockers (B2, B3) against the new specs. | edited spec 004 | §1, §8 (Spec 008) |
-| **J-18** | Update `config/tenants/tenant-0.ts` JSDoc comment to point to `config/tenants/tenant-0.jurisdiction.ts` as the (future) jurisdiction file, and to record that **for now** tenant-0 has no jurisdiction profile (opt-out). | edited tenant config | §3.1 |
+| **J-18** | Refactor `config/tenants/tenant-0.ts` to read parametrizable fields from `process.env` with sensible defaults (currency, enabledModules, alertThresholds). Keep structural fields (id, templates) in code. JSDoc note points to the future `tenant-0.jurisdiction.ts` and confirms **for now** tenant-0 has no jurisdiction profile (opt-out). | edited tenant config | §3.1, Plan §4.1 |
+| **J-19** | Update `docs/identity.md` (or equivalent) to record the env-var pattern as the binding mechanism for tenant-specific values, with `.env.example` as the canonical schema reference. | doc update | Plan §4.1, §4.2 |
 
 ## Sequencing
 

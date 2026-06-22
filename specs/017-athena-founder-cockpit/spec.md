@@ -3,8 +3,22 @@
 **Status:** Draft
 **Type:** Driving adapter — read+write+configure working surface for tenant admins
 **Owner:** Stewards
-**Version:** 0.1.0
+**Version:** 0.2.0 (open questions resolved)
 **Last updated:** 2026-06-22
+
+> **Revision note (v0.2.0).** All 10 open questions in §11 resolved by the steward on 2026-06-22. Summary of resolutions:
+> - **Q1 (auth):** per-session API key in HttpOnly cookie; founder pastes on first load.
+> - **Q2 (rendering):** SSR with embedded JSON-LD, identical to Atlas.
+> - **Q3 (role-triage):** the projection emits the role tag; Athena renders.
+> - **Q4 (decisions inbox):** a projection owned by the Core or the relevant module; the API serves it; Athena renders.
+> - **Q5 (config forms):** hand-rolled in v0, schema-driven (JSON Schema → form) in v1.
+> - **Q6 (catalog source):** per-tenant config exposed via the API as a projection; no new Core primitive.
+> - **Q7 (Phase 5 readiness):** placeholder panels in v0 ("Phase 5 not yet available"), absent per AC-6.
+> - **Q8 (delegation):** design the data model (`roleAssignment`) in v0; implement in v1; the AC-8 placeholder affordance is the visible signal.
+> - **Q9 (role population):** admin, operator, boss populated in v0; developer in the taxonomy with an empty list.
+> - **Q10 (unclassified warning):** small inline label with tooltip, not a blocking modal.
+>
+> v0.1.0 was the initial draft. The substantive content (goals, surface, ACs, activation criteria) is unchanged; v0.2.0 reflects the steward's resolutions.
 
 > **Method.** Spec-first (Constitution, Principle 8). Defines *what* Athena is and *why*, not *how*. Conceptual — no UI markup, no JSON shapes, no handler code. Athena consumes the [Platform API (Spec 016)](../016-platform-api/spec.md) over HTTP; the API is the contract, Athena is a curator on top of it.
 
@@ -244,16 +258,18 @@ Athena does **not** add new event types. This is binding.
 
 ## 11. Open questions
 
-- **Q1 — Auth model for Athena.** Does Athena hold a session that proxies the API key, or does the founder enter the API key per session? *Recommendation:* per-session, with the key stored in an HttpOnly cookie. v0 does not implement a real auth UI; the founder enters the key on first load.
-- **Q2 — UI rendering style.** SSR with embedded JSON-LD (parallels Atlas) vs. client-side rendering with a thin SSR shell. *Recommendation:* SSR with embedded JSON-LD, identical to Atlas. Same discipline, same token discipline, same static-asset convention.
-- **Q3 — Role-triage logic.** Where is the role assigned to an item? Options: (a) the projection itself carries the role tag; (b) Athena classifies on render. *Recommendation:* (a) — projections emit role-tagged items; Athena renders. Keeps Athena free of business logic.
-- **Q4 — "Decisions inbox" data shape.** Is it a projection of "events awaiting human action," or a derived view? *Recommendation:* a projection. The Core or the relevant module owns the "pending decisions" view; the API exposes it.
-- **Q5 — Configuration forms.** How are complex configurations (e.g. an agent spec) presented? Options: JSON editor, schema-driven form, hand-rolled form per entity. *Recommendation:* schema-driven form (JSON Schema → form). v0 ships with hand-rolled forms for the four entity types (catalog, agent, channel, pipeline); schema-driven is a v1 affordance.
-- **Q6 — Service catalog source.** Is the catalog a tenant config (per-tenant) or a Core/Module concept? *Recommendation:* per-tenant config, exposed via the API as a projection. No new Core primitive.
-- **Q7 — Phase 5 readiness.** Agents and channels depend on Phase 5 (Agent Runtime). *Recommendation:* Athena's v0 ships with **placeholder panels** for agents, channels, and pipelines. The placeholders show "Phase 5 not yet available" and are absent per AC-6 (sections activate as their backing engines land — Atlas's pattern). The configuration surface for them is also deferred.
-- **Q8 — Delegation model.** v0 has no delegation; v1 introduces it. *Recommendation:* define the delegation data model in v0's design (a `roleAssignment` entity — actor + role + scope), but do not implement it in v0. The placeholder affordance in AC-8 is the visible signal.
-- **Q9 — "Boss" and "Developer" roles in v0.** The conversation's role taxonomy was admin / operator / boss / developer. v0 may not have all four populated (e.g. "developer" is largely irrelevant until there is technical debt to triage). *Recommendation:* v0 ships with admin, operator, and boss populated from the available projections. "Developer" appears in the role taxonomy with an empty list, signaling that the founder does not currently wear that hat (and delegating it is a v1 concern).
-- **Q10 — Acceptance criteria for the "unclassified" warning.** AC-4 mentions unclassified items render with a warning. *Recommendation:* the warning is a small inline label, not a blocking modal. Visible enough to notice; not so loud it disrupts the flow.
+> **Status (2026-06-22):** all 10 open questions resolved by the steward. Each entry below records the question and the binding resolution. Resolved questions are kept in this section (rather than deleted) so the decision log is auditable; downstream amendments should append new questions, not edit resolutions.
+
+- **Q1 — Auth model for Athena.** Per-session API key in HttpOnly cookie vs. localStorage vs. per-request entry. *Resolution:* **per-session API key in an HttpOnly cookie** set by `session.ts` on first request; the founder pastes the key once. The browser never sees the key. Zero XSS surface, matches the platform's "no client-side state" discipline. v0 has no real auth UI. See §7.
+- **Q2 — UI rendering style.** SSR with embedded JSON-LD vs. client-side framework vs. hybrid. *Resolution:* **SSR with embedded JSON-LD, identical to Atlas.** Same discipline, same token discipline, same static-asset convention. No framework, no client-side hydration. See §1 and §7.
+- **Q3 — Role-triage logic.** Projection carries the role tag vs. Athena classifies on render. *Resolution:* **the projection emits the role tag.** The Core or the relevant module owns the role assignment; the projection emits `{ role, urgency, nextAction }` per item; Athena renders. Keeps Athena free of business logic (AC-9). See §3 Goal 1, AC-4.
+- **Q4 — "Decisions inbox" data shape.** Projection of "events awaiting human action" vs. derived view in Athena. *Resolution:* **a projection owned by the Core or the relevant module.** The API serves it; Athena renders. Mirrors Q3: projections are the source of truth. See §4 (decisions inbox row) and AC-5.
+- **Q5 — Configuration forms.** Hand-rolled per entity vs. JSON editor vs. schema-driven from v0. *Resolution:* **hand-rolled in v0; schema-driven (JSON Schema → form) is a v1 affordance.** v0 ships four hand-rolled forms (catalog, agent, channel, pipeline). When the surface grows or forms get repetitive, v1 adds a JSON-Schema-driven generator. Simplicity First. See §3 Goal 3, AC-6.
+- **Q6 — Service catalog source.** Per-tenant config vs. Core/Module concept. *Resolution:* **per-tenant config, exposed via the API as a projection.** Lives in `config/tenants/<tenant>.ts` (or a projection backed by `CatalogItemUpserted` events). No new Core primitive. Matches Constitution Principle 10 (Generic Core, Specific Tenants). See §4 (catalog row).
+- **Q7 — Phase 5 readiness (agents, channels, pipelines).** Placeholder panels vs. full panels vs. hard-coded "coming soon." *Resolution:* **placeholder panels in v0** that render "Phase 5 not yet available" if the user navigates to their URL; **absent from the registry** per AC-6 (Atlas pattern — sections activate as their backing engines land). The configuration surface for them is also deferred. Honest surface beats aspirational placeholder. See §4 and AC-6.
+- **Q8 — Delegation model.** Design in v0, implement in v1 vs. implement in v0 vs. skip the placeholder. *Resolution:* **design the data model in v0** (a `roleAssignment` entity: actor + role + scope), **implement in v1.** The AC-8 placeholder affordance ("Delegate this role…" greyed-out with "v1" tooltip) is the visible signal. The data model is documented in the spec but not built. See AC-8.
+- **Q9 — Role population in v0.** Four roles populated vs. three populated + developer empty. *Resolution:* **admin, operator, boss populated in v0 from the available projections; "developer" appears in the role taxonomy with an empty list.** The empty list signals "you do not currently wear that hat" — a v1 delegation concern. Matches the conversation's role taxonomy. See §3 Goal 1 and §11 Q3.
+- **Q10 — Unclassified warning UX (AC-4).** Inline label vs. blocking modal vs. silent drop. *Resolution:* **small inline label with tooltip** ("⚠ unclassified" + "this item has no role assigned"). Visible enough to notice; not so loud it disrupts the flow. Honest about a missing data attribute, not noisy. See AC-4.
 
 ---
 

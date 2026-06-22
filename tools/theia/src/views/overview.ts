@@ -1,0 +1,208 @@
+// Theia (Spec 012) — overview view (PR 8).
+//
+// Renders the single-page overview from a ProjectState. Sections
+// (matching Spec §5):
+//   - Phase timeline (AC-1)
+//   - Spec grid (AC-2)
+//   - ADRs (AC-5)
+//   - Code inventory (AC-6)
+//   - Use cases (AC-7)
+//   - Tests (AC-8 — running… placeholder while pendingTests resolves)
+//   - Diff summary (AC-9)
+//   - Blockers + next-unlocks (AC-10)
+//
+// The view is read-only by construction: no POST, no forms. The
+// browser is a renderer (per §7 "no client-side state for project
+// data"); refresh = re-request.
+
+import type { ProjectState } from "../types.ts";
+import { renderLayout } from "./layout.ts";
+import { escapeHtml, tag } from "./tokens.ts";
+
+export function renderOverview(state: ProjectState): string {
+  const body = [
+    renderPhaseTimeline(state),
+    renderSpecGrid(state),
+    renderAdrsSection(state),
+    renderCodeInventorySection(state),
+    renderUseCasesSection(state),
+    renderTestsSection(state),
+    renderDiffSection(state),
+    renderBlockersSection(state),
+  ].join("\n");
+  return renderLayout({ title: "Overview · Theia", body });
+}
+
+function renderPhaseTimeline(state: ProjectState): string {
+  if (state.phases.length === 0) {
+    return section("Phases", "<p class=\"muted\">No roadmap phases detected.</p>");
+  }
+  const maxPhase = Math.max(...state.phases.map((p) => p.number));
+  const cells: string[] = [];
+  for (let n = 0; n <= maxPhase; n++) {
+    const phase = state.phases.find((p) => p.number === n);
+    const isActive = n === state.activePhase;
+    const bg = isActive ? "var(--accent)" : phase !== undefined ? "var(--card)" : "transparent";
+    const color = isActive ? "var(--paper)" : "var(--ink)";
+    const border = phase !== undefined ? "1px solid var(--rule)" : "1px dashed var(--rule)";
+    cells.push(`<div style="
+      flex: 1; min-width: 80px; padding: 8px; border-radius: 2px;
+      background: ${bg}; color: ${color}; border: ${border};
+      font-family: var(--mono); font-size: 12px; text-align: center;
+    ">Phase ${n}${phase !== undefined ? `<br><small>${escapeHtml(phase.title)}</small>` : ""}</div>`);
+  }
+  return section(`Phases (${state.phases.length})`, `<div style="display:flex; gap:8px;">${cells.join("")}</div>`);
+}
+
+function renderSpecGrid(state: ProjectState): string {
+  if (state.specs.length === 0) {
+    return section("Specs", "<p class=\"muted\">No specs detected.</p>");
+  }
+  const sorted = [...state.specs].sort((a, b) => {
+    if (a.status !== b.status && a.status === "Ratified" && b.status !== "Ratified") return -1;
+    if (b.status === "Ratified" && a.status !== "Ratified") return 1;
+    return a.slug.localeCompare(b.slug);
+  });
+  const cards = sorted.map((s) => {
+    const done = s.tasksDone + s.planDone;
+    const total = s.tasksTotal + s.planTotal;
+    const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+    const statusTone = s.status === "Ratified" ? "ok" : s.status === "Blocked" ? "alert" : "neutral";
+    return `<div class="theia-card">
+      <div>${tag(s.status, statusTone)} <strong>${escapeHtml(s.slug)}</strong></div>
+      <div class="theia-mono" style="margin-top: 4px;">Phase ${s.phase ?? "?"} · v${escapeHtml(s.version ?? "?")}</div>
+      <div style="margin-top: 8px;">${escapeHtml(s.title)}</div>
+      <div style="margin-top: 8px;">
+        <span class="theia-mono">${done}/${total} tasks</span>
+        <span class="theia-progress"><span style="width:${pct}%"></span></span>
+      </div>
+    </div>`;
+  }).join("");
+  return section(
+    `Specs (${state.specs.length})`,
+    `<div class="theia-grid">${cards}</div>`,
+  );
+}
+
+function renderAdrsSection(state: ProjectState): string {
+  if (state.adrs.length === 0) {
+    return section("ADRs", "<p class=\"muted\">No ADRs detected.</p>");
+  }
+  const rows = state.adrs.map((a) => {
+    const tone = a.status === "Accepted" ? "ok" : a.status === "Superseded" ? "neutral" : "neutral";
+    return `<tr>
+      <td style="padding: 4px 8px;">${tag(a.status, tone)}</td>
+      <td style="padding: 4px 8px;" class="theia-mono">ADR-${String(a.number).padStart(3, "0")}</td>
+      <td style="padding: 4px 8px;">${escapeHtml(a.title)}</td>
+      <td style="padding: 4px 8px;" class="theia-mono">${escapeHtml(a.date ?? "")}</td>
+    </tr>`;
+  }).join("");
+  return section(
+    `ADRs (${state.adrs.length})`,
+    `<table style="width:100%; border-collapse: collapse;">${rows}</table>`,
+  );
+}
+
+function renderCodeInventorySection(state: ProjectState): string {
+  if (state.codeInventory.length === 0) {
+    return section("Code", "<p class=\"muted\">No code inventory.</p>");
+  }
+  const grouped = new Map<string, typeof state.codeInventory>();
+  for (const entry of state.codeInventory) {
+    const list = grouped.get(entry.kind) ?? [];
+    list.push(entry);
+    grouped.set(entry.kind, list);
+  }
+  const parts: string[] = [];
+  for (const kind of ["app", "package", "test"] as const) {
+    const list = grouped.get(kind) ?? [];
+    if (list.length === 0) continue;
+    const items = list.map((e) => `<li><code>${escapeHtml(e.name)}</code></li>`).join("");
+    parts.push(`<h3>${kind} (${list.length})</h3><ul>${items}</ul>`);
+  }
+  return section("Code inventory", parts.join(""));
+}
+
+function renderUseCasesSection(state: ProjectState): string {
+  if (state.useCases.length === 0) {
+    return section("CLI commands", "<p class=\"muted\">No commands detected.</p>");
+  }
+  const items = state.useCases.map((u) => `<li><code>${escapeHtml(u.command)}</code></li>`).join("");
+  return section(`CLI commands (${state.useCases.length})`, `<ul>${items}</ul>`);
+}
+
+function renderTestsSection(state: ProjectState): string {
+  const t = state.tests;
+  if (t.running) {
+    return section(
+      "Tests",
+      `<div class="theia-card theia-mono">running…</div>`,
+    );
+  }
+  if (t.total === null) {
+    return section(
+      "Tests",
+      `<div class="theia-warn-banner">tests unavailable: ${escapeHtml(t.reason ?? "unknown")}</div>`,
+    );
+  }
+  const ok = t.fail === 0;
+  const banner = ok
+    ? ""
+    : `<div class="theia-fail-banner">${t.fail} test${t.fail === 1 ? "" : "s"} failed</div>`;
+  const failList = t.failingNames.length === 0
+    ? ""
+    : `<details><summary>${t.failingNames.length} failing</summary><ul>${t.failingNames.map((n) => `<li class="theia-mono">${escapeHtml(n)}</li>`).join("")}</ul></details>`;
+  return section(
+    "Tests",
+    `${banner}<div class="theia-card">
+      <div class="theia-mono">${t.pass}/${t.total} pass${t.fail !== null && t.fail > 0 ? `, ${t.fail} fail` : ""}</div>
+      ${failList}
+    </div>`,
+  );
+}
+
+function renderDiffSection(state: ProjectState): string {
+  const d = state.diff;
+  if (!d.available) {
+    return section(
+      "Diff",
+      `<p class="muted">${escapeHtml(d.reason ?? "no diff available")}</p>`,
+    );
+  }
+  const commitList = d.commits.length === 0
+    ? "<p class=\"muted\">No commits ahead of main.</p>"
+    : `<ul class="theia-mono">${d.commits.slice(0, 10).map((c) => `<li>${escapeHtml(c.sha.slice(0, 7))} ${escapeHtml(c.subject)}</li>`).join("")}${d.commits.length > 10 ? `<li>… +${d.commits.length - 10} more</li>` : ""}</ul>`;
+  const branchLabel = d.branch !== null ? `branch <code>${escapeHtml(d.branch)}</code>` : "no branch";
+  return section(
+    `Diff (${branchLabel})`,
+    `<div class="theia-card">
+      <div class="theia-mono">${d.filesChanged} files · +${d.insertions} / -${d.deletions}</div>
+      ${commitList}
+    </div>`,
+  );
+}
+
+function renderBlockersSection(state: ProjectState): string {
+  const parts: string[] = [];
+  if (state.blockers.length > 0) {
+    const items = state.blockers.map((b) => {
+      const unblockers = b.unblockers.map((u) => `<code>${escapeHtml(u.unblockerSlug)}</code>`).join(", ");
+      return `<li><code>${escapeHtml(b.blockedSlug)}</code> blocked by ${unblockers}</li>`;
+    }).join("");
+    parts.push(`<h3>Blocked (${state.blockers.length})</h3><ul>${items}</ul>`);
+  } else {
+    parts.push(`<p class="muted">No specs currently blocked.</p>`);
+  }
+  if (state.nextUnlocks.length > 0) {
+    const items = state.nextUnlocks.map((u) => `<li><code>${escapeHtml(u.slug)}</code> → would unblock ${u.unlocksCount}</li>`).join("");
+    parts.push(`<h3>Next unlocks</h3><ul>${items}</ul>`);
+  }
+  return section("Blockers + next unlocks", parts.join(""));
+}
+
+function section(title: string, body: string): string {
+  return `<section class="theia-section">
+    <h3>${escapeHtml(title)}</h3>
+    ${body}
+  </section>`;
+}

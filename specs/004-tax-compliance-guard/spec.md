@@ -11,7 +11,7 @@
 > **Method.** Spec-first (Constitution, Principle 8). The original v0.5.0 stub
 > held the place and recorded 4 unblockers (B1..B4). All four shipped:
 >
-> - **B1** [Spec 008 — Jurisdiction Model](../008-jurisdiction-model/spec.md) (PR #35) — Core types, ports, adapters, lint scripts, env-var pattern.
+> - **B1** [Spec 008 — Jurisdiction Model](../013-jurisdiction-model/spec.md) (PR #35) — Core types, ports, adapters, lint scripts, env-var pattern.
 > - **B2** [Spec 009 — Policy Engine](../009-policy-engine/spec.md) (PR #47) — Core types, 3-outcome verdict, default evaluator, use case, adapters, `PolicyDecisionRecorded`, lint.
 > - **B3** [Spec 010 — Authoritative Rule Source](../010-authoritative-rule-source/spec.md) (PR #50) — 4 Core events, 4 use cases, default staleness config, 3 CLI commands, lint.
 > - **B4** Spec 001 Revenue Visibility v1 — `RevenueConfirmed`, `RevenueReceived`, `ExpenseRegistered`, `FinancialSummary` (PR #29).

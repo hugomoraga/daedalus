@@ -1,7 +1,7 @@
 # Plan 008 — Jurisdiction Model (Core)
 
-**Status:** Ratified · implementation plan for [Spec 008](./spec.md) v1.0.0
-**Derives from:** [Spec 008](./spec.md)
+**Status:** Ratified · implementation plan for [Spec 013](./spec.md) v1.0.0
+**Derives from:** [Spec 013](./spec.md)
 **Conforms to:** [Technical Principles](../../memory/technical-principles.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md)
 **Version:** 1.0.0
 **Last updated:** 2026-06-21
@@ -10,7 +10,7 @@
 
 ---
 
-## 0. Decisions carried from Spec 008
+## 0. Decisions carried from Spec 013
 
 - **Core owns the shape, Module owns the interpretation.** The Core never evaluates an obligation.
 - **RuleSet content lives in `config/rulesets/<tenant>/`** (data, not code). Loaded by a `FilesystemRuleSetLoaderAdapter` (default).
@@ -162,8 +162,8 @@ This is the mechanical form of Constitution Principle 10 for the jurisdiction la
 - The Policy Engine that will eventually evaluate obligations (Spec 009 stub).
 - The authoritative-source acquisition process (Spec 010 stub).
 - Rule versioning UI / diff tooling. Version bumps replace by reference; no migration logic.
-- Multi-jurisdiction-per-tenant (deferred per Spec 008 §6).
+- Multi-jurisdiction-per-tenant (deferred per Spec 013 §6).
 
 ---
 
-*Subordinate to [Spec 008](./spec.md) and the canon. Hexagonal; ports earn their place; jurisdiction content stays in the Tenant layer.*
+*Subordinate to [Spec 013](./spec.md) and the canon. Hexagonal; ports earn their place; jurisdiction content stays in the Tenant layer.*

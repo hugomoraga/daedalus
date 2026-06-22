@@ -91,7 +91,7 @@ type PolicyMatch =
 
 ### 3.3 `PolicyProvenance` (mandatory)
 
-Every policy MUST carry provenance. Mirrors `RuleProvenance` from [Spec 008](../008-jurisdiction-model/spec.md) §3.3 — same intent (who vouched for this content, when, with what source), same mandatory nature.
+Every policy MUST carry provenance. Mirrors `RuleProvenance` from [Spec 013](../013-jurisdiction-model/spec.md) §3.3 — same intent (who vouched for this content, when, with what source), same mandatory nature.
 
 ```ts
 type PolicyProvenance = {
@@ -103,7 +103,7 @@ type PolicyProvenance = {
 };
 ```
 
-The Core validates provenance (via `validatePolicyProvenance` — same shape as `validateProvenance` from Spec 008). A policy without provenance is a hard error.
+The Core validates provenance (via `validatePolicyProvenance` — same shape as `validateProvenance` from Spec 013). A policy without provenance is a hard error.
 
 ### 3.4 `PolicyDecision` (the engine's verdict)
 
@@ -135,7 +135,7 @@ interface PolicyEnginePort {
   }): Promise<PolicyDecision>;
 }
 
-// The action being evaluated. v1 supports: obligation events from Spec 008
+// The action being evaluated. v1 supports: obligation events from Spec 013
 // (ObligationMissed is the canonical first case), and arbitrary action
 // shapes via the Module layer (any Module can construct a PolicyAction).
 type PolicyAction = {
@@ -198,7 +198,7 @@ Full lineage per ADR-004: `tenantId`, `actor`, `occurredAt`, `correlationId`, `c
 
 ## 9. Persistence
 
-The default **policy store** reads from `config/policies/<tenant>/<policyId>@<version>.json` (filesystem-backed; mirrors the [Spec 008 ruleset loader](../008-jurisdiction-model/spec.md) pattern). A tenant can supply its own store by implementing `PolicyStorePort`.
+The default **policy store** reads from `config/policies/<tenant>/<policyId>@<version>.json` (filesystem-backed; mirrors the [Spec 013 ruleset loader](../013-jurisdiction-model/spec.md) pattern). A tenant can supply its own store by implementing `PolicyStorePort`.
 
 ```ts
 interface PolicyStorePort {
@@ -232,12 +232,12 @@ A test double (`InMemoryPolicyStore`) is shipped for unit tests and Phase 1 defa
 - ✅ Every governed action's audit trail can be replayed to derive the exact policy decision.
 - ✅ A tenant can swap a Module's policy bundle for its own without Core changes (Constitution Principle 10).
 - ✅ `escalate` *never* auto-resolves. Time has no opinion. A workflow's `requiresHuman` is a separate concept; the policy engine emits `escalate`, and the caller (Module / Workflow Engine) decides what to do with the `gateRef`.
-- ✅ Engine never modifies policies. Policies are immutable per version. (Spec 008 §6 Conformance, mirrored.)
-- ✅ `verifiedBy` (PII) never enters git history. Mirrors the Spec 008 env-var pattern: policy provenance is loaded from `.env` (gitignored) at composition time.
+- ✅ Engine never modifies policies. Policies are immutable per version. (Spec 013 §6 Conformance, mirrored.)
+- ✅ `verifiedBy` (PII) never enters git history. Mirrors the Spec 013 env-var pattern: policy provenance is loaded from `.env` (gitignored) at composition time.
 
 ## 13. Non-goals (this spec, this version)
 
-- Inventing policies for any tenant. (Same line as Spec 008 §6: "No invented rules.")
+- Inventing policies for any tenant. (Same line as Spec 013 §6: "No invented rules.")
 - A DSL for policies.
 - A "policy marketplace" or policy inheritance.
 - Auto-fetching policies from external sources.
@@ -256,7 +256,7 @@ A test double (`InMemoryPolicyStore`) is shipped for unit tests and Phase 1 defa
 | [Constitution Principle 10](../../memory/constitution.md) | Engine stays generic; Module owns policies; Tenant owns parameters. |
 | [Roadmap Phase 3](../../docs/roadmap.md#phase-3--policy-engine) | This spec *is* the Phase 3 capability. |
 | [Spec 004](../004-tax-compliance-guard/spec.md) | First consumer of this engine (its B2). The tax-compliance-policy bundle will be the first real consumer. |
-| [Spec 008](../008-jurisdiction-model/spec.md) | Provides the obligation shape that the tax-compliance policy bundle will consume. The `verifyProvenance` pattern is mirrored. |
+| [Spec 013](../013-jurisdiction-model/spec.md) | Provides the obligation shape that the tax-compliance policy bundle will consume. The `verifyProvenance` pattern is mirrored. |
 | [Spec 008 — Workflow Engine](../008-workflow-engine/spec.md) | The Workflow Engine's `PolicyDecisionPort` (v0 no-op) is a separate, simpler surface for "should this transition need human approval?" The Policy Engine is the richer, audited substrate. They will be integrated in a future Spec. |
 | [ADR-001](../../governance/decisions/ADR-001-defer-root-entity-selection.md) | Open questions resolved based on Phase 2 evidence (engine shipped) + the v0.1 spec's own framing. No premature design. |
 | [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md) | `PolicyDecisionRecorded` carries full lineage. The engine respects tenant boundaries structurally. |

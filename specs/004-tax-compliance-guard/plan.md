@@ -2,7 +2,7 @@
 
 **Status:** Ratified · implementation plan for [Spec 004](./spec.md) v1.0.0
 **Derives from:** [Spec 004](./spec.md)
-**Conforms to:** [Technical Principles](../../memory/technical-principles.md), [ADR-002](../../governance/decisions/ADR-002-adopt-technical-framework.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md), [Spec 008](../008-jurisdiction-model/spec.md), [Spec 009](../009-policy-engine/spec.md), [Spec 010](../010-authoritative-rule-source/spec.md)
+**Conforms to:** [Technical Principles](../../memory/technical-principles.md), [ADR-002](../../governance/decisions/ADR-002-adopt-technical-framework.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md), [Spec 008](../013-jurisdiction-model/spec.md), [Spec 009](../009-policy-engine/spec.md), [Spec 010](../010-authoritative-rule-source/spec.md)
 **Version:** 1.0.0
 **Last updated:** 2026-06-22
 

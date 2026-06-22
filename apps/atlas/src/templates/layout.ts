@@ -61,8 +61,8 @@ export function renderLayout(props: LayoutProps): string {
     main {
       display: grid;
       grid-template-columns: var(--rail-width) 1fr;
-      gap: ${tokens.space.s7}px;
-      padding: ${tokens.space.s7}px;
+      gap: 10px;
+      padding: 20px;
       max-width: 1280px;
       width: 100%;
       margin: 0 auto;

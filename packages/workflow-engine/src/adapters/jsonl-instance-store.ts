@@ -9,7 +9,15 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import type { Instance } from "../domain/instance.ts";
+import type { InstanceQueryOptions, InstanceStatusFilter } from "../domain/instance-query.ts";
 import type { InstanceStorePort } from "../application/ports/instance-store.ts";
+import {
+  clampLimit,
+  filterByStatus,
+  filterByWorkflow,
+  filterSince,
+  sortByStartedAtDesc,
+} from "../application/projections/_helpers.ts";
 
 function assertSafeSegment(value: string, name: string): void {
   if (value.length === 0) throw new Error(`${name} must not be empty`);
@@ -66,6 +74,39 @@ export class JsonlInstanceStoreAdapter implements InstanceStorePort {
       }
     }
     return Array.from(latest.values());
+  }
+
+  // NEW in Spec 011 v1.0 — additive read method for the read-side projections
+  // (Active Processes, Queue Status, Workflow Metrics). Streams the per-tenant
+  // file, keeps the latest snapshot per id, applies filters in memory, sorts
+  // by `startedAt` desc, clamps `limit` to 1000. Returns `[]` on missing file.
+  async list(
+    tenantId: string,
+    options?: InstanceQueryOptions,
+  ): Promise<Instance[]> {
+    const file = this.#file(tenantId);
+    if (!existsSync(file)) return [];
+    const content = await readFile(file, "utf8");
+    const latest = new Map<string, Instance>();
+    for (const line of content.split("\n")) {
+      if (line.trim().length === 0) continue;
+      try {
+        const inst = JSON.parse(line) as Instance;
+        latest.set(inst.id, inst); // overwrite = latest snapshot wins
+      } catch {
+        // skip malformed lines
+      }
+    }
+    const all = Array.from(latest.values());
+    // Default status filter: live instances only (Spec 011 §3.1 / AC-2).
+    const statusFilter: InstanceStatusFilter[] = options?.status ?? ["active", "waiting_human"];
+    const filtered = sortByStartedAtDesc(
+      filterByWorkflow(
+        filterSince(filterByStatus(all, statusFilter), options?.since),
+        options,
+      ),
+    );
+    return filtered.slice(0, clampLimit(options));
   }
 
   async save(tenantId: string, instance: Instance): Promise<void> {

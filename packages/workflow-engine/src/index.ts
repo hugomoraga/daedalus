@@ -12,6 +12,20 @@ export type {
   Workflow,
 } from "./domain/workflow.ts";
 export type { Instance, InstanceStatus, InstanceTransition } from "./domain/instance.ts";
+// NEW in Spec 011 v1.0 — read-side query types (additive).
+export type {
+  InstanceStatusFilter,
+  InstanceQueryOptions,
+} from "./domain/instance-query.ts";
+export type {
+  ActiveProcessView,
+  QueueStatus,
+  QueueStatusByWorkflow,
+  QueueStatusTotals,
+  WorkflowMetrics,
+  WorkflowMetricsByWorkflow,
+  WorkflowMetricsTotals,
+} from "./domain/projection-types.ts";
 
 // Engine event vocabulary
 export {
@@ -50,6 +64,14 @@ export { capturingEventStore, type CapturingEventStore } from "./application/cap
 
 // Engine loop
 export { runEngine } from "./application/engine.ts";
+
+// NEW in Spec 011 v1.0 — read-side projection functions (pure, deterministic).
+// Consumers (ATLAS first) import these to derive display shapes from Instance[].
+// Projection helpers (`_helpers.ts`) are intentionally NOT re-exported — they
+// are implementation details of the projection functions themselves.
+export { projectActiveProcesses } from "./application/projections/active-processes.ts";
+export { projectQueueStatus } from "./application/projections/queue-status.ts";
+export { projectWorkflowMetrics } from "./application/projections/workflow-metrics.ts";
 
 // Pure domain helpers (kept on the public contract — domain primitives a
 // composition root or a future custom transition policy may legitimately need)

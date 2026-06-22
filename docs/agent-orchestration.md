@@ -55,7 +55,7 @@ git worktree remove /Users/hu/daedalus-atlas-spec-ratify
 ## What the protocol does NOT cover
 
 - **Coordination of shared files** (e.g. `package.json`, `tools/`). If two sessions need to touch the same file, one opens first; the other rebases after.
-- **Branch number allocation.** Sessions pick an unused `NNN` from `git log main --oneline` (the highest N + 1). The `.data/agents/<session-id>/branch.json` advisory log (mentioned in [ADR-008 §5](../governance/decisions/ADR-008-worktree-per-session.md)) is **not yet implemented**; today, branch-number collisions are caught at PR-review time.
+- **Branch number allocation.** Sessions pick an unused `NNN` from `git log main --oneline` (the highest N + 1). Coordination is via `git worktree list --porcelain` (per [ADR-008 §5](../governance/decisions/ADR-008-worktree-per-session.md)) — that is the source of truth for which branches are bound to which worktrees. There is no separate advisory log; branch-number collisions are caught at PR-review time.
 - **Cross-worktree test runs.** Tests run in the worktree they're invoked from. There is no shared test orchestration between sessions; each worktree is independent.
 
 ## Related

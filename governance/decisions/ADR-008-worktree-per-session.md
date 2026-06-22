@@ -1,6 +1,6 @@
 # ADR-008 — Worktree-per-session for parallel agents + branch-ownership protocol
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-06-22
 **Deciders:** Stewards
 **Trigger:** Two work-loss incidents in a single session (2026-06-22): a Spec 007 ratification commit was nearly lost to a `git reset` after an auto-branch-switch; a path-cleanup set of uncommitted edits was wiped by the same pattern.
@@ -65,7 +65,7 @@ The AGENTS.md rule is sharpened:
 > **One agent per branch per worktree. A branch is checked out in at most one worktree at a time.**
 
 - A session may **read** another session's branch via `git show <branch>:<path>` or via PR review, but it does **not** check it out.
-- The coordination log (`.data/agents/<session-id>/branch.json`, see §5) records who owns which branch; opening a new session picks an unused N.
+- **Enforcement is convention + bootstrap, not a hook.** `tools/scripts/new-session.sh` refuses to bind a branch that is already checked out in another worktree (it greps `git worktree list --porcelain`). Git itself prevents two worktrees from checking out the same branch. A pre-commit hook that re-checks `git worktree list` is intentionally **not** shipped — the rule is social, not tool-enforced; documenting it is enough.
 
 ### 3. **Branch naming carries the session id (optional but recommended)**
 
@@ -85,21 +85,24 @@ The only hooks that run early enough are per-CLI tools or the user's own discipl
 
 This was deliberately cut from the ADR after empirical verification on git 2.53. The worktree is the structural fix; no hook can substitute.
 
-### 5. **Coordination log (`.data/agents/<session-id>/branch.json`)**
+### 5. **Coordination: `git worktree list --porcelain` is the source of truth**
 
-Each session writes a tiny JSON file declaring itself:
+There is **no separate coordination log**. Branch ↔ worktree bookkeeping already exists in git and is queryable:
 
-```json
-{
-  "sessionId": "atlas-claude-2026-06-22-pt2",
-  "branch": "056-atlas-path-cleanup",
-  "worktree": "/Users/hu/daedalus-atlas",
-  "openedAt": "2026-06-22T08:30:00.000Z",
-  "capability": "ATLAS path cleanup"
-}
+```bash
+$ git worktree list --porcelain
+worktree /Users/hu/daedalus-atlas
+HEAD abc123…
+branch refs/heads/056-atlas-path-cleanup
+
+worktree /Users/hu/daedalus-spec004
+HEAD def456…
+branch refs/heads/052-spec004-impl
 ```
 
-A new session reads `.data/agents/*/branch.json` to see what's active before picking an N. The log is **advisory**, not enforced; the worktree is the structural enforcement.
+A new session runs `git worktree list --porcelain` to see which branches are bound to which worktrees before picking an `NNN`. **This is the only coordination mechanism.** No `.data/agents/<session-id>/branch.json` is written or read — that location was considered and rejected because `.data/` is per-worktree (§6), so a per-worktree log cannot communicate *across* sessions, which is precisely what coordination needs.
+
+`tools/scripts/new-session.sh` already uses `git worktree list --porcelain` to refuse clobbering an existing branch binding; no new code is required.
 
 ### 6. **`.data/` is per-worktree**
 
@@ -166,14 +169,14 @@ This ADR does **not** amend the Constitution, Technical Principles, or Identity.
 ### Positive
 - **No work loss from auto-branch-switch.** A `git checkout` in one worktree cannot touch another's working tree. The two failure modes observed on 2026-06-22 become structurally impossible.
 - **True parallel sessions.** Two sessions can run *simultaneously* on *different branches* in *different worktrees* without coordination beyond the branch number.
-- **Better debugging.** `git worktree list` shows exactly which session is on which branch. The `.data/agents/<id>/branch.json` log makes intent explicit.
+- **Better debugging.** `git worktree list --porcelain` shows exactly which session is on which branch. No parallel log to maintain.
 - **No canon change.** Operational, not architectural.
 
 ### Negative / risks
 - **Disk usage.** Each worktree holds a copy of the working tree + `node_modules/`. For this repo (small), the cost is negligible. For larger repos, worktrees double the on-disk size. **Mitigation:** prune stale worktrees after merge.
 - **Setup overhead.** One extra command per session. **Mitigation:** the `tools/scripts/new-session.sh` script (one line).
 - **`.data/` divergence.** Each worktree's tests see only that worktree's `.data/`. Already true for `mkdtemp`-based tests; this just makes it explicit. **Mitigation:** none needed.
-- **WIP commit cleanup burden.** The pre-checkout hook auto-commits, which can litter a branch with WIP commits if used heavily. **Mitigation:** the worktree makes this hook rarely needed; the hook is the last-resort fallback, not the primary mechanism.
+- **No WIP-commit hook is shipped.** Tempting to add a `pre-checkout` hook that auto-commits WIP — but git's hook fires *after* the worktree update (§4), so it cannot save uncommitted edits. The worktree is the structural fix; no automated save mechanism is provided. **Mitigation:** none needed — commit or stash before any in-worktree checkout.
 - **Cross-worktree reads.** To read another session's work, use `git show <branch>:<path>` or PR review (not `git checkout`). This is a small ceremony, not a real cost.
 
 ---
@@ -181,10 +184,16 @@ This ADR does **not** amend the Constitution, Technical Principles, or Identity.
 ## Acceptance (met when)
 
 - [x] `tools/scripts/new-session.sh` exists, is executable, refuses to clobber existing worktrees/branches.
-- [ ] AGENTS.md §"Git & collaboration protocol" is updated to reference this ADR and to require the worktree-per-session pattern.
-- [ ] A short doc note in `docs/agent-orchestration.md` (new file, ~30 lines) explains the workflow with a worked example.
-- [ ] No `pre-checkout` hook (proven infeasible per §4 — git fires it post-update).
-- [ ] No code, no spec, no new event types — this ADR is operational governance only.
+- [x] AGENTS.md §"Git & collaboration protocol" is updated to reference this ADR and to require the worktree-per-session pattern.
+- [x] A short doc note in `docs/agent-orchestration.md` (new file, ~30 lines) explains the workflow with a worked example.
+- [x] No `pre-checkout` hook (proven infeasible per §4 — git fires it post-update).
+- [x] No code, no spec, no new event types — this ADR is operational governance only.
+
+### Post-ratification follow-ups (closed in `070-adr008-review-fixes`)
+
+- [x] **Decision 5 contradiction resolved.** The original §5 proposed a `.data/agents/<session-id>/branch.json` log, which is structurally broken because `.data/` is per-worktree (§6) — a per-worktree log cannot communicate across sessions. Replaced with `git worktree list --porcelain` (git's built-in bookkeeping) as the coordination mechanism. `tools/scripts/new-session.sh` already uses this for collision detection.
+- [x] **Stale `pre-checkout` reference removed from Consequences.** The original draft mentioned a "pre-checkout hook that auto-commits"; Decision 4 explicitly ships no such hook. Rewrite clarifies that the worktree is the structural fix and no automated save is provided.
+- [x] **Branch-ownership rule clarified as convention-enforced** (Decision 2 now states: enforced by `tools/scripts/new-session.sh` collision check + git's own per-branch worktree invariant, **not** by a pre-commit hook — the rule is social, not tool-enforced).
 
 ---
 

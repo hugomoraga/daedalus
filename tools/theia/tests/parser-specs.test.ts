@@ -176,7 +176,7 @@ test("parseRepo on the live repo surfaces specs from specs/", async () => {
   // tools/theia/tests/parser-specs.test.ts → repoRoot is 4 dirname()s up:
   //   tests → theia → tools → <repo>
   const repoRoot = dirname(dirname(dirname(dirname(fileURLToPath(import.meta.url)))));
-  const state = parseRepo(repoRoot);
+  const state = await parseRepo(repoRoot);
   assert.ok(state.specs.length >= 12, `expected ≥12 specs from ${repoRoot}, got ${state.specs.length}`);
   // At least one Ratified spec (most of the codebase ships with one).
   assert.ok(state.specs.some((s) => s.status === "Ratified"));

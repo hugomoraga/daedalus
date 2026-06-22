@@ -22,6 +22,12 @@ export {
   computeNextUnlocks,
   type NextUnlock,
 } from "./parser/blockers.ts";
+export {
+  runGitDiff,
+  parseGitLog,
+  parseGitDiffStat,
+  type RunGitResult,
+} from "./runners/git.ts";
 export type {
   ProjectState,
   SpecCard,

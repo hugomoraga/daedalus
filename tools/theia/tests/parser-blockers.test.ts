@@ -164,7 +164,7 @@ test("AC-14: parseBlockers is deterministic (fixture)", () => {
 test("parseRepo on the live repo surfaces blockers + nextUnlocks (PR 5 wired)", async () => {
   const { parseRepo } = await import("../src/parser.ts");
   const repoRoot = dirname(dirname(dirname(dirname(fileURLToPath(import.meta.url)))));
-  const state = parseRepo(repoRoot);
+  const state = await parseRepo(repoRoot);
   // The live repo currently has no BLOCKED specs (post-004 build), but
   // the surfaces must be present (typed shape stable).
   assert.ok(Array.isArray(state.blockers));

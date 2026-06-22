@@ -95,7 +95,7 @@ test("parseUseCases tolerates `case \"...\":` legacy pattern (Plan §2 fallback)
 test("parseRepo on the live repo surfaces inventory + useCases (PR 4 wired)", async () => {
   const { parseRepo } = await import("../src/parser.ts");
   const repoRoot = dirname(dirname(dirname(dirname(fileURLToPath(import.meta.url)))));
-  const state = parseRepo(repoRoot);
+  const state = await parseRepo(repoRoot);
   assert.ok(state.codeInventory.length > 0, "live repo has apps + packages");
   assert.ok(state.useCases.length >= 20, "live repo has many CLI commands");
 });

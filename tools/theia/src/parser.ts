@@ -21,8 +21,9 @@ import { parsePhases } from "./parser/phases.ts";
 import { parseCodeInventory } from "./parser/inventory.ts";
 import { parseUseCases } from "./parser/use-cases.ts";
 import { parseBlockers, computeNextUnlocks } from "./parser/blockers.ts";
+import { runGitDiff } from "./runners/git.ts";
 
-export function parseRepo(rootPath: string): ProjectState {
+export async function parseRepo(rootPath: string): Promise<ProjectState> {
   const root = resolve(rootPath);
   const exists = existsSync(root) && statSync(root).isDirectory();
   const now = new Date().toISOString();
@@ -59,7 +60,13 @@ export function parseRepo(rootPath: string): ProjectState {
     .filter((s) => s.status === "Blocked" && s.blockers.length > 0)
     .map((s) => ({ blockedSlug: s.slug, unblockers: s.blockers }));
 
-  // TODO PR-6: runGitDiff(root).
+  // PR 6: git diff runner (AC-9). Errors collapse to
+  // { available: false, reason } — the runner never throws.
+  const diffResult = await runGitDiff(root);
+  const diff = diffResult.ok
+    ? diffResult.summary
+    : { ...emptyDiff(), reason: diffResult.reason };
+
   // TODO PR-7: runNpmTest(root).
   return {
     ...emptyState(root, now),
@@ -70,6 +77,7 @@ export function parseRepo(rootPath: string): ProjectState {
     useCases,
     blockers,
     nextUnlocks,
+    diff,
     activePhase,
   };
 }
@@ -86,16 +94,7 @@ function emptyState(rootPath: string, computedAt: string): ProjectState {
     activePhase: 0,
     blockers: [],
     nextUnlocks: [],
-    diff: {
-      branch: null,
-      commits: [],
-      filesChanged: 0,
-      insertions: 0,
-      deletions: 0,
-      entries: [],
-      available: false,
-      reason: "parser not yet wired (PR 3–7 pending)",
-    },
+    diff: emptyDiff(),
     tests: {
       running: false,
       total: null,
@@ -106,5 +105,18 @@ function emptyState(rootPath: string, computedAt: string): ProjectState {
       completedAt: null,
       reason: "test runner not yet wired (PR 7 pending)",
     },
+  };
+}
+
+function emptyDiff() {
+  return {
+    branch: null,
+    commits: [],
+    filesChanged: 0,
+    insertions: 0,
+    deletions: 0,
+    entries: [],
+    available: false,
+    reason: "git diff not yet wired (PR 6 pending)",
   };
 }

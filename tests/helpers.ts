@@ -11,7 +11,16 @@ import { JsonOpportunityStoreAdapter } from "@daedalus/opportunity-discovery/ada
 import type { RevenueDeps } from "@daedalus/revenue-visibility";
 import { TenantConfigThresholdsAdapter } from "@daedalus/revenue-visibility/adapters";
 import { JsonlEventStoreAdapter } from "@daedalus/jsonl-event-store";
-import type { CoreDeps } from "@daedalus/core";
+import {
+  createLeadUseCase,
+  qualifyLeadUseCase,
+  type CoreDeps,
+} from "@daedalus/core";
+import {
+  startDraftUseCase,
+  addLineItemUseCase,
+  finalizeDraftUseCase,
+} from "@daedalus/proposal-generation";
 import type { EngineDeps } from "@daedalus/workflow-engine";
 import { JsonlInstanceStoreAdapter, JsonlWorkflowStoreAdapter } from "@daedalus/workflow-engine/adapters";
 import { coreUseCases, noOpPolicy, runEngine, type PolicyDecisionPort } from "@daedalus/workflow-engine";
@@ -31,6 +40,22 @@ export function makeTestDeps(): { deps: TestDeps; baseDir: string } {
     actor: "test",
   };
   return { deps, baseDir };
+}
+
+// Drive a proposal all the way to ProposalGenerated and return the proposalId.
+// Used by core-value-chain integration tests as a deterministic setup shortcut.
+export async function finalizeAProposal(
+  deps: TestDeps,
+  tenantId = "tenant-0",
+  customer = "ACME (mock)",
+): Promise<string> {
+  const { leadId } = await createLeadUseCase(deps, { tenantId, customer });
+  await qualifyLeadUseCase(deps, { tenantId, leadId });
+  const { draftId } = await startDraftUseCase(deps, { tenantId, leadId, template: "standard" });
+  await addLineItemUseCase(deps, { tenantId, draftId, label: "Discovery", amount: 1200 });
+  await addLineItemUseCase(deps, { tenantId, draftId, label: "Build", amount: 4800 });
+  const { proposalId } = await finalizeDraftUseCase(deps, { tenantId, draftId, currency: "CLP" });
+  return proposalId;
 }
 
 // Workflow-engine specific: sets up a temp dir with the lead-to-payment

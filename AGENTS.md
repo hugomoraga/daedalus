@@ -44,6 +44,10 @@ If a task legitimately needs one of these (e.g. "triage the open architecture re
 - Focused iteration: `npm run test:filter -- "AC-1"` (only tests matching pattern) or `node --test tests/<file>.test.ts` (single file).
 - **Package boundaries:** import only via package entry points (`@daedalus/<pkg>`) and declared subpaths (e.g. `…/adapters`). **No deep imports** — `exports` blocks them on purpose.
 
+## Research tools
+
+`/last30days <topic>` (skill: `mvanhorn/last30days-skill`, installed globally) is available for **research before specs or ADRs**, not for routine implementation. Default to free sources (Reddit, HN, Polymarket, GitHub). Paid source keys (`SCRAPECREATORS_API_KEY`, `PERPLEXITY_API_KEY`, `XQUIK_API_KEY`, `XAI_API_KEY`, `BRAVE_API_KEY`) require explicit steward approval — they are not part of the default toolset. Engagement-scored summaries inform decisions; they do not override the canon.
+
 ## Git & collaboration protocol
 
 - **One agent per branch at a time.** Coordinate via PRs, never edit the same branch concurrently.

@@ -33,8 +33,8 @@ export const PANELS: ReadonlyArray<Panel> = [
   {
     slug: "welcome",
     label: "Welcome",
-    backingModel: "core.events.jsonl + tenant.config",
-    render: ({ tenant, events }) => renderWelcomePanel(tenant, events),
+    backingModel: "core.events.jsonl + workflow-engine.projectActiveProcesses + tax-compliance-guard.deriveObligationStates + tenant.config",
+    render: ({ tenant, events, deps }) => renderWelcomePanel(tenant, events, deps),
   },
   {
     slug: "events",

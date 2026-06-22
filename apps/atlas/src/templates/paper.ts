@@ -61,11 +61,21 @@ export function card(inner: string, opts: { padding?: number } = {}): string {
   ">${inner}</section>`;
 }
 
-export function metric(label: string, value: string, sub?: string): string {
+export function metric(
+  label: string,
+  value: string,
+  sub?: string,
+  tone: "ok" | "warn" | "alert" | "neutral" = "neutral",
+): string {
+  const valueColor =
+    tone === "ok" ? tokens.color.ok :
+    tone === "warn" ? tokens.color.warn :
+    tone === "alert" ? tokens.color.alert :
+    tokens.color.neutral;
   return `
     <div style="display:flex; flex-direction:column; gap:${tokens.space.s1}px;">
       <div class="micro muted" style="text-transform:uppercase; letter-spacing:0.08em;">${escapeHtml(label)}</div>
-      <div style="font-family: var(--display); font-size: 28px; line-height:1;">${escapeHtml(value)}</div>
+      <div style="font-family: var(--display); font-size: 28px; line-height:1; color: ${valueColor};">${escapeHtml(value)}</div>
       ${sub !== undefined ? `<div class="micro muted">${escapeHtml(sub)}</div>` : ""}
     </div>
   `;

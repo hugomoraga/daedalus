@@ -1,9 +1,9 @@
 # Spec 007 — ATLAS (Mission Control driving adapter)
 
-**Status:** Ratified · **Phase 1 capability** · v0 + v1 + Phase 2 shipped (PRs #18, #19, #56, #57) · build authorized
+**Status:** Ratified · **Phase 1 capability** · v0 + v1 + Phase 2 shipped (PRs #18, #19, #56, #57, #58, #59) · build authorized
 **Type:** Driving adapter — **read-only** mission control over the Daedalus Core and modules
 **Owner:** Stewards
-**Version:** 1.1.0
+**Version:** 1.2.0
 **Last updated:** 2026-06-22
 
 > **Method.** Spec-first (Constitution, Principle 8). Defines *what* ATLAS is and *why*, not *how*. Conceptual — no schema, no API, no UI markup, no assets in this file.
@@ -11,6 +11,8 @@
 > **Ratification note (v1.0, 2026-06-22).** This ratification brings the spec into alignment with shipped reality. `apps/atlas/` (composition root) is live on `main`. **v0** (PR #16 + #18) shipped: scaffolding, tokens, layout, SSR server, tenant resolver, Welcome panel, Events, Activity, Logs, System Health, full AC test suite for AC-1..AC-8. **v1** (PR #19) shipped: Throughput and Monitoring panels backed by Revenue Visibility v1 projections; AC-7 perf target met at the 10k-event scale.
 >
 > **Amendment (v1.1, 2026-06-22).** Adds the **Compliance** panel (T-23) — the read-side surface for [Spec 004](../004-tax-compliance-guard/spec.md). Backed by `deriveObligationStates` + `ObligorState` already exported from `@daedalus/tax-compliance-guard`. Adds **AC-9, AC-10, AC-11** for shape, pure derivation, and empty-state behaviour. Wired in PR #57. No new Core / Module primitives; pure consumer-side work.
+>
+> **Amendment (v1.2, 2026-06-22).** Enriches the **Welcome** panel (T-06) with workflow + compliance summary counts — the operator's first view now surfaces *what needs attention* at a glance. Adds **AC-12** for the enrichment. The drift between T-06's spec (which mentioned proposal/project/invoice counts and "friction-test status" that never shipped) and the actual implementation is corrected: the panel now reflects what the canon actually offers (workflow engine instances + tax compliance obligations). Wired in PR #59. No new Core / Module primitives; pure consumer-side work.
 
 ---
 
@@ -42,9 +44,10 @@ Visual identity is encoded as **design tokens**, not screenshots. Tokens are con
 1. **Make the value chain visible.** Render `Lead → Proposal → Approval → Project → Delivery → Invoice → Payment` per tenant, replayable from the event stream.
 2. **Make the audit trail visible.** Every event with full lineage (`eventId`, `correlationId`, `causationId`, `actor`, `occurredAt`, `payload`) is browseable.
 3. **Make the read-models visible.** `FinancialSummary`, expected/confirmed/received lifecycle, alerts, qualified leads, system health, **compliance obligations** — without having to run CLI commands.
-4. **Make the platform's multi-tenancy tangible.** Tenant switching is one click from the top nav; isolation is enforced on every read.
-5. **Make the system honest.** ATLAS surfaces *what is actually there* — not aspirational sections. Sections without backing models are absent.
-6. **Render without external dependencies.** No npm UI deps, no font CDNs, no charts libraries. Vanilla HTML + native CSS + Node 22 SSR.
+4. **Surface what needs attention at the landing page.** The Welcome panel renders not just total events and last event, but **workflow counts (active / waiting human) and compliance counts (pending / missed)**. An operator opening ATLAS sees *what is stuck* and *what is overdue* without drilling into a specific panel.
+5. **Make the platform's multi-tenancy tangible.** Tenant switching is one click from the top nav; isolation is enforced on every read.
+6. **Make the system honest.** ATLAS surfaces *what is actually there* — not aspirational sections. Sections without backing models are absent.
+7. **Render without external dependencies.** No npm UI deps, no font CDNs, no charts libraries. Vanilla HTML + native CSS + Node 22 SSR.
 
 ---
 
@@ -143,6 +146,14 @@ If a user interaction in ATLAS looks like a write (e.g. clicking "Approve" on a 
 - *When* the operator opens `/t/<tenantId>/compliance`,
 - *Then* the panel renders an explicit empty state ("no obligations tracked") — not a blank tile, not an error.
 - *And* for a tenant that has activated the Tax & Compliance Guard but has not yet seen any obligation events, the panel still renders (the module is active; the tenant just has no obligations yet).
+
+**AC-12 (Welcome panel enrichment — v1.2).**
+- *Given* a tenant with a mix of workflow instances and obligation events (any subset),
+- *When* the operator opens `/t/<tenantId>/welcome`,
+- *Then* the panel renders a 2×3 grid of metrics whose **primary row** shows what needs attention: *Active workflows*, *Waiting human*, *Pending obligations*; and whose **secondary row** shows general health: *Missed obligations*, *Last event at*, *Total events*.
+- *And* the *Missed obligations* tile uses the `alert` tone (desaturated red) when the count is > 0 and `neutral` when it is 0; the *Waiting human* tile uses the `warn` tone when > 0.
+- *And* the counts are derived *live* from the tenant's stream: workflow counts via `projectActiveProcesses` (Spec 011) over `instanceStore.list(tenantId)`; compliance counts via `deriveObligationStates` (Spec 004) over the event stream. No background recomputation; no caching; the counts reflect the current snapshot at request time.
+- *And* a dedicated test (`tests/atlas-welcome-enrichment.test.ts`) seeds workflow instances + obligation events for two tenants and asserts (a) the primary/secondary split, (b) tone for the "needs attention" tiles, (c) tenant isolation.
 
 ---
 

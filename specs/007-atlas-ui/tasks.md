@@ -29,7 +29,7 @@ Each task maps to a Spec 007 AC and a Plan 007 build step.
 | T-03 | `templates/layout.ts` — mission-control layout (top nav + left rail + main + footer); `templates/paper.ts` — HTML primitives (Card, Label, Metric, Rule, Tag) | AC-4 | ✅ |
 | T-04 | `server.ts` — Node 22 native http server, routing, SSR with embedded JSON-LD | AC-1, AC-4 | ✅ |
 | T-05 | `tenant.ts` — tenant resolver from URL path `/t/<tenantId>` or header; reject unknown with empty-state (never another tenant's data) | AC-2, AC-8 | ✅ |
-| T-06 | `panels/welcome.ts` — tenant summary + workflow counts (active / waiting human) + compliance counts (pending / missed) + last event + total events | AC-7, AC-6, AC-12 | ✅ |
+| T-06 | `panels/welcome.ts` — tenant summary + workflow counts (active / waiting human) + compliance counts (pending / missed) + last event + total events + Navigate grid to the other 10 panels | AC-7, AC-6, AC-12, AC-13 | ✅ |
 | T-07 | `panels/events.ts` — raw event stream, paginated, lineage-rendered (`correlationId`, `causationId`, `actor`, `occurredAt`, `payload`) | AC-1 | ✅ |
 | T-08 | `panels/activity.ts` — events sorted by `occurredAt`, grouped by day | AC-1 | ✅ |
 | T-09 | `panels/logs.ts` — events with a different default filter (last N, no aggregation) | AC-1 | ✅ |

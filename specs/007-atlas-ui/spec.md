@@ -1,9 +1,9 @@
 # Spec 007 — ATLAS (Mission Control driving adapter)
 
-**Status:** Ratified · **Phase 1 capability** · v0 + v1 + Phase 2 shipped (PRs #18, #19, #56, #57, #58, #59) · build authorized
+**Status:** Ratified · **Phase 1 capability** · v0 + v1 + Phase 2 shipped (PRs #18, #19, #56, #57, #58, #59, #66) · build authorized
 **Type:** Driving adapter — **read-only** mission control over the Daedalus Core and modules
 **Owner:** Stewards
-**Version:** 1.2.0
+**Version:** 1.3.0
 **Last updated:** 2026-06-22
 
 > **Method.** Spec-first (Constitution, Principle 8). Defines *what* ATLAS is and *why*, not *how*. Conceptual — no schema, no API, no UI markup, no assets in this file.
@@ -13,6 +13,8 @@
 > **Amendment (v1.1, 2026-06-22).** Adds the **Compliance** panel (T-23) — the read-side surface for [Spec 004](../004-tax-compliance-guard/spec.md). Backed by `deriveObligationStates` + `ObligorState` already exported from `@daedalus/tax-compliance-guard`. Adds **AC-9, AC-10, AC-11** for shape, pure derivation, and empty-state behaviour. Wired in PR #57. No new Core / Module primitives; pure consumer-side work.
 >
 > **Amendment (v1.2, 2026-06-22).** Enriches the **Welcome** panel (T-06) with workflow + compliance summary counts — the operator's first view now surfaces *what needs attention* at a glance. Adds **AC-12** for the enrichment. The drift between T-06's spec (which mentioned proposal/project/invoice counts and "friction-test status" that never shipped) and the actual implementation is corrected: the panel now reflects what the canon actually offers (workflow engine instances + tax compliance obligations). Wired in PR #59. No new Core / Module primitives; pure consumer-side work.
+>
+> **Amendment (v1.3, 2026-06-22).** Adds a **Navigate** grid to the Welcome panel (T-06) — a 2-column list of links to the 10 other panels (Events, Activity, Logs, System Health, Throughput, Monitoring, Active Processes, Queue Status, Workflow Metrics, Compliance). One click from the landing page to any other view; no URL memorization required. Adds **AC-13** for the link grid. Wired in PR #66. No new Core / Module primitives; pure consumer-side work.
 
 ---
 
@@ -154,6 +156,15 @@ If a user interaction in ATLAS looks like a write (e.g. clicking "Approve" on a 
 - *And* the *Missed obligations* tile uses the `alert` tone (desaturated red) when the count is > 0 and `neutral` when it is 0; the *Waiting human* tile uses the `warn` tone when > 0.
 - *And* the counts are derived *live* from the tenant's stream: workflow counts via `projectActiveProcesses` (Spec 011) over `instanceStore.list(tenantId)`; compliance counts via `deriveObligationStates` (Spec 004) over the event stream. No background recomputation; no caching; the counts reflect the current snapshot at request time.
 - *And* a dedicated test (`tests/atlas-welcome-enrichment.test.ts`) seeds workflow instances + obligation events for two tenants and asserts (a) the primary/secondary split, (b) tone for the "needs attention" tiles, (c) tenant isolation.
+
+**AC-13 (Welcome panel — Navigate grid — v1.3).**
+- *Given* the operator opens `/t/<tenantId>/welcome`,
+- *When* the panel renders,
+- *Then* below the metric grids there is a **Navigate** section listing one link per other panel, in this order: Events, Activity, Logs, System Health, Throughput, Monitoring, Active Processes, Queue Status, Workflow Metrics, Compliance.
+- *And* each link's `href` is the absolute path `/t/<tenantId>/<slug>` for the matching `Panel` entry in `apps/atlas/src/panels/register.ts`. The grid is the **registry's own source of truth** — adding a new `Panel` entry auto-includes the link without further changes to `welcome.ts`.
+- *And* the link copy is the panel's `label` (e.g. "Active Processes" → link to `active-processes`).
+- *And* the Welcome panel itself is **not** listed (no self-link).
+- *And* a dedicated test (`tests/atlas-welcome-quick-links.test.ts`) asserts (a) all 10 other panels appear, (b) the Welcome panel does not, (c) each link's path is correct for the operator's tenant, (d) the order is stable.
 
 ---
 

@@ -51,16 +51,13 @@ export { capturingEventStore, type CapturingEventStore } from "./application/cap
 // Engine loop
 export { runEngine } from "./application/engine.ts";
 
-// Pure helpers
+// Pure domain helpers (kept on the public contract — domain primitives a
+// composition root or a future custom transition policy may legitimately need)
 export { evaluateGuard } from "./domain/guard.ts";
 export { newInstance } from "./domain/instance.ts";
-export {
-  matchesInitialTrigger,
-  evaluateTransitions,
-  invokeActions,
-  advanceInstance,
-  markWaitingHuman,
-  markCompleted,
-  markCompensated,
-} from "./application/transitions.ts";
-export { compensate, type CompensationResult } from "./application/compensation.ts";
+
+// Application-layer transition / compensation helpers are intentionally NOT
+// re-exported: they are implementation details of `runEngine` (see
+// application/engine.ts), which imports them from their own modules.
+// Constitution Principle: no deep imports — these stay reachable only through
+// the engine loop, never as a public API surface.

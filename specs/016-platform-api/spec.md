@@ -3,8 +3,24 @@
 **Status:** Draft
 **Type:** Driving adapter — programmatic HTTP surface for the Daedalus Core and modules
 **Owner:** Stewards
-**Version:** 0.1.0
+**Version:** 0.2.0 (open questions resolved)
 **Last updated:** 2026-06-22
+
+> **Revision note (v0.2.0).** All 12 open questions in §11 resolved by the steward on 2026-06-22. Summary of resolutions:
+> - **Q1 (auth):** API keys per-tenant via `Authorization: Bearer <key>`. v0.
+> - **Q2 (idempotency):** in-process, 24h TTL, per-instance (caveat in AC-9).
+> - **Q3 (URL slug):** `:` → `/`, lowercase.
+> - **Q4 (OpenAPI):** hand-written, validated against §4 in CI (AC-7).
+> - **Q5 (`registerApi`):** `(router, ctx) → void` hook.
+> - **Q6 (raw event emission):** not exposed in v0; reserved.
+> - **Q7 (CORS):** none in v0.
+> - **Q8 (lineage headers):** generate fresh if absent; return in response.
+> - **Q9 (versioning):** URL path `/v1/...`.
+> - **Q10 (key provisioning):** env config — `DAEDALUS_API_KEYS_FILE` or per-tenant env var.
+> - **Q11 (rate limit):** 100 req/s default, env-configurable.
+> - **Q12 (shutdown):** 30s default, env-configurable.
+>
+> v0.1.0 was the initial draft. The substantive content (goals, surface, ACs, activation criteria) is unchanged; v0.2.0 reflects the steward's resolutions and tightens a few cross-references (§5, §7) to match.
 
 > **Method.** Spec-first (Constitution, Principle 8). Defines *what* the Platform API is and *why*, not *how*. Conceptual — no JSON shapes, no handler code, no OpenAPI generator. The OpenAPI document (AC-7) is the operational surface, not this spec.
 
@@ -246,18 +262,20 @@ For each command request, the API may emit a `PolicyDecisionRecorded` event (per
 
 ## 11. Open questions
 
-- **Q1 — Auth model for v0.** Per-tenant API keys (proposed) vs. mTLS vs. signed JWT. *Recommendation:* API keys for v0 (simple, suitable for programmatic). Migration to OAuth/JWT deferred to v1 / Phase 5 with its own ADR.
-- **Q2 — Idempotency store.** In-process (per-instance) vs. file-backed (per-instance) vs. shared (Redis / SQLite). *Recommendation:* in-process for v0 with 24h TTL. Cross-instance dedup is a future concern; AC-9 documents the v0 caveat.
-- **Q3 — Use case name → URL slug.** The CLI uses `:` (e.g. `proposal:approve`). The URL uses `/` (e.g. `proposal/approve`). *Recommendation:* use case name is lowercased and `:` becomes `/`. Documented in the spec (§5). Reserved characters in slugs are rejected (`400`).
-- **Q4 — OpenAPI generation.** Hand-written vs. generated from a registry. *Recommendation:* hand-written for v0 (small surface), with §4 as the source of truth. A code generator is a v1 concern.
-- **Q5 — Module `registerApi` hook.** Each module exposes a function that mounts its routes. *Recommendation:* the hook signature is `registerApi(router, ctx) → void`, where `ctx` provides the event store, the policy engine, the tenant resolver, the idempotency store, and the use case registry. The API iterates over `@daedalus/*` workspace packages and calls `registerApi` on each that exports it. Documented in §5.
-- **Q6 — `POST /v1/tenants/:tenantId/events` direct emission.** Reserved for future use. *Recommendation:* **not exposed in v0.** Listed in §4 as reserved, omitted from the OpenAPI document, omitted from the route table. Re-introduced in v1 with explicit ACs and a separate spec amendment.
-- **Q7 — CORS.** Server-to-server in v0. *Resolution:* no CORS in v0; v1 introduces a strict allowlist (gated on its own ADR when browser clients land).
-- **Q8 — Lineage header defaults.** Always generate fresh if absent (proposed) vs. always require (rejected). *Resolution:* always generate fresh if absent, return in response headers. Documented in AC-10.
-- **Q9 — API versioning policy.** URL path `/v1/...` (proposed) vs. header. *Resolution:* URL path. Documented in §7.
-- **Q10 — API key provisioning.** Out-of-band env config (proposed for v0) vs. CLI command. *Resolution:* env config in v0 (a single key per tenant, supplied via `DAEDALUS_API_KEY_<TENANT>` env vars, or a JSON file referenced by `DAEDALUS_API_KEYS_FILE`). A `api-key:create` CLI command is a v1 add-on.
-- **Q11 — Per-tenant rate limit defaults.** Default of 100 req/s (proposed). *Resolution:* configurable via `API_RATE_LIMIT_PER_TENANT` env var, default 100. Per-instance limit, with the AC caveat.
-- **Q12 — Graceful shutdown timeout.** Default 30s (proposed). *Resolution:* configurable via `API_SHUTDOWN_TIMEOUT_MS`, default 30000.
+> **Status (2026-06-22):** all 12 open questions resolved by the steward. Each entry below records the question and the binding resolution. Resolved questions are kept in this section (rather than deleted) so the decision log is auditable; downstream amendments should append new questions, not edit resolutions.
+
+- **Q1 — Auth model for v0.** Per-tenant API keys vs. mTLS vs. signed JWT. *Resolution:* **API keys per-tenant in v0**, supplied via `Authorization: Bearer <key>`. Simple, no ceremony, suitable for programmatic access. mTLS rejected (operationally heavy). OAuth/JWT deferred to v1 / Phase 5 with its own ADR. See §5 (auth) and §7 (auth on every request).
+- **Q2 — Idempotency store.** In-process (per-instance) vs. file-backed (per-instance) vs. shared (Redis / SQLite). *Resolution:* **in-process with 24h TTL, per-instance.** No external dep, no cold-start penalty. Cross-instance dedup is **not honored in v0** — AC-9 documents the caveat. A future spec addresses shared idempotency storage (likely a follow-on once Cloud Run multi-instance becomes a real workload). See AC-5 and AC-9.
+- **Q3 — Use case name → URL slug.** The CLI uses `:` (e.g. `proposal:approve`). The URL uses `/` (e.g. `proposal/approve`). *Resolution:* **the use case name is lowercased and `:` becomes `/`.** Reserved characters in slugs are rejected with `400`. See §5 (use case concept) and §4 (route table).
+- **Q4 — OpenAPI generation.** Hand-written vs. generated from a registry. *Resolution:* **hand-written for v0.** §4 is the source of truth; `/openapi.json` is hand-written to mirror §4; AC-7 validates the document against the OpenAPI 3.1 JSON Schema and asserts every registered route appears. A code generator is a v1 concern.
+- **Q5 — Module `registerApi` hook.** Each module exposes a function that mounts its routes. *Resolution:* **the hook signature is `registerApi(router, ctx) → void`**, where `ctx` provides `{ eventStore, policyEngine, tenantResolver, idempotencyStore, useCaseRegistry }`. The API iterates over `@daedalus/*` workspace packages at boot and calls `registerApi` on each that exports it. Modules that omit the hook are not exposed over HTTP (their use cases remain CLI-only). See §5 and AC-12.
+- **Q6 — `POST /v1/tenants/:tenantId/events` direct emission.** Reserved for future use (replay tools, event-sourcing interop). *Resolution:* **not exposed in v0.** Listed in §4 as reserved, omitted from the OpenAPI document, omitted from the route table. Re-introduced in v1 with explicit ACs and a separate spec amendment.
+- **Q7 — CORS.** Server-to-server in v0. *Resolution:* **no CORS in v0.** v1 introduces a strict allowlist (gated on its own ADR) when browser-based clients land. See §7 (no CORS in v0).
+- **Q8 — Lineage header defaults.** Always generate fresh if absent (proposed) vs. always require (rejected). *Resolution:* **always generate fresh if absent**, return in response headers. Better DX, lineage is never lost. See AC-10.
+- **Q9 — API versioning policy.** URL path `/v1/...` (proposed) vs. header. *Resolution:* **URL path.** All endpoints live under `/v1/`. Breaking changes require `/v2/...` and a parallel spec amendment + ADR. See §7.
+- **Q10 — API key provisioning.** Out-of-band env config (proposed for v0) vs. CLI command. *Resolution:* **env config in v0.** Keys are provisioned via `DAEDALUS_API_KEYS_FILE` (a JSON file at the path referenced by this env var, shape `{ "<tenantId>": "<key>" }`) or per-tenant env vars of the form `DAEDALUS_API_KEY_<TENANT_ID>`. Out-of-band, 12-factor, ideal for Cloud Run. A `api-key:create` CLI command is a v1 add-on (requires its own use case and a corresponding `registerApi` exposure if exposed).
+- **Q11 — Per-tenant rate limit defaults.** Default of 100 req/s (proposed). *Resolution:* **default 100 req/s, per-tenant, per-instance**, configurable via `API_RATE_LIMIT_PER_TENANT` env var. Backed by an in-process token bucket. Caveat: per-instance only in v0 (cross-instance limiting is a future concern). See §7.
+- **Q12 — Graceful shutdown timeout.** Default 30s (proposed). *Resolution:* **default 30000ms**, configurable via `API_SHUTDOWN_TIMEOUT_MS` env var. Matches Cloud Run's SIGTERM grace. See §7.
 
 ---
 

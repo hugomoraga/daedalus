@@ -44,11 +44,15 @@ export async function seedTenant(tenantId: string, events: readonly SeedEvent[])
 export async function clearTenant(tenantId: string): Promise<void> {
   const base = activeDataDir();
   await rm(join(base, "tenants", tenantId), { recursive: true, force: true });
+  await rm(join(base, ".data", "tenants", tenantId), { recursive: true, force: true });
 }
 
 export async function clearAll(): Promise<void> {
   const base = activeDataDir();
   await rm(join(base, "tenants"), { recursive: true, force: true });
+  // The instance store adapter prepends `.data/`, so its data lives under
+  // `<baseDir>/.data/tenants/...` — must clear both to avoid cross-test leaks.
+  await rm(join(base, ".data", "tenants"), { recursive: true, force: true });
 }
 
 export function makeFlow(tenantId: string, correlationId: string, types: readonly string[]): SeedEvent[] {
@@ -62,4 +66,38 @@ export function makeFlow(tenantId: string, correlationId: string, types: readonl
     correlationId,
     payload: { i },
   }));
+}
+
+// Seed workflow instances directly into the per-tenant JSONL file.
+// Mirrors JsonlInstanceStoreAdapter's save format: one JSON per line.
+// The adapter appends `.data/` internally, so the resolved path is
+// `<activeDir>/.data/tenants/<id>/workflow-instances.jsonl`.
+export type SeedInstance = {
+  id: string;
+  workflowName: string;
+  workflowVersion: string;
+  tenantId: string;
+  currentState: string;
+  status: "active" | "waiting_human" | "completed" | "compensated";
+  firedTransitionIds: string[];
+  pendingTransitionId: string | null;
+  history: Array<{
+    transitionId: string;
+    fromState: string;
+    toState: string;
+    firedAt: string;
+    triggerEventId: string;
+  }>;
+  startedAt: string;
+  updatedAt: string;
+  lastSeenEventId: string | null;
+};
+
+export async function seedInstances(tenantId: string, instances: readonly SeedInstance[]): Promise<void> {
+  const base = activeDataDir();
+  const dir = join(base, ".data", "tenants", tenantId);
+  await mkdir(dir, { recursive: true });
+  const path = join(dir, "workflow-instances.jsonl");
+  const body = instances.map((i) => JSON.stringify(i)).join("\n") + "\n";
+  await writeFile(path, body, "utf8");
 }

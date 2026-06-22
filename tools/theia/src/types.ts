@@ -1,0 +1,124 @@
+// Theia (Spec 012) — typed shapes for the parser's output.
+//
+// The parser is a pure function: given a repo root, it returns a
+// `ProjectState`. Everything downstream (runners, views, server) reads
+// from this shape. PR 1 ships the skeleton with empty arrays; later PRs
+// fill the parsing phases.
+//
+// ADR-007: Theia does NOT import from @daedalus/* (AC-15). The single
+// allowed exception is `src/views/tokens.ts`, which re-exports Atlas
+// tokens for visual cohesion — Atlas never depends on Theia.
+
+export type SpecStatus =
+  | "Draft"
+  | "Ratified"
+  | "Blocked"
+  | "Superseded"
+  | "Unknown";
+
+export type AdrStatus = "Proposed" | "Accepted" | "Superseded" | "Unknown";
+
+// A parsed `**Status:**` line carries a free-text tail after the status
+// word (e.g. "Ratified · Phase 2 · Module specification"). We surface
+// the raw tail as `statusTail` so the UI can render badges without
+// re-parsing.
+export type SpecCard = {
+  slug: string; // e.g. "004-tax-compliance-guard"
+  title: string; // first H1 line, e.g. "Spec 004 — Tax & Compliance Guard"
+  status: SpecStatus;
+  statusTail: string; // raw text after `Status:`
+  phase: number | null; // extracted from statusTail or "Phase N" reference
+  version: string | null; // from `**Version:**`
+  lastUpdated: string | null; // ISO date from `**Last updated:**`
+  summaryPreview: string; // first paragraph of "## 1." or "## Summary"
+  tasksDone: number;
+  tasksTotal: number;
+  planDone: number;
+  planTotal: number;
+  links: {
+    spec: string; // path relative to repo root
+    plan: string | null;
+    tasks: string | null;
+  };
+  unknownReason: string | null; // populated when status === "Unknown"
+  blockers: BlockerEntry[]; // populated when status === "Blocked"
+};
+
+export type AdrRow = {
+  number: number; // 1..N
+  slug: string; // e.g. "defer-root-entity-selection"
+  title: string; // first H1 line
+  status: AdrStatus;
+  date: string | null; // ISO date from `**Date:**`
+  link: string; // path relative to repo root
+};
+
+export type UseCaseRow = {
+  command: string; // e.g. "lead:create"
+  link: string; // path to apps/cli/src/commands/*.ts
+};
+
+export type CodeEntry = {
+  name: string; // e.g. "core", "tax-compliance-guard"
+  kind: "app" | "package" | "test";
+  link: string; // path relative to repo root
+};
+
+export type Phase = {
+  number: number; // 0..5
+  title: string; // e.g. "Phase 3 — Policy Engine"
+  milestoneCount: number;
+};
+
+export type DiffSummary = {
+  branch: string | null;
+  commits: Array<{ sha: string; subject: string }>;
+  filesChanged: number;
+  insertions: number;
+  deletions: number;
+  entries: Array<{ path: string; insertions: number; deletions: number }>;
+  available: boolean;
+  reason: string | null; // when available === false
+};
+
+export type TestResult = {
+  running: boolean;
+  total: number | null;
+  pass: number | null;
+  fail: number | null;
+  failingNames: string[];
+  startedAt: string | null;
+  completedAt: string | null;
+  reason: string | null; // when running === false and total === null
+};
+
+export type BlockerEntry = {
+  // An unblocker for a BLOCKED spec: another spec or ADR that, once
+  // ratified, removes the block.
+  unblockerSlug: string;
+  unblockerKind: "spec" | "adr";
+};
+
+// Aggregated per-spec blocker view (used by the "Blocked by" + "Next
+// unlocks" sections). Pre-computed by the parser for efficiency.
+export type BlockerView = {
+  blockedSlug: string;
+  unblockers: BlockerEntry[];
+};
+
+// Top-level aggregate. The parser returns this; runners + views
+// consume it; the server serializes it.
+export type ProjectState = {
+  rootPath: string;
+  computedAt: string; // ISO timestamp; used for cache busting + AC-14
+  specs: SpecCard[];
+  adrs: AdrRow[];
+  useCases: UseCaseRow[];
+  codeInventory: CodeEntry[];
+  phases: Phase[];
+  activePhase: number;
+  blockers: BlockerView[];
+  nextUnlocks: Array<{ slug: string; unlocksCount: number }>;
+  diff: DiffSummary;
+  tests: TestResult;
+};

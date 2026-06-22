@@ -1,0 +1,11 @@
+{
+  "name": "@daedalus/theia",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Theia — read-only project-state visualizer for the Daedalus repo (Spec 012, ADR-007). Zero external runtime dependencies. Not a platform capability; lives in tools/ and is never imported by apps/ or packages/.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {}
+}

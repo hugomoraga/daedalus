@@ -6,7 +6,8 @@
   "description": "Daedalus — an architecture for autonomous organizations. Modular monorepo.",
   "workspaces": [
     "packages/*",
-    "apps/*"
+    "apps/*",
+    "tools/*"
   ],
   "engines": {
     "node": ">=22.6.0"

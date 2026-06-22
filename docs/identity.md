@@ -72,6 +72,8 @@ This is the architectural decision that keeps the platform from collapsing into 
 ### Core — generic
 The Constitution, the domain model, the event vocabulary, and the policy/workflow/agent engines. The Core knows **nothing** about any specific tenant. It could operate a different founder tomorrow with no change. (Constitution, Principle 10; protected from amendment under Article VI.)
 
+**Policy before Agent is now mechanically enforced.** Phase 3 ships the [Policy Engine](../specs/009-policy-engine/spec.md) as a Core capability: every governed action goes through `evaluateAndRecordPolicy`, which records a `PolicyDecisionRecorded` event with full lineage. The engine's three outcomes are `allow`, `deny`, `escalate` — `escalate` is terminal (Constitution §II.3, Default Deny). The Core stays generic (the engine is a platform substrate); Modules own policies (e.g. Spec 004's tax-compliance-policy bundle); Tenants own parameters via env vars. Policy before Agent is no longer "we agreed" — it's the system enforcing.
+
 > The `Lead → Payment` value chain is the **first reference workflow** for validation, **not** the universal lifecycle of every organization. The universal root entity is deliberately deferred — see [ADR-001](../governance/decisions/ADR-001-defer-root-entity-selection.md).
 
 ### Modules — reusable

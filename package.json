@@ -12,10 +12,11 @@
     "node": ">=22.6.0"
   },
   "scripts": {
-    "test": "node --test && node scripts/check-core-jurisdiction-agnostic.mjs && node scripts/check-rulesets-have-provenance.mjs",
+    "test": "node --test && node scripts/check-core-jurisdiction-agnostic.mjs && node scripts/check-rulesets-have-provenance.mjs && node scripts/check-policies-have-provenance.mjs",
     "test:filter": "node --test --test-name-pattern",
     "lint:core-jurisdiction-agnostic": "node scripts/check-core-jurisdiction-agnostic.mjs",
     "lint:rulesets-have-provenance": "node scripts/check-rulesets-have-provenance.mjs",
+    "lint:policies-have-provenance": "node scripts/check-policies-have-provenance.mjs",
     "cli": "node apps/cli/src/index.ts",
     "atlas": "node apps/atlas/src/cli.ts"
   }

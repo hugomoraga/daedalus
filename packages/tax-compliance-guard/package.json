@@ -1,0 +1,12 @@
+{
+  "name": "@daedalus/tax-compliance-guard",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@daedalus/core": "*"
+  }
+}

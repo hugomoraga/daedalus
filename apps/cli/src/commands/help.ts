@@ -47,6 +47,9 @@ export const HELP = [
   "  rules:register  --tenant <id> --ruleset <id>@<ver> --file <path>",
   "  rules:list      --tenant <id>",
   "  rules:sweep     --tenant <id>",
+  "  obligations:list  --tenant <id> [--watch]",
+  "  obligations:ack   --tenant <id> --obligation <id> --due-event <id> [--notes <n>]",
+  "  obligations:sweep --tenant <id>",
   "  events          --tenant <id> [--limit <n>] [--tail]",
 ].join("\n");
 

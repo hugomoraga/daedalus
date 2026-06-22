@@ -1,9 +1,10 @@
 import type { ProposalDeps } from "@daedalus/proposal-generation";
 import type { OpportunityDiscoveryDeps } from "@daedalus/opportunity-discovery";
 import type { RevenueDeps } from "@daedalus/revenue-visibility";
+import type { TaxComplianceDeps } from "@daedalus/tax-compliance-guard";
 import { loadTenantConfig } from "../../../../config/tenants/index.ts";
 
-export type Deps = ProposalDeps & OpportunityDiscoveryDeps & RevenueDeps;
+export type Deps = ProposalDeps & OpportunityDiscoveryDeps & RevenueDeps & TaxComplianceDeps;
 
 export interface CommandContext {
   tenantId: string;

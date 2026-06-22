@@ -8,6 +8,7 @@ import { JsonlEventStoreAdapter } from "@daedalus/jsonl-event-store";
 import { JsonFileDraftStoreAdapter } from "@daedalus/proposal-generation/adapters";
 import { TenantConfigThresholdsAdapter } from "@daedalus/revenue-visibility/adapters";
 import { JsonOpportunityStoreAdapter } from "@daedalus/opportunity-discovery/adapters";
+import { FilesystemPolicyStore, FilesystemRuleSetLoaderAdapter } from "@daedalus/core/adapters";
 import { defaultTenantId } from "../../../config/tenants/index.ts";
 import { renderHelp } from "./commands/help.ts";
 import { handlers as leadHandlers } from "./commands/lead.ts";
@@ -19,6 +20,7 @@ import { handlers as revenueHandlers } from "./commands/revenue.ts";
 import { handlers as workflowHandlers } from "./commands/workflow.ts";
 import { handlers as eventsHandlers } from "./commands/events.ts";
 import { handlers as rulesHandlers } from "./commands/rules.ts";
+import { handlers as obligationsHandlers } from "./commands/obligations.ts";
 import type { CommandHandler, Deps } from "./commands/types.ts";
 
 const DATA_DIR = ".data";
@@ -29,6 +31,8 @@ function buildDeps(): Deps {
     draftStore: new JsonFileDraftStoreAdapter(DATA_DIR),
     opportunityStore: new JsonOpportunityStoreAdapter(DATA_DIR),
     thresholds: new TenantConfigThresholdsAdapter(),
+    ruleSetLoader: new FilesystemRuleSetLoaderAdapter(DATA_DIR),
+    policyStore: new FilesystemPolicyStore(DATA_DIR),
     newId: () => randomUUID(),
     now: () => new Date().toISOString(),
     actor: "cli",
@@ -46,6 +50,7 @@ const HANDLERS = new Map<string, CommandHandler>(
     ...workflowHandlers,
     ...eventsHandlers,
     ...rulesHandlers,
+    ...obligationsHandlers,
   ],
 );
 
@@ -78,6 +83,9 @@ async function main(): Promise<void> {
       file: { type: "string" },
       limit: { type: "string" },
       tail: { type: "boolean" },
+      obligation: { type: "string" },
+      "due-event": { type: "string" },
+      watch: { type: "boolean" },
     },
   });
 

@@ -105,9 +105,27 @@ export function makeEngineDeps(
   const resetCursor = async (): Promise<void> => {
     await deps.instanceStore.setCursor(tenantId, "");
   };
-  const runFor = async (ms: number): Promise<void> => {
+  // Run the engine loop and wait until the event stream stops growing
+  // (with a hard ceiling of `maxMs` for the whole operation). Avoids the
+  // race between the engine's first poll tick and a fixed `setTimeout`.
+  // Polling cadence of 25ms keeps wall-clock cost low.
+  const runFor = async (maxMs: number): Promise<void> => {
     const handle = runEngine(deps, tenantId, { pollMs: 10 });
-    await new Promise((r) => setTimeout(r, ms));
+    const start = Date.now();
+    let lastSize = -1;
+    let stableSince = 0;
+    while (Date.now() - start < maxMs) {
+      await new Promise((r) => setTimeout(r, 25));
+      const size = (await readStream(tenantId)).length;
+      if (size === lastSize) {
+        if (stableSince === 0) stableSince = Date.now();
+        // Stream is stable for 150ms — engine is done.
+        if (Date.now() - stableSince > 150) break;
+      } else {
+        lastSize = size;
+        stableSince = 0;
+      }
+    }
     handle.stop();
     await new Promise((r) => setTimeout(r, 30));
   };

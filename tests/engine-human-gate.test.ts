@@ -43,7 +43,7 @@ test("AC-4: human gate waits for HumanApproved before firing", async () => {
       payload,
     });
   }
-  await e.runFor(250);
+  await e.runFor(400);
   const after1 = await e.readStream(e.tenantId);
   const gate = after1.find((x) => x.type === HumanApprovalRequired);
   assert.ok(gate, "HumanApprovalRequired emitted when ProjectClosed arrived");
@@ -67,7 +67,7 @@ test("AC-4: human gate waits for HumanApproved before firing", async () => {
     correlationId: "flow-1",
     payload: { workflowName: "lead-to-payment", instanceId: "flow-1" },
   });
-  await e.runFor(200);
+  await e.runFor(350);
   const after2 = await e.readStream(e.tenantId);
   const fired = after2.find(
     (x) => x.type === WorkflowTransitionFired && x.payload.transitionId === "paid-to-closed",

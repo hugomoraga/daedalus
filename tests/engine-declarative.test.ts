@@ -33,7 +33,7 @@ test("AC-1: LeadQualified creates an instance and advances state", async () => {
     correlationId: "flow-1",
     payload: { leadId: "lead-1" },
   });
-  await e.runFor(150);
+  await e.runFor(300);
 
   const events = await e.readStream(e.tenantId);
   const started = events.find((x) => x.type === WorkflowInstanceStarted);

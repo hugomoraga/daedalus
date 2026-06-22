@@ -31,7 +31,7 @@ test("AC-7: tenant A's workflow instances do not see tenant B's events", async (
     payload: {},
   });
 
-  await Promise.all([a.runFor(200), b.runFor(200)]);
+  await Promise.all([a.runFor(400), b.runFor(400)]);
 
   const eventsA = await a.readStream(a.tenantId);
   const eventsB = await b.readStream(b.tenantId);

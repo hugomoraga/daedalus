@@ -112,3 +112,38 @@ export { recordProfileChange } from "./application/jurisdiction/record-profile-c
 // Imported via the `./adapters` subpath (ADR-004) by composition roots.
 export { InMemoryJurisdictionAdapter } from "./adapters/jurisdiction/in-memory-jurisdiction.ts";
 export { FilesystemRuleSetLoaderAdapter } from "./adapters/jurisdiction/filesystem-rule-set-loader.ts";
+
+// Policy Engine (Spec 009) — platform substrate (Core stays generic; Modules
+// own policies; Tenants own parameters via env vars per Plan 008 §4.1).
+
+// Domain types
+export type { PolicySourceKind, PolicyProvenance } from "./domain/policy/policy-provenance.ts";
+export type {
+  PolicyRef,
+  PolicyOutcome,
+  PolicyMatch,
+  PolicyRule,
+  Policy,
+  PolicyAction,
+} from "./domain/policy/policy.ts";
+export type { PolicyDecision } from "./domain/policy/policy-decision.ts";
+export { PolicyDecisionRecorded } from "./domain/policy/policy-decision-recorded.ts";
+export type { PolicyDecisionRecordedPayload } from "./domain/policy/policy-decision-recorded.ts";
+
+// Application — ports, pure functions, use case
+export type {
+  PolicyEnginePort,
+} from "./application/policy/ports/policy-engine-port.ts";
+export type { PolicyStorePort } from "./application/policy/ports/policy-store-port.ts";
+export {
+  PolicyNotFound,
+  PolicyProvenanceMissing,
+  PolicyVersionMismatch,
+} from "./application/policy/ports/policy-store-port.ts";
+export { validatePolicyProvenance } from "./application/policy/validate-policy-provenance.ts";
+export { defaultEvaluate } from "./application/policy/default-evaluator.ts";
+export {
+  evaluateAndRecordPolicy,
+  type EvaluateAndRecordInput,
+  type EvaluateAndRecordResult,
+} from "./application/policy/evaluate-and-record-policy.ts";

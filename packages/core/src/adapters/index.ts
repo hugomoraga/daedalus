@@ -4,3 +4,5 @@
 
 export { InMemoryJurisdictionAdapter } from "./jurisdiction/in-memory-jurisdiction.ts";
 export { FilesystemRuleSetLoaderAdapter } from "./jurisdiction/filesystem-rule-set-loader.ts";
+export { InMemoryPolicyStore } from "./policy/in-memory-policy-store.ts";
+export { FilesystemPolicyStore } from "./policy/filesystem-policy-store.ts";

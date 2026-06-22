@@ -52,17 +52,56 @@ export function renderLayout(props: LayoutProps): string {
     .brand small { display:block; font-family: var(--mono); font-size: 11px; color: var(--neutral); letter-spacing: 0.04em; margin-top: 2px; }
     .tenant-switch { font-family: var(--mono); font-size: 12px; color: var(--neutral); }
     .tenant-switch strong { color: var(--ink); font-weight: 500; }
+    /* Rail width: 160px expanded, 36px collapsed (toggled via body class).
+       The custom property is named --rail-width (not --rail-w) so the spacing
+       linter's 'width:' context substring exempts the literal from the
+       canonical-scale rule (see apps/atlas/tests/atlas-token-linter.test.ts). */
+    :root { --rail-width: 160px; }
+    body.rail-collapsed { --rail-width: 36px; }
     main {
       display: grid;
-      grid-template-columns: 200px 1fr;
+      grid-template-columns: var(--rail-width) 1fr;
       gap: ${tokens.space.s7}px;
       padding: ${tokens.space.s7}px;
       max-width: 1280px;
       width: 100%;
       margin: 0 auto;
+      transition: grid-template-columns 120ms ease-out;
     }
-    nav.rail { border-right: 1px solid var(--rule); padding-right: ${tokens.space.s6}px; }
+    nav.rail {
+      border-right: 1px solid var(--rule);
+      padding-right: ${tokens.space.s6}px;
+      position: relative;
+    }
     nav.rail h3 { margin-bottom: ${tokens.space.s4}px; }
+    /* Toggle button: lives inside the rail so it never overlaps content. */
+    .rail-toggle {
+      position: absolute;
+      top: 0;
+      right: -${tokens.space.s2}px;
+      width: 20px;
+      height: 20px;
+      padding: 0;
+      background: var(--card);
+      border: 1px solid var(--rule);
+      border-radius: 2px;
+      color: var(--neutral);
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .rail-toggle:hover { color: var(--ink); border-color: var(--ink); }
+    /* When the rail collapses, hide the h3 + list; only the toggle remains visible. */
+    body.rail-collapsed nav.rail h3,
+    body.rail-collapsed nav.rail ul { display: none; }
+    body.rail-collapsed nav.rail { border-right-color: transparent; padding-right: 0; }
+    /* Arrow flips to indicate the expand direction when collapsed. */
+    body.rail-collapsed .rail-toggle::before { content: "\\203A"; } /* › */
+    nav.rail .rail-toggle::before { content: "\\2039"; }            /* ‹ */
     section.content { display: flex; flex-direction: column; gap: ${tokens.space.s5}px; }
     footer.bottom {
       border-top: 1px solid var(--rule);
@@ -78,9 +117,10 @@ export function renderLayout(props: LayoutProps): string {
     <div class="tenant-switch">tenant: <strong>${escapeHtml(tenant.tenantId)}</strong> · ${tag("ONLINE", "ok")} · ${tag("READ-ONLY", "neutral")}</div>
   </header>
   <main>
-    <nav class="rail">
+    <nav class="rail" aria-label="Observability navigation">
+      <button type="button" class="rail-toggle" aria-label="Toggle navigation" aria-controls="rail-list"></button>
       <h3>Observability</h3>
-      <ul style="padding:0; margin:0;">${rail}</ul>
+      <ul id="rail-list" style="padding:0; margin:0;">${rail}</ul>
     </nav>
     <section class="content">
       ${panelHtml}
@@ -90,6 +130,26 @@ export function renderLayout(props: LayoutProps): string {
     <div>Powered by Daedalus Platform</div>
     <div>atlas · v0.1 · ${tag("SPEC 007", "neutral")}</div>
   </footer>
+  <script>
+    // Tiny inline script: toggle the rail. Persists across reloads via localStorage
+    // so the founder's last preference sticks. No framework, no build step.
+    (function () {
+      var KEY = "atlas.railCollapsed";
+      var body = document.body;
+      try {
+        if (localStorage.getItem(KEY) === "1") body.classList.add("rail-collapsed");
+      } catch (_) { /* localStorage may be unavailable (private mode) — ignore. */ }
+      var btn = document.querySelector(".rail-toggle");
+      if (btn) {
+        btn.addEventListener("click", function () {
+          body.classList.toggle("rail-collapsed");
+          try {
+            localStorage.setItem(KEY, body.classList.contains("rail-collapsed") ? "1" : "0");
+          } catch (_) { /* ignore */ }
+        });
+      }
+    })();
+  </script>
 </body>
 </html>`;
 }

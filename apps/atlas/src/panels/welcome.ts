@@ -89,25 +89,30 @@ export async function renderWelcomePanel(
   `;
 }
 
-// AC-13 — the Navigate grid. Each link is a row with the panel's
-// label + a small "→" affordance, separated by a hairline. The grid
-// adapts via auto-fit: 2+ columns on desktop, 1 on mobile.
+// AC-13 — the Navigate grid. Each link is a card with the panel's label +
+// its slug + a small "→" affordance. The cards scroll horizontally in a
+// CSS-only marquee (the track holds the cards twice, animation translates
+// -50% to loop seamlessly, pauses on hover). Replaces the previous dense
+// auto-fit grid that crammed long labels like "Active Processes" into
+// narrow columns on wide viewports.
 function renderNavigate(tenantId: string, targets: ReadonlyArray<Panel>): string {
-  const links = targets.map((panel) => {
+  const cards = targets.map((panel) => {
     const href = `/t/${tenantId}/${panel.slug}`;
     return `
-      <a href="${escapeHtml(href)}" style="display:flex; align-items:baseline; justify-content:space-between; padding: ${tokens.space.s2}px 0; border-top: 1px solid var(--rule); color: var(--ink); text-decoration:none;">
+      <a class="navigate-card" href="${escapeHtml(href)}">
         <span>${escapeHtml(panel.label)}</span>
         <span class="micro muted">${escapeHtml(panel.slug)} &rarr;</span>
       </a>
     `;
   }).join("");
+  // Duplicate the cards so the -50% translateX loops seamlessly.
+  const track = cards + cards;
 
   return `
     <h2>Navigate</h2>
-    <p class="muted" style="margin-top: ${tokens.space.s2}px; max-width: 60ch;">${targets.length} panels — every other view in ATLAS.</p>
-    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(${tokens.space.s7}px, 1fr)); gap: 0 ${tokens.space.s5}px; margin-top: ${tokens.space.s3}px;">
-      ${links}
+    <p class="muted" style="margin-top: ${tokens.space.s2}px; max-width: 60ch;">${targets.length} panels — every other view in ATLAS. Hover to pause.</p>
+    <div class="navigate-rail">
+      <div class="navigate-track">${track}</div>
     </div>
   `;
 }

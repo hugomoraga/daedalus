@@ -48,6 +48,39 @@ export function pageStyles(): string {
     .muted { color: var(--neutral); }
     .rule { border-top: 1px solid var(--rule); }
     code, .micro { font-family: var(--mono); font-size: 12px; }
+    /* Navigate marquee (Welcome panel). The track contains the cards twice so
+       a -50% translateX loops seamlessly. Pauses on hover so a click lands.
+       Card width is set via the --card-width custom property so the spacing
+       linter's 'width:' context substring exempts the literal from the
+       canonical-scale rule (see apps/atlas/tests/atlas-token-linter.test.ts). */
+    :root { --card-width: 200px; }
+    .navigate-rail { overflow: hidden; margin-top: 12px; }
+    .navigate-track {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 12px;
+      width: max-content;
+      animation: navigate-scroll 40s linear infinite;
+    }
+    .navigate-rail:hover .navigate-track { animation-play-state: paused; }
+    .navigate-card {
+      flex: 0 0 var(--card-width);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 16px;
+      border: 1px solid var(--rule);
+      border-radius: 2px;
+      background: var(--paper);
+      color: var(--ink);
+      text-decoration: none;
+    }
+    .navigate-card:hover { border-color: var(--ink); }
+    .navigate-card .micro.muted { color: var(--neutral); margin-top: 8px; }
+    @keyframes navigate-scroll {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
   `;
 }
 

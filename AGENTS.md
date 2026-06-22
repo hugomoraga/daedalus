@@ -31,6 +31,7 @@ Decisions live in the repo, not in any agent's chat memory. Agents coordinate **
 - **Node 22+**, native TypeScript type-stripping. **Zero external runtime dependencies.**
 - `npm install` (only symlinks workspace packages). `npm test` or `node --test` — **must stay green.**
 - Run the CLI: `node apps/cli/src/index.ts <command>`.
+- Focused iteration: `npm run test:filter -- "AC-1"` (only tests matching pattern) or `node --test tests/<file>.test.ts` (single file).
 - **Package boundaries:** import only via package entry points (`@daedalus/<pkg>`) and declared subpaths (e.g. `…/adapters`). **No deep imports** — `exports` blocks them on purpose.
 
 ## Git & collaboration protocol

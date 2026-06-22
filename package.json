@@ -13,6 +13,7 @@
   },
   "scripts": {
     "test": "node --test && node scripts/check-core-jurisdiction-agnostic.mjs && node scripts/check-rulesets-have-provenance.mjs",
+    "test:filter": "node --test --test-name-pattern",
     "lint:core-jurisdiction-agnostic": "node scripts/check-core-jurisdiction-agnostic.mjs",
     "lint:rulesets-have-provenance": "node scripts/check-rulesets-have-provenance.mjs",
     "cli": "node apps/cli/src/index.ts",

@@ -9,9 +9,9 @@ import { FinancialRiskFlagged } from "../domain/events.ts";
 import type { AlertRuleId } from "../domain/alert.ts";
 import {
   projectFinancialSummary,
-  projectConcentrationRatio,
-  projectNegativeCashflowRatio,
-} from "./projections.ts";
+} from "./projections/financial-summary.ts";
+import { projectConcentrationRatio } from "./projections/concentration.ts";
+import { projectNegativeCashflowRatio } from "./projections/negative-cashflow.ts";
 
 export type AlertResult = {
   ruleId: AlertRuleId;

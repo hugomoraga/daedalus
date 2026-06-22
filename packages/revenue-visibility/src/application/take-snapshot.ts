@@ -3,7 +3,7 @@
 
 import { appendIntents, enrich, startLineage } from "@daedalus/core";
 import type { RevenueDeps } from "./deps.ts";
-import { projectFinancialSummary } from "./projections.ts";
+import { projectFinancialSummary } from "./projections/financial-summary.ts";
 import { RevenueSnapshotGenerated } from "../domain/events.ts";
 
 export type TakeSnapshotCommand = {

@@ -15,7 +15,8 @@ export type { RevenueState } from "./domain/revenue.ts";
 export type { Estimate } from "./domain/estimate.ts";
 export type { Expense } from "./domain/expense.ts";
 export type { AlertThresholds, AlertRuleId, AlertSeverity, AlertRule } from "./domain/alert.ts";
-export type { RevenueSummary, FinancialSummary, BasicState } from "./application/projections.ts";
+export type { RevenueSummary } from "./application/projections/expected-revenue.ts";
+export type { FinancialSummary, BasicState } from "./application/projections/financial-summary.ts";
 
 // Command types
 export type { IngestProposalRevenueCommand } from "./application/ingest-proposal-revenue.ts";
@@ -38,5 +39,8 @@ export { takeSnapshotUseCase } from "./application/take-snapshot.ts";
 export { evaluateAlertsUseCase } from "./application/evaluate-alerts.ts";
 
 // Projections (read-models)
-export { projectExpectedRevenue } from "./application/projections.ts";
-export { projectFinancialSummary, projectEstimate, projectConcentrationRatio, projectNegativeCashflowRatio } from "./application/projections.ts";
+export { projectExpectedRevenue } from "./application/projections/expected-revenue.ts";
+export { projectFinancialSummary } from "./application/projections/financial-summary.ts";
+export { projectEstimate } from "./application/projections/estimate.ts";
+export { projectConcentrationRatio } from "./application/projections/concentration.ts";
+export { projectNegativeCashflowRatio } from "./application/projections/negative-cashflow.ts";

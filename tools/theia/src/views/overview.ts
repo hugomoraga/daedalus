@@ -23,6 +23,7 @@ export function renderOverview(state: ProjectState): string {
   const body = [
     renderPhaseTimeline(state),
     renderSpecGrid(state),
+    renderDriftWidget(state),
     renderAdrsSection(state),
     renderCodeInventorySection(state),
     renderUseCasesSection(state),
@@ -31,6 +32,26 @@ export function renderOverview(state: ProjectState): string {
     renderBlockersSection(state),
   ].join("\n");
   return renderLayout({ title: "Overview · Theia", body });
+}
+
+// Spec 015 §6 AC-4 — "Specs needing attention" widget. Renders one
+// row per (spec, issue) pair. Hidden entirely when no spec has any
+// convention issue, so a clean repo shows nothing here.
+function renderDriftWidget(state: ProjectState): string {
+  const all: Array<{ slug: string; issue: string }> = [];
+  for (const s of state.specs) {
+    for (const issue of s.conventionIssues) {
+      all.push({ slug: s.slug, issue });
+    }
+  }
+  if (all.length === 0) return "";
+  const items = all.map(({ slug, issue }) =>
+    `<li><code>${escapeHtml(slug)}</code> <span class="muted">— ${escapeHtml(issue)}</span></li>`
+  ).join("");
+  return section(
+    "Specs needing attention",
+    `<ul class="theia-mono">${items}</ul>`,
+  );
 }
 
 function renderPhaseTimeline(state: ProjectState): string {

@@ -14,6 +14,8 @@ export type SpecStatus =
   | "Ratified"
   | "Blocked"
   | "Superseded"
+  | "Planning"
+  | "Shipped"
   | "Unknown";
 
 export type AdrStatus = "Proposed" | "Accepted" | "Superseded" | "Unknown";
@@ -42,6 +44,7 @@ export type SpecCard = {
   };
   unknownReason: string | null; // populated when status === "Unknown"
   blockers: BlockerEntry[]; // populated when status === "Blocked"
+  conventionIssues: string[]; // Spec 015 §6 AC-4 — drift signals; empty when clean
 };
 
 export type AdrRow = {

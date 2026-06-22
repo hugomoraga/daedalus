@@ -2,9 +2,9 @@
 
 **Status:** v0 **shipped & green** (PR #14 — `012-core-value-chain-completion`, merged `e705d19`)
 **Derives from:** Spec 006 + Plan 006
-**Conforms to:** [Technical Principles](../../memory/technical-principles.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md)
-**Version:** 0.2.0
-**Last updated:** 2026-06-15
+**Conforms to:** [Conventions](../../tools/theia/CONVENTIONS.md), [Technical Principles](../../memory/technical-principles.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md)
+**Version:** 1.0.0
+**Last updated:** 2026-06-22
 
 > The `/tasks` step for closing the Core value chain `Lead → Payment`. Tasks map to Spec 006 acceptance criteria and Plan 006 build steps. **All v0 tasks shipped**; nothing pending for Phase 1.
 
@@ -20,23 +20,21 @@ v0 is built and passing (`node --test` green; 88 tests). The Core value chain `L
 
 Each task maps to a Spec 006 AC and a Plan 006 build step.
 
-| ID | Task | Spec AC | Status |
-|---|---|---|---|
-| T-01 | Domain: `ProposalSubmitted` + `ProposalRejected` event types; extend `Proposal` aggregate (add `submitted` state) | AC-1 | ✅ |
-| T-02 | Domain: `Project` aggregate (created/delivered/closed), state machine | AC-2, AC-3 | ✅ |
-| T-03 | Domain: `Invoice` aggregate (issued/sent/paid/overdue), state machine | AC-4, AC-5 | ✅ |
-| T-04 | Projections: `projectProposal`, `projectProject`, `projectInvoice` (replay-based) | AC-6 | ✅ |
-| T-05 | Use case: `submitProposalUseCase` (idempotent on `submitted`/`approved`/`rejected`) | AC-1 | ✅ |
-| T-06 | Use case: `rejectProposalUseCase` (idempotent; requires non-empty reason) | AC-1 | ✅ |
-| T-07 | Use case: `createProjectUseCase` — reactor from `ProposalApproved`; idempotent on `proposalId` | AC-2, AC-8 | ✅ |
-| T-08 | Use case: `markProjectDeliveredUseCase` (state machine invariant) | AC-3 | ✅ |
-| T-09 | Use case: `closeProjectUseCase` — requires delivered + invoices paid (or explicit reason) | AC-3, AC-8, R2 | ✅ |
-| T-10 | Use case: `issueInvoiceUseCase` — reactor from `ProjectDelivered`; idempotent on `projectId`; requires project=delivered | AC-4, AC-8 | ✅ |
-| T-11 | Use case: `sendInvoiceUseCase` (state machine invariant) | AC-5 | ✅ |
-| T-12 | Use case: `payInvoiceUseCase` — reactor from `PaymentReceived`; idempotent on `(invoiceId, paymentId)` | AC-5 | ✅ |
-| T-13 | Use case: `markInvoiceOverdueUseCase` (flag, not state; multiple times allowed) | AC-5 | ✅ |
-| T-14 | CLI: 9 commands + 3 status reads | — | ✅ |
-| T-15 | Tests: AC-1..AC-9 + evidence run | all | ✅ |
+- [x] T-01: Domain: `ProposalSubmitted` + `ProposalRejected` event types; extend `Proposal` aggregate (add `submitted` state) (AC-1)
+- [x] T-02: Domain: `Project` aggregate (created/delivered/closed), state machine (AC-2, AC-3)
+- [x] T-03: Domain: `Invoice` aggregate (issued/sent/paid/overdue), state machine (AC-4, AC-5)
+- [x] T-04: Projections: `projectProposal`, `projectProject`, `projectInvoice` (replay-based) (AC-6)
+- [x] T-05: Use case: `submitProposalUseCase` (idempotent on `submitted`/`approved`/`rejected`) (AC-1)
+- [x] T-06: Use case: `rejectProposalUseCase` (idempotent; requires non-empty reason) (AC-1)
+- [x] T-07: Use case: `createProjectUseCase` — reactor from `ProposalApproved`; idempotent on `proposalId` (AC-2, AC-8)
+- [x] T-08: Use case: `markProjectDeliveredUseCase` (state machine invariant) (AC-3)
+- [x] T-09: Use case: `closeProjectUseCase` — requires delivered + invoices paid (or explicit reason) (AC-3, AC-8, R2)
+- [x] T-10: Use case: `issueInvoiceUseCase` — reactor from `ProjectDelivered`; idempotent on `projectId`; requires project=delivered (AC-4, AC-8)
+- [x] T-11: Use case: `sendInvoiceUseCase` (state machine invariant) (AC-5)
+- [x] T-12: Use case: `payInvoiceUseCase` — reactor from `PaymentReceived`; idempotent on `(invoiceId, paymentId)` (AC-5)
+- [x] T-13: Use case: `markInvoiceOverdueUseCase` (flag, not state; multiple times allowed) (AC-5)
+- [x] T-14: CLI: 9 commands + 3 status reads
+- [x] T-15: Tests: AC-1..AC-9 + evidence run (all)
 
 ---
 

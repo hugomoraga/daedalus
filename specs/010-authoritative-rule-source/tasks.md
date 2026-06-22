@@ -2,7 +2,7 @@
 
 **Status:** v1 **SHIPPED** — Spec 010 v1.0.0 + Plan 010 v1.0.0 + 20 tasks ✅ (impl PR #50, branch `049-spec010-rule-source-implementation`). Spec 004 B3 ✅ Closed.
 **Derives from:** [Spec 010](./spec.md) + [Plan 010](./plan.md)
-**Conforms to:** [Technical Principles](../../memory/technical-principles.md), [ADR-002](../../governance/decisions/ADR-002-adopt-technical-framework.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md), [Spec 008](../013-jurisdiction-model/spec.md) (provenance), [Spec 009](../009-policy-engine/spec.md) (event vocabulary + lineage), [Plan 008 §4.1](../../memory/technical-principles.md) (env-var pattern)
+**Conforms to:** [Conventions](../../tools/theia/CONVENTIONS.md), [Technical Principles](../../memory/technical-principles.md), [ADR-002](../../governance/decisions/ADR-002-adopt-technical-framework.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md), [Spec 008](../013-jurisdiction-model/spec.md) (provenance), [Spec 009](../009-policy-engine/spec.md) (event vocabulary + lineage), [Plan 008 §4.1](../../memory/technical-principles.md) (env-var pattern)
 **Version:** 1.1.0
 **Last updated:** 2026-06-22
 
@@ -10,55 +10,43 @@
 
 ---
 
-## Phase A — Events + types ✅
+## Phase A — Events + types
 
-| ID | Task | Status |
-|---|---|---|
-| R-01 | `RuleSetRegistered` event type + payload | ✅ |
-| R-02 | `RuleSetSuperseded` event type + payload | ✅ |
-| R-03 | `RuleSetStale` event type + payload | ✅ |
-| R-04 | `ObligationCoverageGap` event type + payload | ✅ |
-| R-05 | `StalenessConfig` type + threshold-computation helper | ✅ |
+- [x] R-01: `RuleSetRegistered` event type + payload
+- [x] R-02: `RuleSetSuperseded` event type + payload
+- [x] R-03: `RuleSetStale` event type + payload
+- [x] R-04: `ObligationCoverageGap` event type + payload
+- [x] R-05: `StalenessConfig` type + threshold-computation helper
 
-## Phase B — Use cases ✅
+## Phase B — Use cases
 
-| ID | Task | Status |
-|---|---|---|
-| R-06 | `registerRuleSetUseCase` | ✅ |
-| R-07 | `supersedeRuleSetUseCase` | ✅ |
-| R-08 | `sweepStalenessUseCase` (uses `actor: "system"`) | ✅ |
-| R-09 | `listRuleSourcesUseCase` | ✅ |
+- [x] R-06: `registerRuleSetUseCase`
+- [x] R-07: `supersedeRuleSetUseCase`
+- [x] R-08: `sweepStalenessUseCase` (uses `actor: "system"`)
+- [x] R-09: `listRuleSourcesUseCase`
 
-## Phase C — Default config ✅
+## Phase C — Default config
 
-| ID | Task | Status |
-|---|---|---|
-| R-10 | `defaultStalenessConfig()` env-var-driven | ✅ |
-| R-11 | Wired into `packages/core/src/adapters/index.ts` | ✅ |
+- [x] R-10: `defaultStalenessConfig()` env-var-driven
+- [x] R-11: Wired into `packages/core/src/adapters/index.ts`
 
-## Phase D — CLI commands (3 new) ✅
+## Phase D — CLI commands (3 new)
 
-| ID | Task | Status |
-|---|---|---|
-| R-12 | `rules:register` | ✅ (consolidated in `apps/cli/src/commands/rules.ts`) |
-| R-13 | `rules:list` | ✅ |
-| R-14 | `rules:sweep` | ✅ |
-| R-15 | Wired into `apps/cli/src/index.ts` + help text | ✅ |
+- [x] R-12: `rules:register` (consolidated in `apps/cli/src/commands/rules.ts`)
+- [x] R-13: `rules:list`
+- [x] R-14: `rules:sweep`
+- [x] R-15: Wired into `apps/cli/src/index.ts` + help text
 
-## Phase E — Conformance & tests ✅
+## Phase E — Conformance & tests
 
-| ID | Task | Status |
-|---|---|---|
-| R-16 | `tests/rule-source.test.ts` — 7 cases | ✅ |
-| R-17 | CLI integration covered via the same suite (no separate file needed; CLI commands are thin wrappers) | ⏭️ (consolidated) |
-| R-18 | `scripts/check-rule-source-staleness.mjs` wired into `npm test` | ✅ |
-| R-19 | `.env.example` updated with the 3 staleness env vars | ✅ |
+- [x] R-16: `tests/rule-source.test.ts` — 7 cases
+- [ ] R-17: CLI integration covered via the same suite (no separate file needed; CLI commands are thin wrappers) (consolidated)
+- [x] R-18: `scripts/check-rule-source-staleness.mjs` wired into `npm test`
+- [x] R-19: `.env.example` updated with the 3 staleness env vars
 
-## Phase F — Documentation & unblock ✅
+## Phase F — Documentation & unblock
 
-| ID | Task | Status |
-|---|---|---|
-| R-20 | `specs/004-tax-compliance-guard/spec.md` §4 B3 marked ✅ Closed; Status v0.5.0; net 3 of 4 unblockers built | ✅ |
+- [x] R-20: `specs/004-tax-compliance-guard/spec.md` §4 B3 marked ✅ Closed; Status v0.5.0; net 3 of 4 unblockers built
 
 ---
 

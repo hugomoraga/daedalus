@@ -13,12 +13,13 @@
     "node": ">=22.6.0"
   },
   "scripts": {
-    "test": "node --test && node scripts/check-core-jurisdiction-agnostic.mjs && node scripts/check-rulesets-have-provenance.mjs && node scripts/check-policies-have-provenance.mjs && node scripts/check-rule-source-staleness.mjs",
+    "test": "node --test && node scripts/check-core-jurisdiction-agnostic.mjs && node scripts/check-rulesets-have-provenance.mjs && node scripts/check-policies-have-provenance.mjs && node scripts/check-rule-source-staleness.mjs && node tools/scripts/check-spec-conventions.mjs",
     "test:filter": "node --test --test-name-pattern",
     "lint:core-jurisdiction-agnostic": "node scripts/check-core-jurisdiction-agnostic.mjs",
     "lint:rulesets-have-provenance": "node scripts/check-rulesets-have-provenance.mjs",
     "lint:policies-have-provenance": "node scripts/check-policies-have-provenance.mjs",
     "lint:rule-source-staleness": "node scripts/check-rule-source-staleness.mjs",
+    "lint:spec-conventions": "node tools/scripts/check-spec-conventions.mjs",
     "cli": "node apps/cli/src/index.ts",
     "atlas": "node apps/atlas/src/cli.ts",
     "theia": "node tools/theia/src/cli.ts"

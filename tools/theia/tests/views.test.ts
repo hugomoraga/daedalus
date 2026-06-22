@@ -111,3 +111,46 @@ test("spec detail view for an unknown slug renders a 'not found' page", async ()
   assert.match(html, /not found/i);
   assert.match(html, /back to overview/);
 });
+
+// ----------------------------------------------------------------------------
+// Spec 015 — drift widget (AC-4)
+// ----------------------------------------------------------------------------
+
+test("AC-4: drift widget is hidden when no spec has issues", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  // Force every spec to be clean: empty conventionIssues array.
+  for (const s of state.specs) {
+    s.conventionIssues = [];
+  }
+  const html = renderOverview(state);
+  assert.doesNotMatch(html, /Specs needing attention/);
+});
+
+test("AC-4: drift widget lists each (spec, issue) pair when populated", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  // Inject issues on two specs.
+  const card1 = state.specs[0]!;
+  const card2 = state.specs[1]!;
+  card1.conventionIssues = ["tasks.md missing"];
+  card2.conventionIssues = ["tasks.md has 0 checkboxes", "Unknown status: oops"];
+  const html = renderOverview(state);
+  assert.match(html, /Specs needing attention/);
+  // Each issue should appear (escapeHtml encodes the slug verbatim).
+  assert.match(html, new RegExp(card1.slug));
+  assert.match(html, new RegExp(card2.slug));
+  assert.match(html, /tasks\.md missing/);
+  assert.match(html, /tasks\.md has 0 checkboxes/);
+  assert.match(html, /Unknown status: oops/);
+});
+
+test("AC-4: drift widget renders between Specs and ADRs sections", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  state.specs[0]!.conventionIssues = ["tasks.md missing"];
+  const html = renderOverview(state);
+  const specsIdx = html.indexOf("Specs (");
+  const driftIdx = html.indexOf("Specs needing attention");
+  const adrsIdx = html.indexOf("ADRs (");
+  assert.ok(specsIdx !== -1 && driftIdx !== -1 && adrsIdx !== -1);
+  assert.ok(specsIdx < driftIdx, "drift widget should appear after Specs");
+  assert.ok(driftIdx < adrsIdx, "drift widget should appear before ADRs");
+});

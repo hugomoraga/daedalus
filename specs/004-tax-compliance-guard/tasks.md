@@ -2,8 +2,8 @@
 
 **Status:** ✅ **SHIPPED** — Spec 004 v1.0.0 + Plan 004 v1.0.0 ratified 2026-06-22 (governance PR #52, branch `051-spec004-tax-compliance-ratify-pack`). T-01..T-20 implemented 2026-06-22 (impl PR #53, branch `052-spec004-tax-compliance-implementation`). All 4 unblockers built; 164/164 tests + 4 lint scripts green.
 **Derives from:** [Spec 004](./spec.md) + [Plan 004](./plan.md)
-**Conforms to:** [Technical Principles](../../memory/technical-principles.md), [ADR-002](../../governance/decisions/ADR-002-adopt-technical-framework.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md), [Spec 008](../013-jurisdiction-model/spec.md), [Spec 009](../009-policy-engine/spec.md), [Spec 010](../010-authoritative-rule-source/spec.md)
-**Version:** 1.0.0
+**Conforms to:** [Conventions](../../tools/theia/CONVENTIONS.md), [Technical Principles](../../memory/technical-principles.md), [ADR-002](../../governance/decisions/ADR-002-adopt-technical-framework.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md), [Spec 008](../013-jurisdiction-model/spec.md), [Spec 009](../009-policy-engine/spec.md), [Spec 010](../010-authoritative-rule-source/spec.md)
+**Version:** 1.1.0
 **Last updated:** 2026-06-22
 
 > The `/tasks` step for the Tax & Compliance Guard Module. v1.0 is the **guard**, not the engine. Tasks map 1:1 to Spec 004 acceptance criteria and Plan 004 build steps.
@@ -12,38 +12,30 @@
 
 ## Phase A — Domain types + pure helpers
 
-| ID | Task | Produces | Spec ref |
-|---|---|---|---|
-| **T-01** | `ObligationDue` / `ObligationMet` / `ObligationMissed` / `ObligationEvaluationRecorded` event types + payload types. | `packages/tax-compliance-guard/src/domain/obligation.ts` | §4 |
-| **T-02** | `computeDeadline(deadlineSpec, triggerTime)` — pure function. v1.0: simple day count for `offset-from-trigger`; `fixed-calendar` returns the calendar date. | `packages/tax-compliance-guard/src/application/compute-deadline.ts` | §3.2 |
-| **T-03** | `deriveObligationStates(events)` — pure function. Given a tenant's event stream, returns the current state of every obligation (`pending` / `met` / `missed`). | `packages/tax-compliance-guard/src/application/obligation-state.ts` | §7, AC-9 |
-| **T-04** | `TaxComplianceDeps` — Module deps shape. Extends `CoreDeps` with `RuleSetLoaderPort` + `PolicyEnginePort` + a tax-compliance-policy reference constant. | `packages/tax-compliance-guard/src/application/deps.ts` | Plan §5 |
+- [x] T-01: `ObligationDue` / `ObligationMet` / `ObligationMissed` / `ObligationEvaluationRecorded` event types + payload types → `packages/tax-compliance-guard/src/domain/obligation.ts` (§4)
+- [x] T-02: `computeDeadline(deadlineSpec, triggerTime)` — pure function. v1.0: simple day count for `offset-from-trigger`; `fixed-calendar` returns the calendar date → `packages/tax-compliance-guard/src/application/compute-deadline.ts` (§3.2)
+- [x] T-03: `deriveObligationStates(events)` — pure function. Given a tenant's event stream, returns the current state of every obligation (`pending` / `met` / `missed`) → `packages/tax-compliance-guard/src/application/obligation-state.ts` (§7, AC-9)
+- [x] T-04: `TaxComplianceDeps` — Module deps shape. Extends `CoreDeps` with `RuleSetLoaderPort` + `PolicyEnginePort` + a tax-compliance-policy reference constant → `packages/tax-compliance-guard/src/application/deps.ts` (Plan §5)
 
 ## Phase B — Use cases
 
-| ID | Task | Produces | Spec ref |
-|---|---|---|---|
-| **T-05** | `watchFinancialEventsUseCase(deps, event)` — find matching obligations, emit `ObligationDue` + `ObligationEvaluationRecorded`, fall through to `ObligationCoverageGap` when no match. | `packages/tax-compliance-guard/src/application/watch-financial-events.ts` | §3.1, AC-1, AC-4, AC-5, AC-6, AC-7 |
-| **T-06** | `sweepDeadlinesUseCase(deps, tenantId, asOf?)` — derives state, emits `ObligationMissed` for past-due obligations. Idempotent. | `packages/tax-compliance-guard/src/application/sweep-deadlines.ts` | §3.2, AC-2 |
-| **T-07** | `acknowledgeObligationUseCase(deps, input)` — validates the obligation is `pending`, emits `ObligationMet`. | `packages/tax-compliance-guard/src/application/acknowledge-obligation.ts` | §3.3, AC-3 |
-| **T-08** | `listObligationsUseCase(deps, tenantId)` — returns the structured report (live state). | `packages/tax-compliance-guard/src/application/list-obligations.ts` | §3.4 |
-| **T-09** | `evaluateTaxPolicyUseCase(deps, obligationContext)` — convenience wrapper. Loads the tax-compliance-policy bundle (or defaults to `allow` if absent), invokes the Policy Engine, returns the decision. | `packages/tax-compliance-guard/src/application/evaluate-tax-policy.ts` | §3.5, AC-4, AC-5, AC-6 |
+- [x] T-05: `watchFinancialEventsUseCase(deps, event)` — find matching obligations, emit `ObligationDue` + `ObligationEvaluationRecorded`, fall through to `ObligationCoverageGap` when no match → `packages/tax-compliance-guard/src/application/watch-financial-events.ts` (§3.1, AC-1, AC-4, AC-5, AC-6, AC-7)
+- [x] T-06: `sweepDeadlinesUseCase(deps, tenantId, asOf?)` — derives state, emits `ObligationMissed` for past-due obligations. Idempotent → `packages/tax-compliance-guard/src/application/sweep-deadlines.ts` (§3.2, AC-2)
+- [x] T-07: `acknowledgeObligationUseCase(deps, input)` — validates the obligation is `pending`, emits `ObligationMet` → `packages/tax-compliance-guard/src/application/acknowledge-obligation.ts` (§3.3, AC-3)
+- [x] T-08: `listObligationsUseCase(deps, tenantId)` — returns the structured report (live state) → `packages/tax-compliance-guard/src/application/list-obligations.ts` (§3.4)
+- [x] T-09: `evaluateTaxPolicyUseCase(deps, obligationContext)` — convenience wrapper. Loads the tax-compliance-policy bundle (or defaults to `allow` if absent), invokes the Policy Engine, returns the decision → `packages/tax-compliance-guard/src/application/evaluate-tax-policy.ts` (§3.5, AC-4, AC-5, AC-6)
 
 ## Phase C — Public contract + CLI
 
-| ID | Task | Produces | Spec ref |
-|---|---|---|---|
-| **T-10** | `packages/tax-compliance-guard/src/index.ts` — curated public contract (event types + use cases + pure helpers + deps type). | `index.ts` | Plan §5, ADR-004 |
-| **T-11** | `packages/tax-compliance-guard/package.json` — `@daedalus/tax-compliance-guard` v0.0.0, no external deps, dep on `@daedalus/core`. | `package.json` | Plan §1 |
-| **T-12** | `apps/cli/src/commands/obligations.ts` — 3 commands (list / ack / sweep). | per-command-files pattern | §6 |
-| **T-13** | Wire the 3 commands into `apps/cli/src/index.ts` (parseArgs + switch) + `apps/cli/src/commands/help.ts`. | `index.ts` + `help.ts` (edit) | §6 |
+- [x] T-10: `packages/tax-compliance-guard/src/index.ts` — curated public contract (event types + use cases + pure helpers + deps type) → `index.ts` (Plan §5, ADR-004)
+- [x] T-11: `packages/tax-compliance-guard/package.json` — `@daedalus/tax-compliance-guard` v0.0.0, no external deps, dep on `@daedalus/core` → `package.json` (Plan §1)
+- [x] T-12: `apps/cli/src/commands/obligations.ts` — 3 commands (list / ack / sweep) → per-command-files pattern (§6)
+- [x] T-13: Wire the 3 commands into `apps/cli/src/index.ts` (parseArgs + switch) + `apps/cli/src/commands/help.ts` → `index.ts` + `help.ts` (edit) (§6)
 
 ## Phase D — Conformance & tests
 
-| ID | Task | Produces | Spec ref |
-|---|---|---|---|
-| **T-14** | `tests/tax-compliance-guard.test.ts` — 9 cases (the ACs below). Uses `node --test`. Test data constructed inline. | test file passing `npm test` | §7 |
-| **T-15** | `tests/cli-obligations.test.ts` — CLI integration for the 3 commands. | test file passing `npm test` | §7 |
+- [x] T-14: `tests/tax-compliance-guard.test.ts` — 9 cases (the ACs below). Uses `node --test`. Test data constructed inline → test file passing `npm test` (§7)
+- [x] T-15: `tests/cli-obligations.test.ts` — CLI integration for the 3 commands → test file passing `npm test` (§7)
 
 ### Acceptance cases (T-14)
 
@@ -59,13 +51,11 @@
 
 ## Phase E — Documentation & unblock
 
-| ID | Task | Produces | Spec ref |
-|---|---|---|---|
-| **T-16** | `packages/core/package.json` — add `@daedalus/tax-compliance-guard` to the workspace. | `package.json` (workspace entry) | Plan §1 |
-| **T-17** | `docs/identity.md` — record "Tax & Compliance Guard shipped; the system guards; the human claims compliance". | doc update | §13 |
-| **T-18** | `docs/roadmap.md` — flip Phase 3 capability as ✅ Built (Tax & Compliance Guard shipped); the Policy Engine ships separately as the substrate. | roadmap update | §15 |
-| **T-19** | `config/rulesets/tenant-0/README.md` — note that the founder adds a tenant-0 rule set (Spec 010 §9 process) as the seed for the Module's first test. NOT a real rule. | doc update | Spec 010 |
-| **T-20** | `specs/004-tax-compliance-guard/tasks.md` — flip status to SHIPPED. | self-update | self |
+- [x] T-16: `packages/core/package.json` — add `@daedalus/tax-compliance-guard` to the workspace → `package.json` (workspace entry) (Plan §1)
+- [x] T-17: `docs/identity.md` — record "Tax & Compliance Guard shipped; the system guards; the human claims compliance" → doc update (§13)
+- [x] T-18: `docs/roadmap.md` — flip Phase 3 capability as ✅ Built (Tax & Compliance Guard shipped); the Policy Engine ships separately as the substrate → roadmap update (§15)
+- [x] T-19: `config/rulesets/tenant-0/README.md` — note that the founder adds a tenant-0 rule set (Spec 010 §9 process) as the seed for the Module's first test. NOT a real rule → doc update (Spec 010)
+- [x] T-20: `specs/004-tax-compliance-guard/tasks.md` — flip status to SHIPPED → self-update (self)
 
 ## Sequencing
 

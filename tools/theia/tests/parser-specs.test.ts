@@ -13,9 +13,11 @@ import { statSync } from "node:fs";
 import { parseSpecs, computeActivePhase } from "../src/parser/specs.ts";
 import {
   countCheckboxes,
+  countLegacyTableRows,
   parseSpecCompletion,
   mergeCompletion,
 } from "../src/parser/completion.ts";
+import * as nodeFs from "node:fs";
 
 const FIXTURE = fileURLToPath(new URL("./fixtures/repo-typical", import.meta.url));
 
@@ -129,6 +131,105 @@ test("countCheckboxes is a pure function (no I/O)", () => {
 test("mergeCompletion sums two counts", () => {
   assert.deepEqual(mergeCompletion({ done: 1, total: 2 }, { done: 3, total: 5 }), { done: 4, total: 7 });
   assert.deepEqual(mergeCompletion({ done: 0, total: 0 }, { done: 0, total: 0 }), { done: 0, total: 0 });
+});
+
+// ----------------------------------------------------------------------------
+// Spec 015 — canonical format (AC-1, AC-2)
+// ----------------------------------------------------------------------------
+
+// Spec 015 §6 AC-1: countCheckboxes is the canonical path; a file with
+// even one `- [x]` resolves to canonical counts only.
+test("AC-1: countCheckboxes returns exact done/total for the canonical format", () => {
+  const md = `# Tasks
+
+- [x] T-01: first (AC-1)
+- [x] T-02: second (AC-2)
+- [ ] T-03: third (AC-3)
+- [x] T-04: fourth (AC-4)
+`;
+  assert.deepEqual(countCheckboxes(md), { done: 3, total: 4 });
+});
+
+// Spec 015 §6 AC-2: countLegacyTableRows recognises the legacy
+// emoji-table form. Only fires when the file has zero checkboxes.
+test("AC-2: countLegacyTableRows recognises | ✅ | / | ⏸ | / | ⛔ | cells", () => {
+  const md = `| ID | Task | Status |
+|---|---|---|
+| T-01 | first | ✅ |
+| T-02 | second | ✅ |
+| T-03 | third | ⏸ |
+| T-04 | fourth | ⛔ |
+`;
+  assert.deepEqual(countLegacyTableRows(md), { done: 2, total: 4 });
+});
+
+test("AC-2: countLegacyTableRows returns 0/0 for canonical-only input", () => {
+  const md = `- [x] T-01
+- [ ] T-02
+`;
+  assert.deepEqual(countLegacyTableRows(md), { done: 0, total: 0 });
+});
+
+test("AC-2: empty file yields 0/0 for both counters", () => {
+  assert.deepEqual(countCheckboxes(""), { done: 0, total: 0 });
+  assert.deepEqual(countLegacyTableRows(""), { done: 0, total: 0 });
+});
+
+// Spec 015 §6 AC-1 (canonical-first resolution): when a file has BOTH
+// checkboxes AND legacy cells, the canonical count wins.
+test("AC-1 + AC-2: parseSpecCompletion prefers canonical over legacy when both present", () => {
+  const dir = join(FIXTURE, "specs", "_mix-fixture");
+  nodeFs.mkdirSync(dir, { recursive: true });
+  try {
+    // Both formats in the same file: 2 canonical + 1 legacy cell.
+    // Expected: canonical wins → done=1, total=2.
+    nodeFs.writeFileSync(
+      join(dir, "tasks.md"),
+      `- [x] T-01: canonical done\n- [ ] T-02: canonical pending\n\n| ID | Status |\n|---|---|\n| X-99 | ✅ |\n`,
+    );
+    const c = parseSpecCompletion(FIXTURE, "_mix-fixture");
+    assert.equal(c.tasks.done, 1);
+    assert.equal(c.tasks.total, 2);
+  } finally {
+    nodeFs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// Spec 015 §6 AC-2: when a file has ONLY legacy cells, legacy count wins.
+test("AC-2: parseSpecCompletion falls back to legacy when no checkboxes", () => {
+  const dir = join(FIXTURE, "specs", "_legacy-fixture");
+  nodeFs.mkdirSync(dir, { recursive: true });
+  try {
+    nodeFs.writeFileSync(
+      join(dir, "tasks.md"),
+      `| ID | Task | Status |\n|---|---|---|\n| T-01 | done | ✅ |\n| T-02 | done | ✅ |\n| T-03 | pending | ⏸ |\n`,
+    );
+    const c = parseSpecCompletion(FIXTURE, "_legacy-fixture");
+    assert.equal(c.tasks.done, 2);
+    assert.equal(c.tasks.total, 3);
+  } finally {
+    nodeFs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// Spec 015 §6 AC-4 (drift widget data): conventionIssues surfaces
+// problems on the SpecCard itself, not just the parser's hidden
+// state. Parse the typical fixture and confirm the widget would
+// find what it needs.
+test("AC-4: conventionIssues is empty for a clean canonical spec", () => {
+  const cards = parseSpecs(FIXTURE);
+  const clean = cards.find((c) => c.slug === "001-ratified-p2");
+  assert.ok(clean !== undefined);
+  assert.ok(Array.isArray(clean!.conventionIssues));
+  assert.deepEqual(clean!.conventionIssues, []);
+});
+
+// Spec 015 §6 AC-4: conventionIssues surfaces Unknown status.
+test("AC-4: conventionIssues surfaces 'Unknown status' for the unknown-status fixture", () => {
+  const cards = parseSpecs(FIXTURE);
+  const unknown = cards.find((c) => c.slug === "004-unknown");
+  assert.ok(unknown !== undefined);
+  assert.ok(unknown!.conventionIssues.some((i) => i.startsWith("Unknown status")));
 });
 
 // AC-2: each card carries the artifact links (spec / plan / tasks).

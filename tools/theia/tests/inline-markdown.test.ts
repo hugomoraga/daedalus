@@ -65,3 +65,55 @@ test("UX-006: backticks and bold can mix freely", () => {
     "<strong>bold</strong> with <code>code</code> and <strong>more</strong> <code>more code</code>",
   );
 });
+
+// ----------------------------------------------------------------------------
+// UX-007 — links [text](url) + safe-URL guard
+// ----------------------------------------------------------------------------
+
+test("UX-007: [text](url) becomes an <a> with the URL as href", () => {
+  assert.equal(
+    inlineMarkdownToHtml("[Spec 012](../../012-theia/spec.md)"),
+    `<a href="../../012-theia/spec.md">Spec 012</a>`,
+  );
+  assert.equal(
+    inlineMarkdownToHtml("see [the constitution](https://example.com/constitution)"),
+    `see <a href="https://example.com/constitution">the constitution</a>`,
+  );
+});
+
+test("UX-007: bold and code inside link text render correctly", () => {
+  assert.equal(
+    inlineMarkdownToHtml("[**bold** link](url)"),
+    `<a href="url"><strong>bold</strong> link</a>`,
+  );
+  assert.equal(
+    inlineMarkdownToHtml("[`code` link](url)"),
+    `<a href="url"><code>code</code> link</a>`,
+  );
+});
+
+test("UX-007: link href is HTML-escaped", () => {
+  assert.equal(
+    inlineMarkdownToHtml("[text](https://example.com/?a=1&b=2)"),
+    `<a href="https://example.com/?a=1&amp;b=2">text</a>`,
+  );
+});
+
+test("UX-007: dangerous URL schemes are rejected (no href rendered, text kept)", () => {
+  assert.equal(inlineMarkdownToHtml("[click](javascript:alert(1))"), "click");
+  assert.equal(inlineMarkdownToHtml("[click](JavaScript:alert(1))"), "click");
+  assert.equal(inlineMarkdownToHtml("[click](data:text/html,<script>)"), "click");
+  assert.equal(inlineMarkdownToHtml("[click](vbscript:msgbox)"), "click");
+  assert.equal(inlineMarkdownToHtml("[click](file:///etc/passwd)"), "click");
+});
+
+test("UX-007: unbalanced brackets are treated as literal", () => {
+  assert.equal(inlineMarkdownToHtml("[unclosed"), "[unclosed");
+  assert.equal(inlineMarkdownToHtml("text ]("), "text ](");
+  assert.equal(inlineMarkdownToHtml("[text](unclosed"), "[text](unclosed");
+});
+
+test("UX-007: empty link text or href keeps the brackets literal", () => {
+  assert.equal(inlineMarkdownToHtml("[](url)"), "[](url)");
+  assert.equal(inlineMarkdownToHtml("[text]()"), "[text]()");
+});

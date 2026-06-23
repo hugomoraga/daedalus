@@ -10,4 +10,4 @@
 
 ## 1. Summary
 
-This fixture simulates a Ratified Phase-2 spec. The parser must surface `status = "Ratified"` and `phase = 2`.
+This fixture simulates a **Ratified** Phase-2 spec. The parser must surface `status = "Ratified"` and `phase = 2`. See [Spec 012 (Theia)](../../012-theia/spec.md) for the consumer.

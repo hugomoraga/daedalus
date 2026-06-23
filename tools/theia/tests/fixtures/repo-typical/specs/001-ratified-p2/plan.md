@@ -2,6 +2,6 @@
 
 > Fixture for Theia parser tests.
 
-- [x] Phase A shipped
-- [x] Phase B shipped
-- [ ] Phase C blocked
+- [x] PL-01: Phase A shipped
+- [x] PL-02: Phase B shipped
+- [ ] PL-03: Phase C blocked

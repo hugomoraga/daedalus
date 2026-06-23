@@ -2,7 +2,12 @@
 
 > Fixture for Theia parser tests.
 
-- [x] T-01 first task done
-- [x] T-02 second task done
-- [ ] T-03 third task pending
-- [x] T-04 fourth task done
+## PR 1 — Foundation
+
+- [x] T-01: first task done
+- [x] T-02: second task done
+
+## PR 2 — Wiring
+
+- [ ] T-03: third task pending
+- [x] T-04: fourth task done

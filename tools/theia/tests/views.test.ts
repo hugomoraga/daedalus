@@ -121,6 +121,40 @@ test("spec detail view for an unknown slug renders a 'not found' page", async ()
   assert.match(html, /back to overview/);
 });
 
+test("UX-003: spec detail view enumerates each task with its state", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderSpecDetail("001-ratified-p2", state);
+  // Done task: id + text + done styling class.
+  assert.match(html, /<code>T-01<\/code>/);
+  assert.match(html, /first task done/);
+  assert.match(html, /theia-task-done/);
+  // Pending task: id + text + pending styling class.
+  assert.match(html, /<code>T-03<\/code>/);
+  assert.match(html, /third task pending/);
+  assert.match(html, /theia-task-pending/);
+});
+
+test("UX-003: spec detail view groups tasks by ## section heading", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderSpecDetail("001-ratified-p2", state);
+  // The fixture tasks.md has two `##` sections: "PR 1 — Foundation"
+  // and "PR 2 — Wiring". Each renders as its own .theia-task-section.
+  assert.match(html, /theia-task-section[^>]*>PR 1 — Foundation</);
+  assert.match(html, /theia-task-section[^>]*>PR 2 — Wiring</);
+  assert.match(html, /theia-task-list/);
+});
+
+test("UX-003: spec detail view with empty taskList omits the task block", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderSpecDetail("002-draft-p0", state);
+  // No <li class="theia-task-*"> should appear in the body. (The CSS
+  // selector string itself lives inside <style>, so we check the
+  // rendered markup only — an <li> with a theia-task- class.)
+  assert.doesNotMatch(html, /<li[^>]*theia-task-/);
+  assert.doesNotMatch(html, /<h3[^>]*theia-task-section/);
+  assert.doesNotMatch(html, /<div[^>]*theia-task-block/);
+});
+
 // ----------------------------------------------------------------------------
 // Spec 015 — drift widget (AC-4)
 // ----------------------------------------------------------------------------

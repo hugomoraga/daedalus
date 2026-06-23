@@ -250,4 +250,33 @@ Resolved by PR #92: card is now `<a class="theia-card theia-card-link" href="/sp
 
 ---
 
-*Last updated: 2026-06-22 (CHORE-001 → done via PR #85; CHORE-002 → done after PR #86 amendment merged; UX-002 → done via PR #92; UX-001 still open from session-end note).*
+## UX-003 — Theia spec detail page should enumerate tasks with their state
+
+**Status:** done
+**Kind:** follow-up
+**Source:** session-end note, 2026-06-22
+**Affects:** tools/theia/src/views/spec.ts, tools/theia/src/parser/completion.ts, tools/theia/src/parser/specs.ts, tools/theia/src/types.ts, tools/theia/src/views/layout.ts
+
+The per-spec detail page (`renderSpecDetail`, `tools/theia/src/views/spec.ts:7`)
+shows the overall `done/total` and a progress bar, but the individual
+tasks are not enumerated — the founder has to open `tasks.md` to see
+which `T-NN` are done and which are pending.
+
+Fix: add a `taskList: TaskItem[]` field to `SpecCard` (new `TaskItem`
+type with `id`, `text`, `done`, `section`). Parser: `parseTaskList`
+walks `tasks.md`, captures canonical `- [x] T-01: text` lines, and
+groups them by the most recent `## Heading` (empty string when no
+heading). View: render the list grouped by section, with `[x]` / `[ ]`
+marks, the task id, and the text; done items get a strikethrough and
+the `--ok` color on the mark; pending items use `--neutral`. CSS lives
+in `tools/theia/src/views/layout.ts` (token-disciplined: only `var(--*)`
+colors, only spacing-scale `4/8/16/24` values, no raw hex).
+
+Resolved by PR #93. The fixture's `001-ratified-p2/tasks.md` and
+`plan.md` were also brought into Spec 015 canonical form (colon after
+the id, real `## PR N — title` sections) — they previously used a
+non-canonical `- [x] T-01 text` shape that the strict parser rejected.
+
+---
+
+*Last updated: 2026-06-22 (CHORE-001 → done via PR #85; CHORE-002 → done after PR #86 amendment merged; UX-002 → done via PR #92; UX-003 → done via PR #93; UX-001 still open from session-end note).*

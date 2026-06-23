@@ -347,3 +347,66 @@ test("UX-006: done tasks render the entire block with strikethrough; the mark st
   // T-03 is pending. Different class.
   assert.match(html, /<li class="theia-task theia-task-pending"[^>]*>/);
 });
+
+// ----------------------------------------------------------------------------
+// UX-007 — spec detail polish
+// ----------------------------------------------------------------------------
+
+test("UX-007: done task body is dimmed (not struck through); only the id carries strikethrough", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderSpecDetail("001-ratified-p2", state);
+  // T-01 is done. The text body should NOT be struck through.
+  // The CSS rule ".theia-task-done .theia-task-line1 code" is the
+  // only place strikethrough appears on a done task. We assert by
+  // checking the inline CSS: the text container is NOT styled with
+  // line-through.
+  //
+  // Simpler check: the .theia-task-text for a done task does not
+  // carry a style attribute with line-through. The strikethrough
+  // is applied via the parent's class + the CSS rule, so we
+  // assert the CSS file has the right rule, not the inline style.
+  assert.match(html, /\.theia-task-done \{\s*color: var\(--neutral\);?\s*\}/);
+  assert.match(html, /\.theia-task-done \.theia-task-line1 code \{ text-decoration: line-through; \}/);
+});
+
+test("UX-007: summary runs through the inline-markdown helper (bold + code + links)", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderSpecDetail("001-ratified-p2", state);
+  // Fixture summary: "**Ratified** Phase-2 spec ... `status = ...` ... [Spec 012 (Theia)](...)".
+  // Bold becomes <strong>.
+  assert.match(html, /<strong>Ratified<\/strong>/);
+  // Backticks become <code> (with HTML-escaped content — quotes
+  // become &quot;).
+  assert.match(html, /<code>status = &quot;Ratified&quot;<\/code>|<code>status = "Ratified"<\/code>/);
+  // Markdown link becomes <a href=...>.
+  assert.match(html, /<a href="\.\.\/\.\.\/012-theia\/spec\.md">Spec 012 \(Theia\)<\/a>/);
+  // No raw markdown should leak into the summary.
+  assert.doesNotMatch(html, /\*\*Ratified\*\*/);
+  assert.doesNotMatch(html, /\[Spec 012/);
+});
+
+test("UX-007: (spec|plan §N[-M]) refs render as muted .theia-section-ref labels, not raw text", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderSpecDetail("001-ratified-p2", state);
+  // Fixture T-01 has (spec §1-§4, AC-4) — the section ref and the
+  // AC ref live in the same paren group. After UX-007, the group
+  // is fully consumed and rendered as both a .theia-section-ref
+  // label and a .theia-task-ac pill.
+  assert.match(html, /<span class="theia-section-ref">spec §1–4<\/span>/);
+  assert.match(html, /<span class="theia-task-ac">AC-4<\/span>/);
+  // T-02 has (plan §3, AC-5) — single-number section ref.
+  assert.match(html, /<span class="theia-section-ref">plan §3<\/span>/);
+  // T-03 has (plan §5, AC-1, AC-2) — multiple AC refs in one group.
+  assert.match(html, /<span class="theia-section-ref">plan §5<\/span>/);
+  // The raw "(spec §1-§4, AC-4)" group is no longer in the text.
+  assert.doesNotMatch(html, /\(spec §1-§4/);
+  assert.doesNotMatch(html, /\(plan §3/);
+});
+
+test("UX-007: section-ref label has its own CSS class (distinct from AC pill)", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderSpecDetail("001-ratified-p2", state);
+  // The section ref has the .theia-section-ref class — distinct
+  // from .theia-task-ac (no background, just mono + neutral color).
+  assert.match(html, /<span class="theia-section-ref-wrap"><span class="theia-section-ref">plan §3<\/span>/);
+});

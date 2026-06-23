@@ -505,7 +505,7 @@ testable end-to-end. 15 new tests (10 inline-markdown + 5 view).
 
 ## UX-007 — Spec detail page needs polish: done styling, summary markdown, plan refs
 
-**Status:** open
+**Status:** done
 **Kind:** follow-up
 **Source:** session-end note, 2026-06-23
 **Affects:** tools/theia/src/views/spec.ts, tools/theia/src/views/layout.ts, tools/theia/src/parser/specs.ts
@@ -583,6 +583,55 @@ visible problems:
   fixture's `spec.md` summary to include a link + bold so the
   test stays self-contained.
 
+Resolved by PR #102. Three changes:
+
+1. **Done styling is no longer overwhelming.** `.theia-task-done`
+   now sets `color: var(--neutral)` (no strikethrough). A targeted
+   rule strikes through the id (`.theia-task-done .theia-task-line1
+   code`) so the `[x]` mark + the `T-NN` id remain the visual
+   "done" signal; the body just dims. The mark stays in `--ok`; the
+   AC pills and section-ref labels stay normal-weight.
+
+2. **Summary runs through the inline-markdown helper.** `card.summaryPreview`
+   is now passed through `inlineMarkdownToHtml`, so `` `code` ``
+   becomes `<code>`, `**bold**` becomes `<strong>`, and
+   `[text](url)` becomes `<a>`. Helper extended with a third pass
+   for links: `[text](url)` → `<a>`, with the link text recursively
+   processed so inline `**bold**` / `` `code` `` inside the link
+   render correctly. URLs with dangerous schemes (`javascript:`,
+   `data:`, `vbscript:`, `file:`) are silently rejected — only the
+   text is kept, the URL is dropped.
+
+3. **`(spec|plan §N[-M])` refs render as a small label.** The view
+   now extracts paren groups that contain a section ref + AC refs
+   in any order, e.g. `(spec §1-§4, AC-4)` produces BOTH a
+   `spec §1–4` label and an `AC-4` pill. The range is normalised
+   to use an en-dash (`1-§4` → `1–4`). The class was renamed from
+   `.theia-plan-ref` to `.theia-section-ref` since it covers both
+   `spec` and `plan` prefixes.
+
+- views/spec.ts: renderSpecDetail now calls inlineMarkdownToHtml
+  on the summary. renderTaskText now extracts AC + section refs
+  in a single pass per paren group. inlineMarkdownToHtml extended
+  with the link pass + safe-URL guard.
+- views/layout.ts: .theia-task-done no longer strikes through
+  body; the targeted id-strikethrough rule is added.
+  .theia-section-ref class added (mono, neutral, no background —
+  distinct from .theia-task-ac pills).
+- tests/inline-markdown.test.ts: 6 new tests covering the link
+  pass + safe-URL guard.
+- tests/views.test.ts: 4 new tests for the three fixes
+  (done styling, summary, section refs).
+- tests/fixtures/.../001-ratified-p2/spec.md: updated summary
+  to include `**bold**` + a `[link](url)` so the new helper is
+  exercised.
+- tests/fixtures/.../001-ratified-p2/tasks.md: updated to include
+  `(spec §N-M, AC-N)` groups so the paren-grouped extraction
+  is exercised.
+
+364/364 tests pass; token linter (AC-11) and no-platform-imports
+linter (AC-15) both green.
+
 ---
 
-*Last updated: 2026-06-23 (UX-001 → done via PR #87, status flipped via PR #94; UX-004 → done via PR #96; UX-005 → done via PR #98; UX-006 → done via PR #100; UX-007 added).*
+*Last updated: 2026-06-23 (UX-001 → done via PR #87, status flipped via PR #94; UX-004 → done via PR #96; UX-005 → done via PR #98; UX-006 → done via PR #100; UX-007 → done via PR #102).*

@@ -125,13 +125,11 @@ test("spec detail view for an unknown slug renders a 'not found' page", async ()
 test("UX-003: spec detail view enumerates each task with its state", async () => {
   const { state } = await parseRepo(FIXTURE);
   const html = renderSpecDetail("001-ratified-p2", state);
-  // Done task: id + text + done styling class.
+  // Done task: id + done styling class.
   assert.match(html, /<code>T-01<\/code>/);
-  assert.match(html, /first task done/);
   assert.match(html, /theia-task-done/);
-  // Pending task: id + text + pending styling class.
+  // Pending task: id + pending styling class.
   assert.match(html, /<code>T-03<\/code>/);
-  assert.match(html, /third task pending/);
   assert.match(html, /theia-task-pending/);
 });
 
@@ -296,4 +294,56 @@ test("UX-005: phase detail view shows the 'active' marker when the phase is the 
   const { state } = await parseRepo(FIXTURE);
   const html = renderPhaseDetail(2, state);
   assert.match(html, />active</);
+});
+
+// ----------------------------------------------------------------------------
+// UX-006 — human-readable task rendering
+// ----------------------------------------------------------------------------
+
+test("UX-006: each task is a two-line block with mark + id on line 1, text on line 2", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderSpecDetail("001-ratified-p2", state);
+  // Each <li> has .theia-task class with a .theia-task-line1 + .theia-task-text child.
+  assert.match(html, /<li class="theia-task[^"]*">\s*<div class="theia-task-line1">/);
+  // Line 1 carries the mark + id.
+  assert.match(html, /theia-task-mark">\[x\]<\/span>\s*<code>T-01<\/code>/);
+  assert.match(html, /theia-task-text">/);
+});
+
+test("UX-006: backticks in the task text render as <code> spans", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderSpecDetail("001-ratified-p2", state);
+  // Fixture T-01 has `tools/theia/` and `package.json` in its text.
+  assert.match(html, /<code>tools\/theia\/<\/code>/);
+  assert.match(html, /<code>package\.json<\/code>/);
+});
+
+test("UX-006: **bold** in the task text renders as <strong> spans", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderSpecDetail("001-ratified-p2", state);
+  // Fixture T-02 starts with **strict**.
+  assert.match(html, /<strong>strict<\/strong>/);
+  // Fixture T-04 starts with **ship**.
+  assert.match(html, /<strong>ship<\/strong>/);
+});
+
+test("UX-006: (AC-N) references are extracted into styled pills at the end of the text", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderSpecDetail("001-ratified-p2", state);
+  // Fixture T-01 has (AC-4) → rendered as a pill.
+  assert.match(html, /<span class="theia-task-ac">AC-4<\/span>/);
+  // Fixture T-03 has (AC-1, AC-2) → two pills.
+  assert.match(html, /<span class="theia-task-ac">AC-1<\/span>/);
+  assert.match(html, /<span class="theia-task-ac">AC-2<\/span>/);
+  // Pills are wrapped in a <span class="theia-task-ac-wrap">.
+  assert.match(html, /<span class="theia-task-ac-wrap">/);
+});
+
+test("UX-006: done tasks render the entire block with strikethrough; the mark stays non-struck", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderSpecDetail("001-ratified-p2", state);
+  // T-01 is done. The <li> has theia-task-done which gets text-decoration: line-through.
+  assert.match(html, /<li class="theia-task theia-task-done"[^>]*>/);
+  // T-03 is pending. Different class.
+  assert.match(html, /<li class="theia-task theia-task-pending"[^>]*>/);
 });

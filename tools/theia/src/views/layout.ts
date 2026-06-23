@@ -47,12 +47,21 @@ export function renderLayout(opts: { title: string; body: string }): string {
     .theia-task-block { margin-top: 24px; }
     .theia-task-section { margin-top: 16px; margin-bottom: 8px; }
     .theia-task-list { list-style: none; padding: 0; margin: 0; }
-    .theia-task-list li { padding: 4px 0; }
+    .theia-task { padding: 8px 0; border-bottom: 1px solid var(--rule); }
+    .theia-task:last-child { border-bottom: none; }
+    .theia-task-line1 { font-family: var(--mono); font-size: 12px; }
+    .theia-task-text { margin-left: 24px; margin-top: 4px; }
     .theia-task-mark { display: inline-block; width: 24px; color: var(--neutral); }
-    .theia-task-done .theia-task-mark { color: var(--ok); }
-    .theia-task-done { color: var(--neutral); }
-    .theia-task-done code, .theia-task-done .theia-task-mark + code { text-decoration: line-through; }
+    .theia-task-done { color: var(--neutral); text-decoration: line-through; }
+    .theia-task-done .theia-task-mark { color: var(--ok); text-decoration: none; }
     .theia-task-pending .theia-task-mark { color: var(--neutral); }
+    .theia-task-ac {
+      display: inline-block; font-family: var(--mono); font-size: 11px;
+      color: var(--neutral); background: var(--rule);
+      padding: 4px 8px; border-radius: 2px; margin-left: 4px;
+      text-decoration: none;
+    }
+    .theia-task-ac-wrap { margin-left: 4px; }
   </style>
 </head>
 <body>

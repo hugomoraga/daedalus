@@ -89,7 +89,7 @@ function renderSpecGrid(state: ProjectState): string {
     const total = s.tasksTotal + s.planTotal;
     const pct = total === 0 ? 0 : Math.round((done / total) * 100);
     const statusTone = s.status === "Ratified" ? "ok" : s.status === "Blocked" ? "alert" : "neutral";
-    return `<div class="theia-card">
+    return `<a class="theia-card theia-card-link" href="/specs/${escapeHtml(s.slug)}">
       <div>${tag(s.status, statusTone)} <strong>${escapeHtml(s.slug)}</strong></div>
       <div class="theia-mono" style="margin-top: 4px;">Phase ${s.phase ?? "?"} · v${escapeHtml(s.version ?? "?")}</div>
       <div style="margin-top: 8px;">${escapeHtml(s.title)}</div>
@@ -97,7 +97,7 @@ function renderSpecGrid(state: ProjectState): string {
         <span class="theia-mono">${done}/${total} tasks</span>
         <span class="theia-progress"><span style="width:${pct}%"></span></span>
       </div>
-    </div>`;
+    </a>`;
   }).join("");
   return section(
     `Specs (${state.specs.length})`,

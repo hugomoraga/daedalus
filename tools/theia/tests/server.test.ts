@@ -115,6 +115,76 @@ test("AC-12: GET /unknown-path returns 404", async () => {
   }
 });
 
+test("UX-005: GET /phases/2 returns 200 + per-phase detail", async () => {
+  const server = await createTheiaServer({ port: 0, host: "127.0.0.1", root: FIXTURE_REPO });
+  await server.listen();
+  try {
+    const addr = server.httpServer.address();
+    const port = addr.port;
+    const res = await fetch(`http://127.0.0.1:${port}/phases/2`);
+    assert.equal(res.status, 200);
+    const html = await res.text();
+    assert.match(html, /Phase 2/);
+    assert.match(html, /specs in this phase/);
+  } finally {
+    await server.close();
+  }
+});
+
+test("UX-005: GET /phases/999 returns 404 (unknown phase renders the detail view's not-found page)", async () => {
+  const server = await createTheiaServer({ port: 0, host: "127.0.0.1", root: FIXTURE_REPO });
+  await server.listen();
+  try {
+    const addr = server.httpServer.address();
+    const port = addr.port;
+    const res = await fetch(`http://127.0.0.1:${port}/phases/999`);
+    assert.equal(res.status, 404);
+    const html = await res.text();
+    assert.match(html, /not found/i);
+  } finally {
+    await server.close();
+  }
+});
+
+test("UX-005: GET /phases/abc returns 404 (non-numeric)", async () => {
+  const server = await createTheiaServer({ port: 0, host: "127.0.0.1", root: FIXTURE_REPO });
+  await server.listen();
+  try {
+    const addr = server.httpServer.address();
+    const port = addr.port;
+    const res = await fetch(`http://127.0.0.1:${port}/phases/abc`);
+    assert.equal(res.status, 404);
+  } finally {
+    await server.close();
+  }
+});
+
+test("UX-005: GET /phases/-1 returns 404 (negative)", async () => {
+  const server = await createTheiaServer({ port: 0, host: "127.0.0.1", root: FIXTURE_REPO });
+  await server.listen();
+  try {
+    const addr = server.httpServer.address();
+    const port = addr.port;
+    const res = await fetch(`http://127.0.0.1:${port}/phases/-1`);
+    assert.equal(res.status, 404);
+  } finally {
+    await server.close();
+  }
+});
+
+test("UX-005: GET /phases/2 with a non-GET method returns 405", async () => {
+  const server = await createTheiaServer({ port: 0, host: "127.0.0.1", root: FIXTURE_REPO });
+  await server.listen();
+  try {
+    const addr = server.httpServer.address();
+    const port = addr.port;
+    const res = await fetch(`http://127.0.0.1:${port}/phases/2`, { method: "POST" });
+    assert.equal(res.status, 405);
+  } finally {
+    await server.close();
+  }
+});
+
 test("server boots and listens on a non-existent repo without throwing", async () => {
   const base = mkdtempSync(join(tmpdir(), "theia-empty-"));
   const server = await createTheiaServer({ port: 0, host: "127.0.0.1", root: base });

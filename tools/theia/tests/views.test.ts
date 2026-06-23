@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { parseRepo } from "../src/parser.ts";
 import { renderOverview } from "../src/views/overview.ts";
 import { renderSpecDetail } from "../src/views/spec.ts";
+import { renderPhaseDetail } from "../src/views/phase.ts";
 
 const FIXTURE = fileURLToPath(new URL("./fixtures/repo-typical", import.meta.url));
 
@@ -242,4 +243,57 @@ test("UX-004: backlog section renders between ADRs and Code inventory", async ()
   assert.ok(adrsIdx !== -1 && backlogIdx !== -1 && codeIdx !== -1);
   assert.ok(adrsIdx < backlogIdx, "backlog should appear after ADRs");
   assert.ok(backlogIdx < codeIdx, "backlog should appear before Code inventory");
+});
+
+// ----------------------------------------------------------------------------
+// UX-005 — clickable phase cells + per-phase detail view
+// ----------------------------------------------------------------------------
+
+test("UX-005: each phase cell in the overview is a link to /phases/<n>", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderOverview(state);
+  for (const n of [0, 1, 2]) {
+    assert.match(html, new RegExp(`<a class="[^"]*theia-phase-cell[^"]*" href="/phases/${n}">`));
+  }
+});
+
+test("UX-005: the active phase cell carries the is-active class", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderOverview(state);
+  // state.activePhase is 2 for the fixture (highest Ratified phase).
+  assert.match(html, /<a class="[^"]*theia-phase-cell[^"]*is-active[^"]*" href="\/phases\/2">/);
+});
+
+test("UX-005: phase detail view renders the title, milestone count, and specs in that phase", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderPhaseDetail(2, state);
+  // Phase 2 is the "Organizational Core" / "Workflow Engine" phase
+  // in the fixture. Assert the title and metadata.
+  assert.match(html, /Phase 2/);
+  assert.match(html, /roadmap milestones:/);
+  assert.match(html, /specs in this phase:/);
+  // Fixture: spec 001-ratified-p2 has phase=2.
+  assert.match(html, /<a href="\/specs\/001-ratified-p2">/);
+});
+
+test("UX-005: phase detail view for an empty phase shows 'no specs' message", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  // Phase 5 doesn't exist in the fixture's roadmap.
+  const html = renderPhaseDetail(5, state);
+  assert.match(html, /not found/i);
+  assert.match(html, /back to overview/);
+});
+
+test("UX-005: phase detail view for a known phase with no specs shows 'no specs assigned'", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  // Phase 1 exists in the fixture roadmap but no spec has phase=1.
+  const html = renderPhaseDetail(1, state);
+  assert.match(html, /Phase 1/);
+  assert.match(html, /No specs assigned to this phase yet/);
+});
+
+test("UX-005: phase detail view shows the 'active' marker when the phase is the active one", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderPhaseDetail(2, state);
+  assert.match(html, />active</);
 });

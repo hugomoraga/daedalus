@@ -64,14 +64,11 @@ function renderPhaseTimeline(state: ProjectState): string {
   for (let n = 0; n <= maxPhase; n++) {
     const phase = state.phases.find((p) => p.number === n);
     const isActive = n === state.activePhase;
-    const bg = isActive ? "var(--accent)" : phase !== undefined ? "var(--card)" : "transparent";
-    const color = isActive ? "var(--paper)" : "var(--ink)";
-    const border = phase !== undefined ? "1px solid var(--rule)" : "1px dashed var(--rule)";
-    cells.push(`<div style="
-      flex: 1; min-width: 80px; padding: 8px; border-radius: 2px;
-      background: ${bg}; color: ${color}; border: ${border};
-      font-family: var(--mono); font-size: 12px; text-align: center;
-    ">Phase ${n}${phase !== undefined ? `<br><small>${escapeHtml(phase.title)}</small>` : ""}</div>`);
+    const classes = ["theia-phase-cell"];
+    if (isActive) classes.push("is-active");
+    if (phase === undefined) classes.push("is-empty");
+    const titlePart = phase !== undefined ? `<br><small>${escapeHtml(phase.title)}</small>` : "";
+    cells.push(`<a class="${classes.join(" ")}" href="/phases/${n}">Phase ${n}${titlePart}</a>`);
   }
   return section(`Phases (${state.phases.length})`, `<div style="display:flex; gap:8px;">${cells.join("")}</div>`);
 }

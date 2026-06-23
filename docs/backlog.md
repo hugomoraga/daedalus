@@ -220,4 +220,32 @@ which feels more "demo / showcase" than "production mission control."
 
 ---
 
-*Last updated: 2026-06-22 (CHORE-001 → done via PR #85; CHORE-002 added → done after PR #86 amendment merged and sibling worktrees removed).*
+## UX-002 — Theia spec grid cards don't link to the per-spec detail view
+
+**Status:** open
+**Kind:** follow-up
+**Source:** session-end note, 2026-06-22
+**Affects:** tools/theia/src/views/overview.ts
+
+The overview's spec grid (`renderSpecGrid`, `tools/theia/src/views/overview.ts:78`)
+renders each spec as a `<div class="theia-card">` containing the slug,
+title, status badge, and progress bar — but the slug is plain text, not
+a link. Clicking a card does nothing; the per-spec detail page already
+exists (`renderSpecDetail`, `tools/theia/src/views/spec.ts:7`) and is
+already routed (`GET /specs/:slug` in `tools/theia/src/server.ts:114`),
+so the destination is wired — only the affordance is missing.
+
+Fix: wrap the card body in an `<a href="/specs/${slug}">` and add a
+hover treatment so the affordance is visible (the global `a` rule
+already adds a bottom border on hover; the `.theia-card` border will
+need `border-bottom: 1px solid var(--rule)` preserved or replaced by a
+hover-only border-color shift). ~5-line view change + one regression
+test asserting `href="/specs/…"` is present for each card.
+
+No spec change needed: Spec 012 already mandates the detail view and
+the overview's spec grid; this entry closes a gap between the two, it
+does not add a capability.
+
+---
+
+*Last updated: 2026-06-22 (CHORE-001 → done via PR #85; CHORE-002 → done after PR #86 amendment merged; UX-002 added; UX-001 still open from session-end note).*

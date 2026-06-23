@@ -22,6 +22,8 @@ export function renderLayout(opts: { title: string; body: string }): string {
     .theia-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 24px; }
     .theia-section { margin-bottom: 32px; }
     .theia-card { background: var(--card); border: 1px solid var(--rule); border-radius: 2px; padding: 16px; margin-bottom: 12px; }
+    .theia-card-link { display: block; color: inherit; text-decoration: none; }
+    .theia-card-link:hover { border-color: var(--ink); }
     .theia-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
     .theia-progress { display: inline-block; height: 4px; background: var(--rule); border-radius: 2px; width: 80px; vertical-align: middle; margin-left: 8px; position: relative; }
     .theia-progress > span { display: block; height: 100%; background: var(--ok); border-radius: 2px; }

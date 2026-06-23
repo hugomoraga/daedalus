@@ -36,6 +36,15 @@ test("AC-2: overview renders a spec grid (one card per spec)", async () => {
   assert.match(html, /004-unknown/);
 });
 
+test("UX-002: each spec grid card links to /specs/<slug>", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderOverview(state);
+  for (const s of state.specs) {
+    const re = new RegExp(`href="/specs/${s.slug.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}"`);
+    assert.match(html, re);
+  }
+});
+
 test("AC-3: status badges include Ratified + Unknown for the fixture", async () => {
   const { state } = await parseRepo(FIXTURE);
   const html = renderOverview(state);

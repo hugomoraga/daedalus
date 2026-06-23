@@ -412,4 +412,84 @@ and negative inputs).
 
 ---
 
-*Last updated: 2026-06-23 (UX-001 → done via PR #87, status flipped via PR #94; UX-004 → done via PR #96; UX-005 → done via PR #98).*
+## UX-006 — Spec detail task list renders as raw text; should be human-readable
+
+**Status:** open
+**Kind:** follow-up
+**Source:** session-end note, 2026-06-23
+**Affects:** tools/theia/src/views/spec.ts, tools/theia/src/views/layout.ts
+
+After UX-003, the per-spec detail view enumerates every task from
+`tasks.md` with `[x]` / `[ ]` and the text in one inline `<li>`.
+On real specs the line is long and dense — e.g.:
+
+> `[x] T-01 apps/atlas/ scaffolding: directory layout, package.json with workspace-only dependencies, assets/ for fonts, README.md (AC-4)`
+
+The backticks around `apps/atlas/`, `package.json`, etc. are
+HTML-escaped, so they render as literal backticks; `**bold**` inside
+the text shows as literal asterisks; `(AC-N)` references show as
+plain text. The whole `<li>` is on one line, so long tasks overflow
+horizontally and are hard to scan.
+
+**Goal.** Render each task as a small, scannable block:
+
+1. **Two-line per task.** First line: `[x]` mark + the task id
+   (e.g. `T-01`) as a badge. Second line: the task text, indented
+   to align with the mark, with the text wrapped naturally.
+2. **Inline code (`backticks`).** A small inline-markdown helper
+   turns `` `…` `` into `<code>…</code>`. Scoped to the
+   text field; the id and section headings are not processed.
+3. **Bold (`**…**`).** Same helper handles `**bold**` → `<strong>`.
+   `***bold-italic***` is out of scope.
+4. **`(AC-N)` references.** Rendered as small styled pills
+   (`<span class="theia-task-ac">AC-1</span>`) at the end of the
+   line. Token-disciplined: `var(--neutral)` text on `var(--rule)`
+   background, no raw colors.
+5. **Done styling stays.** Strikethrough on the id and text; the
+   mark stays in `--ok`. (UX-003 baseline preserved.)
+
+**Layout sketch.**
+
+```
+[ ] T-01
+    apps/atlas/ scaffolding: directory layout, package.json
+    with workspace-only dependencies, assets/ for fonts,
+    README.md                              (AC-4)
+```
+
+CSS-only — no JS, no extra tokens. The token linter still gates
+raw colors / fonts / spacing scale.
+
+**Implementation shape.**
+
+- New `inlineMarkdownToHtml(text: string): string` helper in
+  `tools/theia/src/views/spec.ts` (or co-located in tokens.ts if
+  it ends up shared with the spec summary preview later). Scans
+  the text for `` ` `` and `**` pairs, escapes the rest, returns
+  HTML. Pure function, easy to unit-test.
+- `renderTaskList` in `tools/theia/src/views/spec.ts` — switch
+  the `<li>` from a single inline span to a small two-line block.
+  Run the text through the helper. Extract `(AC-N)` matches
+  before/after the markdown pass and wrap them in
+  `<span class="theia-task-ac">`.
+- `tools/theia/src/views/layout.ts` — minimal CSS for the new
+  block layout, the AC pill, and the indentation.
+- Tests: new file `tools/theia/tests/inline-markdown.test.ts` for
+  the helper (backticks, bold, escapes, mixed), and 2–3 new
+  tests in `tools/theia/tests/views.test.ts` for the rendered
+  HTML shape (block layout, `<code>`, `<strong>`, AC pill).
+
+**Out of scope.**
+
+- Full markdown render (headings, lists, links). The text in
+  `tasks.md` is intentionally light — backticks + bold covers
+  the visible cases.
+- Heading-style autodetection (`### `, `2. `, etc.) — the parser
+  already captures `## ` and the fixture is canonical; widening
+  to other heading depths is a separate concern.
+- Click-to-toggle in the Theia detail view (no mutation; read-only
+  by Spec 012 §7).
+
+---
+
+*Last updated: 2026-06-23 (UX-001 → done via PR #87, status flipped via PR #94; UX-004 → done via PR #96; UX-005 → done via PR #98; UX-006 added).*

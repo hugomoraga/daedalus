@@ -283,4 +283,58 @@ non-canonical `- [x] T-01 text` shape that the strict parser rejected.
 
 ---
 
-*Last updated: 2026-06-23 (UX-001 → done via PR #87, status flipped via PR #94 hygiene sweep).*
+## UX-004 — Theia should render the backlog as a panel
+
+**Status:** open
+**Kind:** follow-up
+**Source:** session-end note, 2026-06-23
+**Affects:** tools/theia/src/parser/, tools/theia/src/views/, tools/theia/src/types.ts
+
+`docs/backlog.md` is the canonical catalog of follow-ups, bugs, churn,
+and deprecations (currently 7 entries: BUG-001, TEST-001, CHORE-001/002
+done; UX-001/002/003 done; the same file already documents a parser
+contract in its "Parser contract (consumed by Theia — Spec 012 follow-up)"
+section). Theia reads `docs/roadmap.md` (phases) and `specs/*/spec.md`
+(specs) but does NOT read `docs/backlog.md`, so the catalog is invisible
+without opening the file by hand.
+
+This entry asks for a Theia panel that surfaces the backlog: one
+`Backlog` section in the overview listing every entry, grouped or
+filterable by `Status` (open / in-progress / wontfix / done) and
+`Kind` (bug / follow-up / churn / deprecation). Read-only, parsed
+once at startup. The parser contract in the file's own header is
+the spec for what to extract.
+
+**Why not a new spec.** Spec 012 already establishes "Theia reads the
+repo's structured artifacts" and the parser contract is already
+documented in `docs/backlog.md` itself. UX-004 closes the gap between
+documented contract and implementation, exactly like UX-002 and UX-003.
+
+**Implementation shape (sketch).**
+- New `tools/theia/src/parser/backlog.ts` — pure function
+  `parseBacklog(rootPath): BacklogItem[]` that walks `docs/backlog.md`
+  and pulls `(id, title, status, kind, source, affects)` per the
+  documented regexes. Section header `^## ([A-Z]+-\d+) — (.+)$`,
+  field lines `^\*\*(Status|Kind|Source|Affects):\*\* (.+)$`. Prose
+  is captured as `body` for the view (escape-html'd in render).
+- `tools/theia/src/types.ts` — new `BacklogItem` type, new
+  `backlog: BacklogItem[]` field on `ProjectState`.
+- `tools/theia/src/parser.ts` — call `parseBacklog` alongside the
+  other parsers.
+- `tools/theia/src/views/overview.ts` — new `renderBacklogSection(state)`
+  that renders a single grouped table (Status as the row group,
+  Kind as a column or sub-group). Use existing tag/badge patterns.
+- `tools/theia/src/views/layout.ts` — minimal CSS, token-disciplined.
+- Tests in `tools/theia/tests/parser-backlog.test.ts` (new file) +
+  extension of `tools/theia/tests/views.test.ts`. The fixture
+  `tools/theia/tests/fixtures/repo-typical/` already has a
+  `docs/` directory; the test should use that.
+
+**Out of scope.**
+- Editing the backlog from Theia (read-only by Spec 012's design).
+- Per-row deep links (no GitHub-anchored targets; entries don't carry
+  a path).
+
+---
+
+*Last updated: 2026-06-23 (UX-001 → done via PR #87, status flipped via PR #94; UX-004 added).*

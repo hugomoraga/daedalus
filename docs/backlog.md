@@ -503,4 +503,86 @@ testable end-to-end. 15 new tests (10 inline-markdown + 5 view).
 
 ---
 
-*Last updated: 2026-06-23 (UX-001 → done via PR #87, status flipped via PR #94; UX-004 → done via PR #96; UX-005 → done via PR #98; UX-006 → done via PR #100).*
+## UX-007 — Spec detail page needs polish: done styling, summary markdown, plan refs
+
+**Status:** open
+**Kind:** follow-up
+**Source:** session-end note, 2026-06-23
+**Affects:** tools/theia/src/views/spec.ts, tools/theia/src/views/layout.ts, tools/theia/src/parser/specs.ts
+
+Looking at the live `/specs/015-spec-file-convention` page (a fully
+shipped spec: 28/28 tasks done), the post-UX-006 rendering has three
+visible problems:
+
+1. **Strikethrough overwhelms a fully-done spec.** The CSS rule
+   `.theia-task-done { text-decoration: line-through; }` applies to
+   the whole `<li>`, so on a spec where every task is done (the common
+   case once a spec is Ratified), the *entire page body* is rendered
+   struck through — mark, id, text body, the inline `<code>` spans,
+   the `(plan §N)` references. The page looks like a graveyard and
+   is hard to scan. Fix: keep strikethrough on the **identity** (the
+   `[x]` mark + the `T-NN` id) as a clear "done" signal, and **dim**
+   the body text instead (color: `var(--neutral)`, no strikethrough).
+   The mark stays in `--ok`. The AC pills stay normal-weight.
+
+2. **Summary preview shows raw markdown.** Line 136 of the rendered
+   HTML: `<p>... has **drift** between how specs ... [Spec 012 (Theia)](../012-theia/spec.md) can mechanically read ...</p>`. The
+   summary is rendered with `escapeHtml(card.summaryPreview)` so
+   backticks, bold, and links all show as literal characters. Fix:
+   run the summary through the existing `inlineMarkdownToHtml`
+   helper (extended to also recognise `[text](url)` links — small
+   addition to the helper). The summary becomes `<p>... has
+   <strong>drift</strong> ... <a href="../012-theia/spec.md">Spec 012
+   (Theia)</a> can ...</p>`.
+
+3. **`(plan §N)` references are plain text.** The current rendering
+   leaves them inline at the end of the task text with no styling.
+   They're not as semantically important as `(AC-N)` (the latter is
+   the spec's acceptance criteria; the former is just a section
+   pointer) so they shouldn't compete visually. Fix: render them as
+   a small muted label (e.g. `§1` in `var(--neutral)` mono) without
+   the parens, at the end of the line. Or: keep them as plain text
+   in a slightly muted color. Easy to defer if the touch feels
+   off — the primary fix is #1 + #2.
+
+**Out of scope.**
+
+- Click-to-toggle in the Theia detail view (read-only by Spec 012 §7).
+- Per-task anchor links (`/specs/<slug>#T-01`).
+- New parser changes. `card.summaryPreview` is the same string the
+  parser already extracts; UX-007 only changes how the view renders
+  it.
+
+**Implementation shape (sketch).**
+
+- `tools/theia/src/views/spec.ts`:
+  - `inlineMarkdownToHtml` gets a third pass for `[text](url)` →
+    `<a href="...">text</a>` (URLs are HTML-escaped; the link
+    text goes through the existing escape). External vs internal
+    is a href-prefix check, no special rendering.
+  - `renderSpecDetail` runs `card.summaryPreview` through the
+    extended helper.
+  - `renderTaskText` (the per-task helper from UX-006) runs the
+    prose through the extended helper. It also extracts `(plan
+    §N[, plan §M, ...])` groups and renders them as small muted
+    labels.
+- `tools/theia/src/views/layout.ts`:
+  - `.theia-task-done` changes from `text-decoration: line-through`
+    to `color: var(--neutral)`.
+  - The mark and id keep strikethrough via a targeted rule:
+    `.theia-task-done .theia-task-mark, .theia-task-done .theia-task-line1 code { text-decoration: line-through; }`.
+  - New `.theia-plan-ref` rule for the section reference label.
+- Tests:
+  - `inline-markdown.test.ts` gets new cases for `[text](url)`.
+  - `views.test.ts` gets new assertions: summary contains
+    `<strong>` + `<a>` (not raw `**` / `[`); done body is not
+    struck through; `(plan §N)` shows as a label, not raw text.
+- Fixture: not strictly required (the live repo's
+  `015-spec-file-convention` exercises all three cases; the tests
+  use the live renderSpecDetail path). Optional: extend the
+  fixture's `spec.md` summary to include a link + bold so the
+  test stays self-contained.
+
+---
+
+*Last updated: 2026-06-23 (UX-001 → done via PR #87, status flipped via PR #94; UX-004 → done via PR #96; UX-005 → done via PR #98; UX-006 → done via PR #100; UX-007 added).*

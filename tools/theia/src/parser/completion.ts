@@ -23,11 +23,21 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import type { TaskItem } from "../types.ts";
+
 const CHECKBOX_RE = /^\s*-\s+\[(x|X| )\](?:\s|$)/gm;
 // Legacy table row with a status glyph. Counts one row per task;
 // ✅ = done, ⏸ / ⛔ = pending. Header and separator rows have no
 // glyph and are silently skipped.
 const LEGACY_RE = /^\s*\|.*[✅⏸⛔].*$/gm;
+// Canonical task line: `- [x] T-01: text…` (id is one or more
+// uppercase-prefixed segments separated by dashes, optionally with
+// letters and dots — covers T-01, T-66a, OF-12, J-13.1).
+const TASK_LINE_RE = /^\s*-\s+\[([xX ])\]\s+([A-Z]+-[A-Za-z0-9.]+):\s*(.+?)\s*$/;
+// Section heading. We track the most recent `## Heading` to group
+// tasks. `##` only (not `#`, not `###`) — `##` matches Spec 015's
+// canonical `## PR N — Title` convention.
+const SECTION_RE = /^##\s+(.+?)\s*$/;
 
 export type CompletionCounts = { done: number; total: number };
 
@@ -95,4 +105,34 @@ export function parseSpecCompletion(rootPath: string, slug: string): SpecComplet
 // Pure: counts in both files; missing files → 0/0.
 export function mergeCompletion(a: CompletionCounts, b: CompletionCounts): CompletionCounts {
   return { done: a.done + b.done, total: a.total + b.total };
+}
+
+// Walks a tasks.md body and returns one TaskItem per canonical-format
+// checkbox line. Items are ordered by line position; `section` is the
+// most recent `## Heading` (empty string when no heading was seen).
+// Only canonical `- [x] ID: text` lines are returned; legacy table
+// rows, non-checkbox bullets, and tasks without an `ID:` prefix are
+// silently skipped (the canonical form is what Spec 015 mandates).
+export function parseTaskList(content: string): TaskItem[] {
+  const items: TaskItem[] = [];
+  let section = "";
+  for (const line of content.split("\n")) {
+    const heading = line.match(SECTION_RE);
+    if (heading !== null && heading[1] !== undefined) {
+      section = heading[1].trim();
+      continue;
+    }
+    const m = line.match(TASK_LINE_RE);
+    if (m === null) continue;
+    const mark = m[1] ?? "";
+    const id = m[2] ?? "";
+    const text = m[3] ?? "";
+    items.push({
+      id,
+      text,
+      done: mark !== "" && mark !== " ",
+      section,
+    });
+  }
+  return items;
 }

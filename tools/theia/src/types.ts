@@ -37,6 +37,7 @@ export type SpecCard = {
   tasksTotal: number;
   planDone: number;
   planTotal: number;
+  taskList: TaskItem[]; // enumerated tasks from tasks.md, grouped by section
   links: {
     spec: string; // path relative to repo root
     plan: string | null;
@@ -45,6 +46,15 @@ export type SpecCard = {
   unknownReason: string | null; // populated when status === "Unknown"
   blockers: BlockerEntry[]; // populated when status === "Blocked"
   conventionIssues: string[]; // Spec 015 §6 AC-4 — drift signals; empty when clean
+};
+
+// One canonical-format task line from tasks.md. Section is the most
+// recent `## Heading` line; empty when the file has no `##` headings.
+export type TaskItem = {
+  id: string; // e.g. "T-01", "T-66a", "OF-12"
+  text: string; // the prose after the id, e.g. "Create tools/theia/..."
+  done: boolean; // true when the checkbox is [x] or [X]
+  section: string; // current ## heading, or "" if none
 };
 
 export type AdrRow = {

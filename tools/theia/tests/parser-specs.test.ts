@@ -15,6 +15,7 @@ import {
   countCheckboxes,
   countLegacyTableRows,
   parseSpecCompletion,
+  parseTaskList,
   mergeCompletion,
 } from "../src/parser/completion.ts";
 import * as nodeFs from "node:fs";
@@ -242,6 +243,75 @@ test("AC-2: cards carry links to spec/plan/tasks (or null when missing)", () => 
   const draft = cards.find((c) => c.slug === "002-draft-p0")!;
   assert.equal(draft.links.plan, null);
   assert.equal(draft.links.tasks, null);
+});
+
+// UX-003: parseTaskList returns one TaskItem per canonical checkbox
+// line, grouped by the most recent `## Heading`. Empty string for
+// the section when no heading has been seen.
+test("UX-003: parseTaskList extracts id, text, done, and section", () => {
+  const md = `## PR 1 — Scaffold
+
+- [x] T-01: first done
+- [ ] T-02: second pending
+- [X] T-03: third done (uppercase X)
+
+## PR 2 — Parser
+
+- [ ] T-11: parse specs
+- [x] T-12: parse completion
+`;
+  const items = parseTaskList(md);
+  assert.equal(items.length, 5);
+  assert.deepEqual(items[0], { id: "T-01", text: "first done", done: true, section: "PR 1 — Scaffold" });
+  assert.deepEqual(items[1], { id: "T-02", text: "second pending", done: false, section: "PR 1 — Scaffold" });
+  assert.deepEqual(items[2], { id: "T-03", text: "third done (uppercase X)", done: true, section: "PR 1 — Scaffold" });
+  assert.deepEqual(items[3], { id: "T-11", text: "parse specs", done: false, section: "PR 2 — Parser" });
+  assert.deepEqual(items[4], { id: "T-12", text: "parse completion", done: true, section: "PR 2 — Parser" });
+});
+
+test("UX-003: parseTaskList returns empty section for files with no ## headings", () => {
+  const md = `- [x] T-01: alone\n- [ ] T-02: also alone\n`;
+  const items = parseTaskList(md);
+  assert.equal(items.length, 2);
+  assert.equal(items[0]!.section, "");
+  assert.equal(items[1]!.section, "");
+});
+
+test("UX-003: parseTaskList skips legacy table rows, bullets without id, and ## headings", () => {
+  const md = `## Real section
+
+- [x] T-01: real task
+- [ ] bullet without id
+| ID | Task | Status |
+| T-02 | legacy | ✅ |
+- [x] OF-12: alphanumeric id with extra letter
+`;
+  const items = parseTaskList(md);
+  assert.equal(items.length, 2);
+  assert.equal(items[0]!.id, "T-01");
+  assert.equal(items[1]!.id, "OF-12");
+});
+
+test("UX-003: parseTaskList returns [] for empty content", () => {
+  assert.deepEqual(parseTaskList(""), []);
+});
+
+// UX-003: SpecCard.taskList is populated by the parser for the
+// fixture's ratified spec.
+test("UX-003: SpecCard.taskList is populated from tasks.md", () => {
+  const cards = parseSpecs(FIXTURE);
+  const ratified = cards.find((c) => c.slug === "001-ratified-p2")!;
+  assert.equal(ratified.taskList.length, 4);
+  assert.equal(ratified.taskList[0]!.id, "T-01");
+  assert.equal(ratified.taskList[0]!.done, true);
+  assert.equal(ratified.taskList[2]!.id, "T-03");
+  assert.equal(ratified.taskList[2]!.done, false);
+});
+
+test("UX-003: SpecCard.taskList is empty when tasks.md is missing", () => {
+  const cards = parseSpecs(FIXTURE);
+  const draft = cards.find((c) => c.slug === "002-draft-p0")!;
+  assert.deepEqual(draft.taskList, []);
 });
 
 // AC-14: parser output is byte-deterministic for the same fixture.

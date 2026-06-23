@@ -16,7 +16,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { SpecCard, SpecStatus } from "../types.ts";
-import { parseSpecCompletion } from "./completion.ts";
+import { parseSpecCompletion, parseTaskList } from "./completion.ts";
 
 const SPECS_DIR = "specs";
 const STATUS_RE = /^\*\*Status:\*\*\s+(.+?)\s*$/m;
@@ -103,6 +103,10 @@ function parseOne(rootPath: string, slug: string): SpecCard {
   // longer needs to fill these — it just delegates to parseSpecs.
   const completion = parseSpecCompletion(rootPath, slug);
 
+  // Enumerated task list for the detail view. Empty when tasks.md
+  // is missing or has no canonical `- [x] ID: text` lines.
+  const taskList = existsSync(tasksPath) ? parseTaskList(readFileSync(tasksPath, "utf8")) : [];
+
   const card: SpecCard = {
     slug,
     title,
@@ -116,6 +120,7 @@ function parseOne(rootPath: string, slug: string): SpecCard {
     tasksTotal: completion.tasks.total,
     planDone: completion.plan.done,
     planTotal: completion.plan.total,
+    taskList,
     links: {
       spec: `${SPECS_DIR}/${slug}/spec.md`,
       plan: existsSync(planPath) ? `${SPECS_DIR}/${slug}/plan.md` : null,

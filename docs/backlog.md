@@ -414,7 +414,7 @@ and negative inputs).
 
 ## UX-006 — Spec detail task list renders as raw text; should be human-readable
 
-**Status:** open
+**Status:** done
 **Kind:** follow-up
 **Source:** session-end note, 2026-06-23
 **Affects:** tools/theia/src/views/spec.ts, tools/theia/src/views/layout.ts
@@ -490,6 +490,17 @@ raw colors / fonts / spacing scale.
 - Click-to-toggle in the Theia detail view (no mutation; read-only
   by Spec 012 §7).
 
+Resolved by PR #100. Each task is now a two-line block: `[x] T-01`
+on line 1, the prose on line 2 (indented). Inline `` `code` ``
+becomes `<code>`, `**bold**` becomes `<strong>`, and `(AC-N[, AC-M])`
+references are extracted and rendered as small styled pills at the
+end. Done styling preserved: strikethrough on the whole block, the
+mark stays non-struck in `--ok`. New `inlineMarkdownToHtml` helper
+in `tools/theia/src/views/spec.ts` (pure, two-pass with placeholders
+so code inside bold renders correctly). Fixture tasks.md updated
+to a real shape (backticks, bold, AC refs) so the feature is
+testable end-to-end. 15 new tests (10 inline-markdown + 5 view).
+
 ---
 
-*Last updated: 2026-06-23 (UX-001 → done via PR #87, status flipped via PR #94; UX-004 → done via PR #96; UX-005 → done via PR #98; UX-006 added).*
+*Last updated: 2026-06-23 (UX-001 → done via PR #87, status flipped via PR #94; UX-004 → done via PR #96; UX-005 → done via PR #98; UX-006 → done via PR #100).*

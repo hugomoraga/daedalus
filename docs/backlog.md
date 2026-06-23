@@ -201,7 +201,7 @@ Future prevention: per the migration note in [ADR-008 §Amendment](../../governa
 
 ## UX-001 — Navigate marquee starts auto-scrolling on load
 
-**Status:** open
+**Status:** done
 **Kind:** follow-up
 **Source:** session-end note, 2026-06-22
 **Affects:** apps/atlas/src/templates/paper.ts
@@ -217,6 +217,10 @@ running; }`. ~3-line CSS change. No markup change needed.
 
 Currently the behavior is the opposite (pauses on hover, runs on load)
 which feels more "demo / showcase" than "production mission control."
+
+Resolved by PR #87 (`fix(atlas): pause Navigate marquee until hover`).
+Backlog status flipped `open → done` in this PR (2026-06-23 hygiene
+sweep — PR #87 landed the fix but didn't update this entry).
 
 ---
 
@@ -279,4 +283,4 @@ non-canonical `- [x] T-01 text` shape that the strict parser rejected.
 
 ---
 
-*Last updated: 2026-06-22 (CHORE-001 → done via PR #85; CHORE-002 → done after PR #86 amendment merged; UX-002 → done via PR #92; UX-003 → done via PR #93; UX-001 still open from session-end note).*
+*Last updated: 2026-06-23 (UX-001 → done via PR #87, status flipped via PR #94 hygiene sweep).*

@@ -31,6 +31,19 @@ export function renderLayout(opts: { title: string; body: string }): string {
     .theia-warn-banner { background: var(--warn); color: var(--paper); padding: 8px 12px; border-radius: 2px; margin-bottom: 16px; font-family: var(--mono); font-size: 12px; }
     .theia-fail-banner { background: var(--alert); color: var(--paper); padding: 8px 12px; border-radius: 2px; margin-bottom: 16px; font-family: var(--mono); font-size: 12px; }
     h4 { font-size: 13px; color: var(--neutral); margin-top: 16px; margin-bottom: 8px; }
+    .theia-phase-cell {
+      --phase-bg: var(--card);
+      --phase-fg: var(--ink);
+      --phase-border: var(--rule);
+      display: block; color: var(--phase-fg); text-decoration: none;
+      background: var(--phase-bg);
+      border: 1px solid var(--phase-border);
+      border-radius: 2px; padding: 8px; flex: 1; min-width: 80px;
+      font-family: var(--mono); font-size: 12px; text-align: center;
+    }
+    .theia-phase-cell:hover { --phase-border: var(--ink); }
+    .theia-phase-cell.is-active { --phase-bg: var(--accent); --phase-fg: var(--paper); }
+    .theia-phase-cell.is-empty { --phase-bg: transparent; border-style: dashed; }
     .theia-task-block { margin-top: 24px; }
     .theia-task-section { margin-top: 16px; margin-bottom: 8px; }
     .theia-task-list { list-style: none; padding: 0; margin: 0; }

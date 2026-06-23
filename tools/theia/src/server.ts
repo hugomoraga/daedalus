@@ -4,6 +4,7 @@
 // server bound to `host:port`. Routes:
 //   - GET /             → overview view
 //   - GET /specs/:slug  → spec detail view
+//   - GET /phases/:n    → phase detail view (UX-005)
 //   - GET /healthz      → 200 OK JSON
 //   - any other path    → 404
 //   - non-GET method    → 405 (AC-5 / AC-12: read-only by construction)
@@ -15,6 +16,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { renderOverview } from "./views/overview.ts";
 import { renderSpecDetail } from "./views/spec.ts";
+import { renderPhaseDetail } from "./views/phase.ts";
 import type { ProjectState, TestResult } from "./types.ts";
 import { parseRepo } from "./parser.ts";
 
@@ -116,6 +118,25 @@ async function handle(
     const slug = decodeURIComponent(specMatch[1] ?? "");
     const snapshot: ProjectState = { ...state(), tests: latestTests() };
     respondText(res, 200, renderSpecDetail(slug, snapshot), "text/html; charset=utf-8");
+    return;
+  }
+  const phaseMatch = /^\/phases\/(\d+)\/?$/.exec(url);
+  if (phaseMatch !== null) {
+    const n = Number(phaseMatch[1] ?? "");
+    if (!Number.isInteger(n) || n < 0) {
+      respondText(res, 404, "Not Found");
+      return;
+    }
+    const snapshot: ProjectState = { ...state(), tests: latestTests() };
+    const phase = snapshot.phases.find((p) => p.number === n);
+    if (phase === undefined) {
+      // Unknown phase: render the detail view's "not found" page so
+      // the response stays HTML (consistent with the spec detail
+      // pattern) rather than a plain text 404.
+      respondText(res, 404, renderPhaseDetail(n, snapshot), "text/html; charset=utf-8");
+      return;
+    }
+    respondText(res, 200, renderPhaseDetail(n, snapshot), "text/html; charset=utf-8");
     return;
   }
 

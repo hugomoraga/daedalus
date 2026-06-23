@@ -350,7 +350,7 @@ in-progress).
 
 ## UX-005 — Phase cells in Theia should be clickable, opening a per-phase detail view
 
-**Status:** open
+**Status:** done
 **Kind:** follow-up
 **Source:** session-end note, 2026-06-23
 **Affects:** tools/theia/src/views/overview.ts, tools/theia/src/server.ts, tools/theia/src/views/, tools/theia/src/types.ts
@@ -398,6 +398,18 @@ convention). UX-005 extends the same pattern to phases; no new
 capability, just a missing affordance. Same posture as UX-002 / UX-003
 / UX-004.
 
+Resolved by PR #98: each phase cell is now `<a class="theia-phase-cell"
+href="/phases/<n>">` with hover treatment via a CSS-variable trick
+(`--phase-border` flips from `var(--rule)` to `var(--ink)` on hover,
+working around the inline `border:` shorthand). New
+`tools/theia/src/views/phase.ts` ships `renderPhaseDetail(n, state)`
+showing phase title, milestone count, and the list of specs assigned
+to that phase (each linked to `/specs/<slug>`). New route
+`GET /phases/:n` in `server.ts`; unknown phase → 404 with the detail
+view's "not found" page (HTML, mirrors the spec detail pattern).
+11 new tests (6 view + 5 server, including 404 cases for non-numeric
+and negative inputs).
+
 ---
 
-*Last updated: 2026-06-23 (UX-001 → done via PR #87, status flipped via PR #94; UX-004 → done via PR #96; UX-005 added).*
+*Last updated: 2026-06-23 (UX-001 → done via PR #87, status flipped via PR #94; UX-004 → done via PR #96; UX-005 → done via PR #98).*

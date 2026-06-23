@@ -25,6 +25,7 @@ export function renderOverview(state: ProjectState): string {
     renderSpecGrid(state),
     renderDriftWidget(state),
     renderAdrsSection(state),
+    renderBacklogSection(state),
     renderCodeInventorySection(state),
     renderUseCasesSection(state),
     renderTestsSection(state),
@@ -122,6 +123,58 @@ function renderAdrsSection(state: ProjectState): string {
     `ADRs (${state.adrs.length})`,
     `<table style="width:100%; border-collapse: collapse;">${rows}</table>`,
   );
+}
+
+// UX-004: render `docs/backlog.md` as a single grouped table. Rows are
+// grouped by `Status` (open / in-progress / wontfix / done) — the
+// working states first, then the closed ones. Each row carries the
+// `id` (mono), `kind` badge, the title (escaped), and an optional
+// collapsed `<details>` with the prose body.
+function renderBacklogSection(state: ProjectState): string {
+  if (state.backlog.length === 0) {
+    return section("Backlog", "<p class=\"muted\">No backlog detected.</p>");
+  }
+  // Group by status, preserving a stable in-group order (sorted by id).
+  const order: ReadonlyArray<string> = ["open", "in-progress", "wontfix", "done"];
+  const groups = new Map<string, typeof state.backlog>();
+  for (const item of state.backlog) {
+    const list = groups.get(item.status) ?? [];
+    list.push(item);
+    groups.set(item.status, list);
+  }
+  // Sort items within each group by id (the parser already does this,
+  // but be defensive against any future parser change).
+  for (const list of groups.values()) {
+    list.sort((a, b) => a.id.localeCompare(b.id));
+  }
+  // Render: ordered groups first, then any unknown status at the end.
+  const groupKeys = [
+    ...order.filter((k) => groups.has(k)),
+    ...[...groups.keys()].filter((k) => !order.includes(k)),
+  ];
+  const parts: string[] = [];
+  for (const key of groupKeys) {
+    const list = groups.get(key) ?? [];
+    if (list.length === 0) continue;
+    const tone = key === "open" ? "alert" : key === "in-progress" ? "neutral" : key === "wontfix" ? "neutral" : "ok";
+    const rows = list.map((b) => {
+      const kindTone = b.kind === "bug" ? "alert" : b.kind === "deprecation" ? "alert" : "neutral";
+      const body = b.body.length > 0
+        ? `<details style="margin-top: 4px;"><summary class="muted">context</summary><div style="margin-top: 4px;">${escapeHtml(b.body)}</div></details>`
+        : "";
+      const affects = b.affects !== null
+        ? `<div class="theia-mono" style="margin-top: 4px;">affects: <code>${escapeHtml(b.affects)}</code></div>`
+        : "";
+      return `<tr>
+        <td style="padding: 4px 8px;" class="theia-mono">${tag(b.id, "neutral")}</td>
+        <td style="padding: 4px 8px;">${tag(b.kind, kindTone)}</td>
+        <td style="padding: 4px 8px;">${escapeHtml(b.title)}${affects}${body}</td>
+      </tr>`;
+    }).join("");
+    parts.push(`<h4 style="margin-top: 16px; margin-bottom: 8px;">${tag(key, tone)} <span class="muted">(${list.length})</span></h4>`);
+    parts.push(`<table style="width:100%; border-collapse: collapse;">${rows}</table>`);
+  }
+  return section(`Backlog (${state.backlog.length})`, parts.join(""));
 }
 
 function renderCodeInventorySection(state: ProjectState): string {

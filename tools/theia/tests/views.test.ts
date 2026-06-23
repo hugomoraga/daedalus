@@ -197,3 +197,49 @@ test("AC-4: drift widget renders between Specs and ADRs sections", async () => {
   assert.ok(specsIdx < driftIdx, "drift widget should appear after Specs");
   assert.ok(driftIdx < adrsIdx, "drift widget should appear before ADRs");
 });
+
+// ----------------------------------------------------------------------------
+// UX-004 — backlog panel
+// ----------------------------------------------------------------------------
+
+test("UX-004: overview renders the Backlog section with the fixture's 3 items", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderOverview(state);
+  assert.match(html, /Backlog \(3\)/);
+  for (const id of ["BUG-001", "UX-001", "UX-002"]) {
+    assert.match(html, new RegExp(id));
+  }
+});
+
+test("UX-004: backlog section is grouped by status (open / in-progress / done)", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderOverview(state);
+  // The view wraps each status in <h4> with a status badge; the count
+  // appears as <span class="muted">(N)</span> just after. Check both
+  // pieces independently.
+  for (const status of ["open", "in-progress", "done"]) {
+    assert.match(html, new RegExp(`<h4[^>]*>[^<]*<span[^>]*>${status}</span>[^<]*<span class="muted">\\(1\\)</span></h4>`));
+  }
+});
+
+test("UX-004: each backlog row carries the id, kind, title, and (when present) the affects file", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderOverview(state);
+  // id, kind, title.
+  assert.match(html, /fixture bug entry/);
+  assert.match(html, /fixture UX entry \(in-progress\)/);
+  // affects is rendered as a <code> block.
+  assert.match(html, /<code>tools\/theia\/<\/code>/);
+  assert.match(html, /<code>apps\/atlas\/src\/<\/code>/);
+});
+
+test("UX-004: backlog section renders between ADRs and Code inventory", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderOverview(state);
+  const adrsIdx = html.indexOf("ADRs (");
+  const backlogIdx = html.indexOf("Backlog (");
+  const codeIdx = html.indexOf("Code inventory");
+  assert.ok(adrsIdx !== -1 && backlogIdx !== -1 && codeIdx !== -1);
+  assert.ok(adrsIdx < backlogIdx, "backlog should appear after ADRs");
+  assert.ok(backlogIdx < codeIdx, "backlog should appear before Code inventory");
+});

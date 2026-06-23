@@ -21,6 +21,7 @@ import { parsePhases } from "./parser/phases.ts";
 import { parseCodeInventory } from "./parser/inventory.ts";
 import { parseUseCases } from "./parser/use-cases.ts";
 import { parseBlockers, computeNextUnlocks } from "./parser/blockers.ts";
+import { parseBacklog } from "./parser/backlog.ts";
 import { runGitDiff } from "./runners/git.ts";
 import { runNpmTest } from "./runners/tests.ts";
 
@@ -56,6 +57,7 @@ export async function parseRepo(rootPath: string): Promise<ParseRepoResult> {
   const phases = parsePhases(root);
   const codeInventory = parseCodeInventory(root);
   const useCases = parseUseCases(root);
+  const backlog = parseBacklog(root);
 
   // PR 5: blocker graph + next-unlocks.
   const specContents = new Map<string, string>();
@@ -101,6 +103,7 @@ export async function parseRepo(rootPath: string): Promise<ParseRepoResult> {
       nextUnlocks,
       diff,
       tests,
+      backlog,
       activePhase,
     },
     pendingTests: controller.result,
@@ -121,6 +124,7 @@ function emptyState(rootPath: string, computedAt: string): ProjectState {
     nextUnlocks: [],
     diff: emptyDiff(),
     tests: emptyTestResult("parser not yet wired (PR 7 pending)"),
+    backlog: [],
   };
 }
 

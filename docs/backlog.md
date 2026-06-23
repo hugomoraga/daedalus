@@ -285,7 +285,7 @@ non-canonical `- [x] T-01 text` shape that the strict parser rejected.
 
 ## UX-004 — Theia should render the backlog as a panel
 
-**Status:** open
+**Status:** done
 **Kind:** follow-up
 **Source:** session-end note, 2026-06-23
 **Affects:** tools/theia/src/parser/, tools/theia/src/views/, tools/theia/src/types.ts
@@ -335,6 +335,17 @@ documented contract and implementation, exactly like UX-002 and UX-003.
 - Per-row deep links (no GitHub-anchored targets; entries don't carry
   a path).
 
+Resolved by PR #96: new `tools/theia/src/parser/backlog.ts` implements
+the parser contract documented in the file's own header. `ProjectState`
+gains a `backlog: BacklogItem[]` field; the overview renders a new
+`Backlog` section grouped by `Status` (open → in-progress → wontfix →
+done, with unknown statuses trailing) and per-row columns for id,
+kind, title, and the (optional) affects file. Each row has a
+collapsed `<details>` carrying the prose body. 12 new tests (8 parser
++ 4 view). Fixture gets `tools/theia/tests/fixtures/repo-typical/docs/backlog.md`
+with 3 representative items (one with Affects, one without, one
+in-progress).
+
 ---
 
-*Last updated: 2026-06-23 (UX-001 → done via PR #87, status flipped via PR #94; UX-004 added).*
+*Last updated: 2026-06-23 (UX-001 → done via PR #87, status flipped via PR #94; UX-004 → done via PR #96).*

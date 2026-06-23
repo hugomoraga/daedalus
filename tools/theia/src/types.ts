@@ -134,4 +134,17 @@ export type ProjectState = {
   nextUnlocks: Array<{ slug: string; unlocksCount: number }>;
   diff: DiffSummary;
   tests: TestResult;
+  backlog: BacklogItem[]; // Spec 012 follow-up — `docs/backlog.md` parsed
+};
+
+// One entry from `docs/backlog.md` (UX-004). The parser contract at
+// the top of the file defines the regexes; this type is the result.
+export type BacklogItem = {
+  id: string; // e.g. "BUG-001", "UX-004" — captured from `## ID — Title`
+  title: string; // captured from the same header
+  status: string; // raw value after `**Status:**`. Allowed set: open | in-progress | wontfix | done
+  kind: string; // raw value after `**Kind:**`. Allowed set: bug | follow-up | churn | deprecation
+  source: string; // raw value after `**Source:**` (required)
+  affects: string | null; // raw value after `**Affects:**` (optional)
+  body: string; // prose after the structured block, until the next `##` heading
 };

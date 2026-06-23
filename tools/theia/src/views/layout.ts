@@ -30,6 +30,7 @@ export function renderLayout(opts: { title: string; body: string }): string {
     .theia-mono { font-family: var(--mono); font-size: 12px; color: var(--neutral); }
     .theia-warn-banner { background: var(--warn); color: var(--paper); padding: 8px 12px; border-radius: 2px; margin-bottom: 16px; font-family: var(--mono); font-size: 12px; }
     .theia-fail-banner { background: var(--alert); color: var(--paper); padding: 8px 12px; border-radius: 2px; margin-bottom: 16px; font-family: var(--mono); font-size: 12px; }
+    h4 { font-size: 13px; color: var(--neutral); margin-top: 16px; margin-bottom: 8px; }
     .theia-task-block { margin-top: 24px; }
     .theia-task-section { margin-top: 16px; margin-bottom: 8px; }
     .theia-task-list { list-style: none; padding: 0; margin: 0; }

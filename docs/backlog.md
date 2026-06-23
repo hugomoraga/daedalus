@@ -348,4 +348,56 @@ in-progress).
 
 ---
 
-*Last updated: 2026-06-23 (UX-001 → done via PR #87, status flipped via PR #94; UX-004 → done via PR #96).*
+## UX-005 — Phase cells in Theia should be clickable, opening a per-phase detail view
+
+**Status:** open
+**Kind:** follow-up
+**Source:** session-end note, 2026-06-23
+**Affects:** tools/theia/src/views/overview.ts, tools/theia/src/server.ts, tools/theia/src/views/, tools/theia/src/types.ts
+
+The phase timeline in the Theia overview
+(`renderPhaseTimeline` in `tools/theia/src/views/overview.ts:58`) renders
+each phase as a `<div>`: number + title, the active one highlighted in
+`--accent`. The cells are not clickable — there is no per-phase route.
+The roadmap parser already extracts phase data
+(`tools/theia/src/parser/phases.ts:27` → `Phase { number, title,
+milestoneCount }`) and `parseRepo` wires it into `state.phases`, so the
+*data* is ready; only the click affordance and the destination view
+are missing.
+
+**Scope of the fix.** Three things, all in `tools/theia/`:
+
+1. **Link the cells.** Wrap each phase cell in `<a href="/phases/N">`
+   (mirrors the UX-002 pattern: anchor replaces `<div>`, add a class
+   that neutralises the global `a { color: accent; border-bottom }`
+   rule and adds `border-color: var(--ink)` on hover).
+2. **Add a route + view.** `GET /phases/:n` in `server.ts`, paired with
+   a new `renderPhaseDetail(n, state)` in `tools/theia/src/views/phase.ts`
+   (new file, parallel to `spec.ts`). The detail view shows: phase
+   number, title, milestone count from the roadmap, and the list of
+   specs whose `phase === n` (one row per spec, linking back to
+   `/specs/<slug>`). The cells in the overview already render
+   `state.activePhase` highlighted; the detail view can show "this
+   phase is currently the active one" in the same `--accent` style.
+3. **Cross-link back.** The detail view ends with `← back to overview`,
+   matching the spec detail pattern.
+
+**Out of scope.**
+
+- Per-phase blocker graph / next-unlocks (that's a richer feature for
+  a future follow-up; the spec detail view doesn't have it either).
+- Per-milestone expansion of the roadmap body (the parser counts
+  milestones but doesn't capture their text — separate change if
+  needed).
+- A `/phases/` index route (the timeline on the overview is already
+  the index).
+
+**Why not a new spec.** Spec 012 already establishes the per-spec
+detail page pattern (and PR #96 wired the per-artifact back-link
+convention). UX-005 extends the same pattern to phases; no new
+capability, just a missing affordance. Same posture as UX-002 / UX-003
+/ UX-004.
+
+---
+
+*Last updated: 2026-06-23 (UX-001 → done via PR #87, status flipped via PR #94; UX-004 → done via PR #96; UX-005 added).*

@@ -72,10 +72,11 @@ Do **not** add an item when:
 
 ## BUG-001 — tools/theia fixture test fails on main (AC-6 expects ≥3 apps, has 1)
 
-**Status:** open
+**Status:** done
 **Kind:** bug
 **Source:** observed during PR #73 / #75 verification (pre-existing on main)
 **Affects:** tools/theia/tests/parser-inventory-use-cases.test.ts
+**Closed:** 2026-06-29 (fix landed in PR #88 on 2026-06-22; entry updated in PR #89)
 
 Theia PR 4 (#67) shipped `parseCodeInventory` expecting the
 `tools/theia/tests/fixtures/repo-typical` fixture to have ≥3 apps, but
@@ -91,6 +92,20 @@ AssertionError: false == true (apps.length >= 3)
 ```
 
 Unrelated to Atlas / seeder / ADR-008 work — fix in its own PR.
+
+**Resolution.** Fixed in PR #88 (`test(theia): expand repo-typical
+fixture to satisfy AC-6 inventory assertion`, commit `ce84833`,
+merged 2026-06-22T22:53:15Z). The fixture now ships with 3 apps
+(`cli`, `atlas`, `theia`) plus a workspace package, satisfying the
+`apps.length >= 3` assertion. PR #89 only updates the bookkeeping —
+the fix itself is #88, per the same provenance rule applied to
+TEST-001 (don't claim `done` for work done out-of-band).
+
+**Verification.** `npm test` post-merge shows the AC-6 failure gone;
+full suite at `1483cfb` passes 363/364, with the one remaining failure
+(`AC-9: compliance panel renders obligations grouped by status with
+totals` in `apps/atlas/tests/atlas-compliance-panel.test.ts:153`) being
+pre-existing and unrelated — tracked separately if confirmed new.
 
 ---
 
@@ -196,6 +211,43 @@ git worktree remove /path/to/worktree
 **Resolution.** All 5 stale sibling worktrees were removed on 2026-06-22 via `git worktree remove <abs-path>` from the main checkout, immediately after PR #86 merged. `git worktree list --porcelain` post-cleanup shows only the main checkout and any in-flight session worktrees (in-repo at `.worktrees/<slug>/`).
 
 Future prevention: per the migration note in [ADR-008 §Amendment](../../governance/decisions/ADR-008-worktree-per-session.md#amendment--2026-06-22-in-repo-worktrees), the sibling-style worktrees that produced this backlog entry are no longer created — new sessions land in `.worktrees/<slug>/`, which keeps the parent directory (`~/Proyectos/`) free of stale project-named entries. So CHORE-002 is structurally unlikely to recur.
+
+---
+
+## CHORE-003 — re-collecting zombies: post-#86 worktrees + post-#85 remote branches
+
+**Status:** done
+**Kind:** churn
+**Source:** session-end audit, 2026-06-29
+**Affects:** local worktrees + `origin` remote branches
+**Closed:** 2026-06-29 (PR #89)
+
+CHORE-002 closed the cleanup as "structurally unlikely to recur" — and the sibling-style `~/Proyectos/daedalus-*` worktrees it targeted did stop appearing, because sessions now use the in-repo `.worktrees/<slug>/` layout (ADR-008 §Amendment). But the new layout created a different shape of leak: **sessions that merge cleanly leave their `.worktrees/<slug>/` directory behind** unless the agent runs `git worktree remove` before closing the turn. CHORE-002 didn't cover that because at the time no in-repo worktree had yet been merged.
+
+Similarly, CHORE-001 deleted 75 stale remote branches on 2026-06-22, but the next ~30 PRs (#86 → #102) each left a fresh `origin/<branch>` ref behind. So the cleanup pattern CHORE-001 → CHORE-002 established needs a periodic re-pass, not a one-shot.
+
+Snapshot at the start of this session (`1483cfb` on `main`):
+
+- **3 stale local worktrees** (all in-repo, all bound to merged branches, all clean):
+  - `.worktrees/bug-001-theia-fixture-apps`     → `087-bug-001-theia-fixture-apps`   (PR #88 merged 2026-06-22)
+  - `.worktrees/post-086-hygiene`               → `087-post-086-hygiene`             (PR #90 merged 2026-06-22)
+  - `.worktrees/test-001-value-chain-cli-flake` → `088-test-001-value-chain-cli-flake` (PR #91 merged 2026-06-22)
+- **6 stale remote branches** on `origin` (all merged, none with open PRs — verified with `git merge-base --is-ancestor origin/<b> origin/main` + `gh pr list --state open`):
+  - `origin/069-amend-008-worktrees-in-repo`     (PR #69 merged)
+  - `origin/085-chore-001-prune-stale-branches` (PR #85 merged)
+  - `origin/086-ux-001-marquee-pause`           (PR #86 merged)
+  - `origin/087-bug-001-theia-fixture-apps`     (PR #88 merged)
+  - `origin/087-post-086-hygiene`               (PR #90 merged)
+  - `origin/088-test-001-value-chain-cli-flake` (PR #91 merged)
+- **6 stale local tracking branches** (one per remote above; `git branch -d` is safe because each tip is an ancestor of `main`).
+
+**Resolution.** All 3 worktrees removed via `git worktree remove` from the main checkout. All 6 remote branches deleted via `git push origin --delete <branch>` (each deletion confirmed by GitHub's response line `[deleted] <branch>`). All 6 local tracking branches deleted via `git branch -d`. Final `git branch -a` shows only the active in-flight branches (`015-`, `016-`, `017-`, `081-`, `082-`, `089-`) + `main` + `origin/main` + `origin/HEAD`. The same session also closed BUG-001 (the unrelated fix having landed in PR #88).
+
+**Follow-up.** This is the second time CHORE-001/002 cleanup has had to be re-run, which suggests a *recurring* cleanup is needed rather than ad-hoc. Candidates (any requires steward approval before adding):
+- A session-end hook (e.g. `tools/scripts/new-session.sh` paired with a `close-session.sh`) that auto-removes the current session's worktree on a clean exit. ADR-008 §Amendment already mandates the in-repo layout; pairing it with auto-cleanup would close the leak structurally.
+- A `tools/scripts/prune-merged-branches.sh` runnable on demand (and by a periodic GitHub Action) that mirrors CHORE-001's safety checks (open-PR guard + ancestor verification) but only deletes branches whose merge is ≥N days old, to avoid racing with post-merge housekeeping PRs.
+
+Tracked here as a single observation; not committed to either follow-up without an explicit decision.
 
 ---
 

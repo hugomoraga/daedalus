@@ -71,3 +71,13 @@ Pick the agent per task (e.g. opencode for fast local iteration, Claude Code for
 - **Claude Code:** `CLAUDE.md` imports this file.
 
 Worked example of the multi-agent flow (open new session → bootstrap worktree → commit → push → PR → cleanup): [`docs/agent-orchestration.md`](docs/agent-orchestration.md).
+
+## Authorised agent tooling
+
+- **[ui-ux-pro-max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)** — a design-language reference skill (~2.9 MB, ~147 files under `.opencode/skills/`, gitignored). **Authorised per [ADR-012](governance/decisions/ADR-012-ui-ux-pro-max-skill.md)** with the following scope and guard rails:
+  - **Scope:** consult the skill when designing a *new* user-facing visual surface (new Atlas panels, the Athena founder cockpit, future public web). **Do not** consult it for Theia (intentionally minimal per Spec 012 §1 + ADR-007), platform infrastructure, tests, parsers, or ADRs.
+  - **Output:** the skill is a *process aid*, not a runtime dep. Its recommendations are inputs to the design process; the final colour, font, or spacing always comes from `apps/atlas/src/tokens.ts` (Atlas AC-5 token linter + Atlas AC-11 typography trio). Inline raw values in views are rejected by CI.
+  - **Disallowed recommendations:** dark mode (would require its own spec), Fira/Inter-variable Google Fonts CDN (Spec 012 §7), Heroicons/Phosphor/Lucide (zero runtime deps). The PR description must list adopted vs rejected recommendations when the skill informs a change.
+  - **Pin version** (per session); the Premium version is **not** adopted.
+
+  Install per session/worktree: `npm install -g ui-ux-pro-max-cli && uipro init --ai opencode`. Re-install on a new machine or after a deliberate version bump.

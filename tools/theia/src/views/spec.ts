@@ -8,6 +8,11 @@ import type { ProjectState, TaskItem } from "../types.ts";
 import { renderLayout } from "./layout.ts";
 import { escapeHtml } from "./tokens.ts";
 
+// GitHub owner/repo. Single source so the spec detail link target
+// stays consistent with the overview / code-inventory targets
+// (UX-008). Update here if the repo moves.
+const GITHUB_REPO = "hugomoraga/daedalus";
+
 export function renderSpecDetail(slug: string, state: ProjectState): string {
   const card = state.specs.find((s) => s.slug === slug);
   if (card === undefined) {
@@ -20,9 +25,12 @@ export function renderSpecDetail(slug: string, state: ProjectState): string {
   const done = card.tasksDone + card.planDone;
   const total = card.tasksTotal + card.planTotal;
   const pct = total === 0 ? 0 : Math.round((done / total) * 100);
-  const links = [
-    card.links.spec !== "" ? `<a href="https://github.com/search?q=repo%3Ahugomoraga%2Fdaedalus+path%3A${card.links.spec}">${escapeHtml(card.links.spec)}</a>` : "",
-  ].join("");
+  // The spec's links.spec is a path relative to the repo root
+  // (e.g. "specs/012-theia/spec.md"). Render it as a direct GitHub
+  // blob URL, not a search URL — UX-008.
+  const specPath = card.links.spec !== ""
+    ? `<a href="https://github.com/${GITHUB_REPO}/blob/main/${card.links.spec}">${escapeHtml(card.links.spec)}</a>`
+    : "";
   const body = `
     <section class="theia-section">
       <h2>${escapeHtml(card.title)}</h2>
@@ -34,7 +42,7 @@ export function renderSpecDetail(slug: string, state: ProjectState): string {
         <span class="theia-mono">${done}/${total} tasks</span>
         <span class="theia-progress"><span style="width:${pct}%"></span></span>
       </div>
-      <p style="margin-top: 16px;">Spec file: ${links}</p>
+      <p style="margin-top: 16px;">Spec file: ${specPath}</p>
       ${renderTaskList(card.taskList)}
       ${card.unknownReason !== null ? `<div class="theia-warn-banner">${escapeHtml(card.unknownReason)}</div>` : ""}
       <p style="margin-top: 24px;"><a href="/">← back to overview</a></p>

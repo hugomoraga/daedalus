@@ -115,6 +115,20 @@ test("spec detail view renders the requested spec", async () => {
   assert.match(html, /back to overview/);
 });
 
+// UX-008 P0-2: the "Spec file" link is a direct GitHub blob URL,
+// not a search URL (the latter rendered `github.com/search?q=…`
+// and never landed on the file).
+test("UX-008: spec detail 'Spec file' link points to the GitHub blob URL", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const card = state.specs.find((s) => s.slug === "001-ratified-p2");
+  assert.ok(card !== undefined, "fixture must include 001-ratified-p2");
+  const html = renderSpecDetail("001-ratified-p2", state);
+  // The path is shown verbatim AND as an href.
+  assert.match(html, new RegExp(`href="https://github\\.com/hugomoraga/daedalus/blob/main/${card.links.spec.replace(/\//g, "\\/")}"`));
+  // The old search URL must NOT appear.
+  assert.doesNotMatch(html, /github\.com\/search\?q=/);
+});
+
 test("spec detail view for an unknown slug renders a 'not found' page", async () => {
   const { state } = await parseRepo(FIXTURE);
   const html = renderSpecDetail("999-does-not-exist", state);

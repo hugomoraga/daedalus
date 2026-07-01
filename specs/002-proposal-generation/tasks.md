@@ -1,12 +1,12 @@
 # Tasks — Proposal Generation
 
-**Status:** v0 shipped & green · **v1 SHIPPED** (orchestrated form — Spec 002 v1.0 + Plan 002 v1.0 ratified, T-15..T-18 ✅, PR #32)
+**Status:** v0 shipped & green · **v1 SHIPPED** (orchestrated form — Spec 002 v1.0 + Plan 002 v1.0 ratified, T-15..T-18 ✅, PR #32) · **T-19 ✅** (ATLAS Phase 2 panels — Spec 007 Phase 2 / PR #69)
 **Derives from:** [Spec 002](./spec.md) + [Plan 002](./plan.md)
 **Conforms to:** [Conventions](../../tools/theia/CONVENTIONS.md), [Technical Principles](../../memory/technical-principles.md), [ADR-002](../../governance/decisions/ADR-002-adopt-technical-framework.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md)
-**Version:** 1.1.0
-**Last updated:** 2026-06-22
+**Version:** 1.2.0
+**Last updated:** 2026-07-01
 
-> The `/tasks` step for Proposal Generation. v0 + v1 are both shipped and green (130/130 tests). The next increment (T-12 richer templates, T-13 expectedValue ADR, T-14 AI drafting, T-19 ATLAS Phase 2 panels) is forward-planning only.
+> The `/tasks` step for Proposal Generation. v0 + v1 are both shipped and green. T-19 (ATLAS Phase 2 panels) also shipped, separately under [Spec 007 — Atlas UI](../007-atlas-ui/spec.md) Phase 2 / PR #69. The next increment (T-12 richer templates, T-13 expectedValue ADR, T-14 AI drafting) remains forward-planning and blocked on Phase 3+ capabilities.
 
 ---
 
@@ -69,7 +69,7 @@ The engine stays Core-only. The `proposalGenerationUseCases` factory lives in th
 - [ ] T-12: Richer tenant templates (beyond the v0 mock `standard` template) — Tenant 0 profile supplies real templates; no Core change (blocked)
 - [ ] T-13: Resolve Q5 — whether Core `ProposalGenerated` needs a formal `expectedValue` attribute vs the v0 optional payload (cross-module decision; **touches Core payload → ADR if promoted**, blocked)
 - [ ] T-14: Drafting assistance as a bounded agent under policy (Q6) — **Agent runtime (Phase 4)** + **Policy engine (Phase 3)** — not built; future spec required (blocked)
-- [ ] T-19: ATLAS Phase 2 panels (`active-processes`, `queue-status`, `workflow-metrics`) — follow-on spec gated on engine shipping (now shipped) (pending)
+- [x] T-19: ATLAS Phase 2 panels (`active-processes`, `queue-status`, `workflow-metrics`) — shipped in [Spec 007 — Atlas UI](../007-atlas-ui/spec.md) Phase 2 / PR #69 (the 3 panels live at `apps/atlas/src/panels/{active-processes,queue-status,workflow-metrics}.ts` and consume the engine projections from [Spec 011 — Workflow Engine Projections](../011-workflow-engine-projections/spec.md)). T-19 closed here as a follow-on dependency; the panels themselves are owned and tracked by Spec 007.
 
 ---
 

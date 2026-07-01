@@ -15,7 +15,7 @@
 // browser is a renderer (per §7 "no client-side state for project
 // data"); refresh = re-request.
 
-import type { ProjectState } from "../types.ts";
+import type { ProjectState, BacklogItem } from "../types.ts";
 import { renderLayout } from "./layout.ts";
 import { escapeHtml, tag, GITHUB_REPO } from "./tokens.ts";
 import { inlineMarkdownToHtml } from "./spec.ts";
@@ -162,6 +162,10 @@ function renderBacklogSection(state: ProjectState, opts: { showDone?: boolean } 
   // page looking for *what to do next*, not the history. The
   // working states (open, in-progress, wontfix) stay visible. A
   // deep link with `?show=done` opens it for steward review.
+  //
+  // UX-010: each entry is a card-list <li> (not a table row). The
+  // id + kind badges are inline with the title; the affects line
+  // sits below, optionally truncated to "first path +N more".
   const groupKeys = [
     ...order.filter((k) => groups.has(k)),
     ...[...groups.keys()].filter((k) => !order.includes(k)),
@@ -170,36 +174,66 @@ function renderBacklogSection(state: ProjectState, opts: { showDone?: boolean } 
   for (const key of groupKeys) {
     const list = groups.get(key) ?? [];
     if (list.length === 0) continue;
-    const tone = key === "open" ? "alert" : key === "in-progress" ? "neutral" : key === "wontfix" ? "neutral" : "ok";
-    const rows = list.map((b) => {
-      const kindTone = b.kind === "bug" ? "alert" : b.kind === "deprecation" ? "alert" : "neutral";
-      const body = b.body.length > 0
-        ? `<details class="theia-backlog-body"><summary class="muted">context</summary><div class="theia-backlog-body-inner">${inlineMarkdownToHtml(b.body)}</div></details>`
-        : "";
-      const affects = b.affects !== null
-        ? `<div class="theia-mono theia-backlog-affects">affects: <code>${escapeHtml(b.affects)}</code></div>`
-        : "";
-      return `<tr class="theia-backlog-row">
-        <td class="theia-mono theia-backlog-id">${tag(b.id, "neutral")}</td>
-        <td class="theia-backlog-kind">${tag(b.kind, kindTone)}</td>
-        <td class="theia-backlog-cell">${escapeHtml(b.title)}${affects}${body}</td>
-      </tr>`;
-    }).join("");
-    const headerHtml = `<h4 class="theia-backlog-group-head">${tag(key, tone)} <span class="muted">(${list.length})</span></h4>`;
-    const tableHtml = `<table class="theia-backlog-table">${rows}</table>`;
+    const groupTone = key === "open" ? "alert" : key === "in-progress" ? "neutral" : key === "wontfix" ? "neutral" : "ok";
+    const items = list.map((b) => renderBacklogItem(b)).join("");
     if (key === "done") {
       // Collapsed by default; open when `?show=done` is on the URL.
       const openAttr = opts.showDone === true ? " open" : "";
       parts.push(`<details class="theia-backlog-done"${openAttr}>`
-        + `<summary class="theia-backlog-done-summary">${tag(key, tone)} <span class="muted">(${list.length})</span> — show ${list.length} done</summary>`
-        + tableHtml
+        + `<summary class="theia-backlog-done-summary">${tag(key, groupTone)} <span class="muted">(${list.length})</span> — show ${list.length} done</summary>`
+        + `<ul class="theia-backlog-list">${items}</ul>`
         + `</details>`);
     } else {
-      parts.push(headerHtml);
-      parts.push(tableHtml);
+      parts.push(`<h4 class="theia-backlog-group-head">${tag(key, groupTone)} <span class="muted">(${list.length})</span></h4>`);
+      parts.push(`<ul class="theia-backlog-list">${items}</ul>`);
     }
   }
   return section(`Backlog (${state.backlog.length})`, parts.join(""), { id: "backlog" });
+}
+
+// Render one backlog entry as a card-list item. The shape is:
+//   <li>
+//     <div class="theia-backlog-head">
+//       [id-badge] [kind-badge] <strong>title</strong>
+//     </div>
+//     <div class="theia-backlog-meta">
+//       affects: <code>first path +N more</code>   (or single path; or omitted)
+//     </div>
+//     <details class="theia-backlog-body">
+//       <summary>▸ context</summary>
+//       <div>…rendered markdown…</div>
+//     </details>
+//   </li>
+function renderBacklogItem(b: BacklogItem): string {
+  const kindTone = b.kind === "bug" ? "alert" : b.kind === "deprecation" ? "alert" : "neutral";
+  const head = `<div class="theia-backlog-head">${tag(b.id, "neutral")} ${tag(b.kind, kindTone)} <strong>${escapeHtml(b.title)}</strong></div>`;
+  const affects = b.affects !== null
+    ? `<div class="theia-mono theia-backlog-affects">affects: <code${truncateAffectsTitle(b.affects) === null ? "" : ` title="${truncateAffectsTitle(b.affects)}"`}>${truncateAffectsDisplay(b.affects)}</code></div>`
+    : "";
+  const body = b.body.length > 0
+    ? `<details class="theia-backlog-body"><summary class="muted">context</summary><div class="theia-backlog-body-inner">${inlineMarkdownToHtml(b.body)}</div></details>`
+    : "";
+  return `<li class="theia-backlog-item">${head}${affects}${body}</li>`;
+}
+
+// Truncate an affects string to its first comma-separated path. If
+// there's only one path, return null (no truncation). If there are
+// multiple, return "first +N more" where N is the count of the
+// remaining paths.
+function truncateAffectsDisplay(affects: string): string {
+  const parts = affects.split(",").map((s) => s.trim()).filter((s) => s.length > 0);
+  if (parts.length <= 1) return escapeHtml(affects);
+  const rest = parts.length - 1;
+  return `${escapeHtml(parts[0] ?? "")} <span class="muted">+${rest} more</span>`;
+}
+
+// Same as truncateAffectsDisplay but returns the full affects for
+// the title attribute (HTML-escaped, for the hover tooltip). null
+// when the affects has only one path.
+function truncateAffectsTitle(affects: string): string | null {
+  const parts = affects.split(",").map((s) => s.trim()).filter((s) => s.length > 0);
+  if (parts.length <= 1) return null;
+  return escapeHtml(parts.join(", "));
 }
 
 function renderCodeInventorySection(state: ProjectState): string {

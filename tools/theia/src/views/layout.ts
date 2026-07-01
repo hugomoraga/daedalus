@@ -206,6 +206,41 @@ export function renderLayout(opts: { title: string; body: string }): string {
       color: var(--neutral);
       font-weight: 500;
     }
+
+    /* UX-010 — card list (replaces the UX-009 table). Each
+       entry is a <li> with three lines:
+         1. theia-backlog-head   : badges + title (inline)
+         2. theia-backlog-affects: mono line, optional
+         3. theia-backlog-body   : <details> with the body
+       The list has no bullets; items are separated by hairline
+       rules. This matches the spec-card pattern visually and
+       keeps each entry to a fixed 2-3-line visible footprint
+       (was 3-5 lines in the table layout, with the badges
+       visually orphaned in the leftmost column). */
+    .theia-backlog-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .theia-backlog-item {
+      padding: 12px 0;
+      border-top: 1px solid var(--rule);
+    }
+    .theia-backlog-list > .theia-backlog-item:first-child {
+      border-top: none;
+    }
+    .theia-backlog-head {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .theia-backlog-head strong { font-weight: 500; }
+    .theia-backlog-affects { margin-top: 4px; }
+    .theia-backlog-affects code {
+      font-family: var(--mono);
+      font-size: 12px;
+    }
   </style>
 </head>
 <body>

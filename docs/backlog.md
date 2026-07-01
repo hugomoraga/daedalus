@@ -1089,3 +1089,107 @@ table row.
     passes).
 - Deep link `?show=done` opens the `done` group for reviewers
   who want the full view.
+
+## UX-010 — Backlog section: card list restructure (badges inline + affects truncated)
+
+**Status:** in-progress
+**Kind:** follow-up
+**Source:** founder observation on 2026-07-01 ("Mejoro pero aun se ve extraño" while reviewing the UX-009 merge at http://127.0.0.1:8789/)
+**Affects:** tools/theia/src/views/overview.ts, tools/theia/src/views/layout.ts, tools/theia/tests/views.test.ts
+
+### Why
+
+UX-009 fixed three things on the backlog section: hidden the
+"done" group, fixed the broken markdown rendering, and tightened
+the row padding. It did **not** address a visual hierarchy
+problem: the row used a 3-column `<table>` (id | kind | cell),
+so the badges landed in the leftmost columns while the title
+and affects were in the rightmost column. When the affects
+path was long (the live UX-009 entry lists 5 paths), the
+title cell wrapped to 3+ lines, leaving the badges visually
+orphaned at the top of a tall row with whitespace in between.
+
+UX-010 replaces the table with a card list (matching the
+spec card pattern) and puts the badges **inline** with the
+title. Each entry becomes:
+
+```
+[UX-009] [FOLLOW-UP] Backlog section: hide done by default, fix markdown rendering, compact rows
+   affects: tools/theia/src/views/overview.ts  +4 more
+   ▸ context
+```
+
+Three lines per entry, no orphan badges.
+
+### Scope (one PR, two commits)
+
+**Concern 1 — restructure to a card list (`overview.ts` +
+`layout.ts`).** Replace `<table class="theia-backlog-table">`
+with `<ul class="theia-backlog-list">` of `<li class="theia-backlog-item">`.
+Each item:
+
+  - **Line 1** (header): the id badge + kind badge inline with
+    the title. The title is `<strong>`; the badges use the
+    existing `tag()` helper. The badges sit on the same
+    horizontal line as the title, so the visual hierarchy
+    reads "this entry, with these tags, is about X".
+  - **Line 2** (meta): the affects line. If the affects is a
+    single path, show it as-is. If the affects has multiple
+    comma-separated paths, show the first + `+N more` where N
+    is the count of the others (e.g. `+4 more`).
+  - **Line 3** (body): the `<details>` summary "▸ context" and
+    the rendered body when expanded. Unchanged from UX-009.
+
+**Concern 2 — affects truncation (`overview.ts`).** The current
+`affects` field is a single string captured by the parser.
+The view splits on `,`, trims each item, and truncates. The
+parser contract is unchanged — affects remains `string | null`.
+The truncation is a view-layer concern.
+
+Truncation rule: if the comma-separated list has 1 item, show
+it as-is. If 2+, show the first + `+N more` (e.g.
+`tools/theia/src/views/overview.ts +4 more`). The total
+count is preserved in the title attribute of the `<code>`
+wrapping the truncated list, so the founder can hover to see
+the full list (UX-007's safe-URL guard already covers
+this — the code block contains literal paths, not URLs).
+
+If the comma-separated list has 1 item, the truncation is a
+no-op. The 14 live entries: 13 have 1 path, 1 has 5
+(UX-009). The truncation only kicks in for multi-path
+entries.
+
+### Out of scope
+
+- **Markdown inside the affects line** — the affects is
+  rendered as `<code>` with the path text HTML-escaped, not
+  through `inlineMarkdownToHtml`. The current behavior is
+  intentional (paths should look like paths, not like
+  prose). Truncation is the only change.
+- **Per-row "open" / "reopen" actions** — read-only by
+  Spec 012 §7.
+- **Inline editing of the body** — same reason.
+- **Capturing affects as `string[]` in the parser** — the
+  parser contract is unchanged. View-layer truncation keeps
+  the parser pure and the contract stable.
+- **Re-grouping by kind** — the current
+  `open` → `in-progress` → `wontfix` → `done` order is the
+  right working-state order.
+
+### Acceptance
+
+- `npm test` → 402 + N pass, where N is the new tests for
+  the card-list structure and the affects-truncation rule.
+- Token linter (AC-11) and no-platform-imports linter
+  (AC-15) both green.
+- Live `curl http://127.0.0.1:8789/`:
+  - The Backlog section renders a `<ul class="theia-backlog-list">`
+    with one `<li>` per entry, instead of a `<table>`.
+  - Each entry shows id + kind badges inline with the title.
+  - The 5-path UX-009 affects renders as
+    `tools/theia/src/views/overview.ts +4 more`.
+  - The 1-path entries render their full path.
+  - The done group is still collapsed by default;
+    `?show=done` still opens it.
+  - The body (block-level markdown from UX-009) still
+    renders correctly inside the details.

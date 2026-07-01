@@ -721,18 +721,110 @@ test("UX-009: renderOverview({ showDone: undefined }) defaults to collapsed", as
   assert.doesNotMatch(html, /<details class="theia-backlog-done" open>/);
 });
 
-test("UX-009: backlog rows use the new compact classes", async () => {
+test("UX-010: backlog uses card list structure (not a table)", async () => {
   const { state } = await parseRepo(FIXTURE);
   const html = renderOverview(state);
-  // Each row has the .theia-backlog-row class instead of the old
-  // inline padding style. The class lets layout.ts control the
-  // padding uniformly (4px 8px → 8px 12px) and the hairline top
-  // border.
-  assert.match(html, /<tr class="theia-backlog-row">/);
-  // The body <details> uses the .theia-backlog-body class.
+  // UX-010: replace the <table> with a <ul> of <li> cards. The
+  // id + kind badges sit inline with the title; the affects
+  // line and the body details sit below.
+  assert.match(html, /<ul class="theia-backlog-list">/);
+  assert.match(html, /<li class="theia-backlog-item">/);
+  // The badges are inline with the title in the head div.
+  assert.match(html, /<div class="theia-backlog-head">/);
+  // The body <details> still uses the .theia-backlog-body class.
   assert.match(html, /<details class="theia-backlog-body">/);
   // The "affects" line is wrapped in a class instead of inline margin.
   assert.match(html, /class="theia-mono theia-backlog-affects"/);
+  // The <table> is gone — the section is a list, not a tabular layout.
+  assert.doesNotMatch(html, /<table class="theia-backlog-table">/);
+  assert.doesNotMatch(html, /<tr class="theia-backlog-row">/);
+});
+
+// UX-010: a single-path affects renders verbatim, no truncation.
+test("UX-010: single-path affects renders verbatim (no +N more)", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  state.backlog = [{
+    id: "TEST-100",
+    title: "single-path entry",
+    status: "open",
+    kind: "bug",
+    source: "fixture",
+    affects: "tools/single-path.test.ts",
+    body: "",
+  }];
+  const html = renderOverview(state);
+  // The single path is shown as-is, with no "+N more" affordance.
+  assert.match(html, /<code>tools\/single-path\.test\.ts<\/code>/);
+  assert.doesNotMatch(html, /\+\d+ more/);
+});
+
+// UX-010: a multi-path affects is truncated to the first path
+// plus "+N more", with the full list preserved in the title attr
+// of the wrapping <code> element so hover reveals the rest.
+test("UX-010: multi-path affects truncates to 'first +N more'", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  state.backlog = [{
+    id: "TEST-101",
+    title: "multi-path entry",
+    status: "open",
+    kind: "follow-up",
+    source: "fixture",
+    affects: "tools/a.ts, tools/b.ts, tools/c.ts, tools/d.ts, tools/e.ts",
+    body: "",
+  }];
+  const html = renderOverview(state);
+  // First path is shown.
+  assert.match(html, /<code[^>]*>tools\/a\.ts/);
+  // "+4 more" indicates the other 4 paths.
+  assert.match(html, /\+4 more/);
+  // The other paths are NOT inline in the rendered text.
+  assert.doesNotMatch(html, /<code[^>]*>tools\/b\.ts/);
+  // The full list IS in the title attribute (HTML-escaped) so
+  // hovering shows the rest.
+  assert.match(html, /title="tools\/a\.ts, tools\/b\.ts, tools\/c\.ts, tools\/d\.ts, tools\/e\.ts"/);
+});
+
+// UX-010: a two-path affects is "first +1 more" (not "+2 more").
+test("UX-010: two-path affects is 'first +1 more'", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  state.backlog = [{
+    id: "TEST-102",
+    title: "two-path entry",
+    status: "open",
+    kind: "follow-up",
+    source: "fixture",
+    affects: "tools/a.ts, tools/b.ts",
+    body: "",
+  }];
+  const html = renderOverview(state);
+  assert.match(html, /\+1 more/);
+  assert.doesNotMatch(html, /\+2 more/);
+});
+
+// UX-010: an affects with a single path that has a comma inside
+// backticks (e.g. "tools/x.ts, with a comma") would be split
+// into 2 by the view — but the view's split is on `,` which is
+// the only signal it has. The parser doesn't change shape; this
+// is a known limitation. The test pins the current behavior
+// (split on every comma) so any future change to the parser
+// is explicit.
+test("UX-010: affects split is purely textual (on every comma)", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  state.backlog = [{
+    id: "TEST-103",
+    title: "affects with embedded comma",
+    status: "open",
+    kind: "follow-up",
+    source: "fixture",
+    affects: "tools/x.ts, with a comma",
+    body: "",
+  }];
+  const html = renderOverview(state);
+  // The view sees 2 comma-separated parts; truncation kicks in
+  // even though the second is a parenthetical. "+1 more" is
+  // rendered. The title attr shows both.
+  assert.match(html, /\+1 more/);
+  assert.match(html, /title="tools\/x\.ts, with a comma"/);
 });
 
 test("UX-007: done task body is dimmed (not struck through); only the id carries strikethrough", async () => {

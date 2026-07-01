@@ -395,10 +395,40 @@ test("AC-7: CLI commands section lists 5 use cases", async () => {
   }
 });
 
-// UX-008 P1-2: CLI commands are grouped by their colon-prefix so a
-// founder scanning the section can find a command by domain
-// (revenue:*, proposal:*, lead:*, ...) without scrolling a flat
-// alphabetised list.
+// UX-008 P1-4: when a spec is fully done, the detail page renders
+// a one-line summary so the founder doesn't have to scroll through
+// every [x] task to know "yes, this shipped, 8 PRs in, v1.0.0".
+test("UX-008 P1-4: fully-done spec detail renders a one-line summary", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const card = state.specs.find((s) => s.slug === "001-ratified-p2");
+  assert.ok(card !== undefined, "fixture must include 001-ratified-p2");
+  // The fixture's 001-ratified-p2 ships all tasks done (see
+  // tasks.md / plan.md in repo-typical). Force the count to match
+  // so the summary line renders, regardless of how the fixture is
+  // shaped.
+  card.tasksDone = card.tasksTotal;
+  card.planDone = card.planTotal;
+  const html = renderSpecDetail("001-ratified-p2", state);
+  // The summary line carries the PR count + total + status + version.
+  const sections = new Set(card.taskList.map((t) => t.section).filter((s) => /^PR \d+/.test(s)));
+  const prCount = sections.size;
+  assert.match(html, new RegExp(`${prCount} PR`));
+  assert.match(html, new RegExp(`${card.tasksDone + card.planDone}/${card.tasksTotal + card.planTotal} tasks done`));
+  assert.match(html, new RegExp(`Ratified`));
+  assert.match(html, new RegExp(`Phase ${card.phase}`));
+  assert.match(html, new RegExp(`v${card.version}`));
+});
+
+test("UX-008 P1-4: not-fully-done spec detail omits the summary line", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const card = state.specs.find((s) => s.slug === "001-ratified-p2");
+  assert.ok(card !== undefined, "fixture must include 001-ratified-p2");
+  // Force a pending state — even one undone task disqualifies.
+  card.tasksDone = Math.max(0, card.tasksDone - 1);
+  const html = renderSpecDetail("001-ratified-p2", state);
+  // The summary line's distinctive phrase ("tasks done") must NOT appear.
+  assert.doesNotMatch(html, /tasks done/);
+});
 test("UX-008 P1-2: CLI commands are grouped by colon-prefix", async () => {
   const { state } = await parseRepo(FIXTURE);
   const html = renderOverview(state);

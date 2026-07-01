@@ -26,6 +26,17 @@ export function renderSpecDetail(slug: string, state: ProjectState): string {
   const specPath = card.links.spec !== ""
     ? `<a href="https://github.com/${GITHUB_REPO}/blob/main/${card.links.spec}">${escapeHtml(card.links.spec)}</a>`
     : "";
+  // UX-008 P1-4: when a spec is fully done, render a one-line summary
+  // right under the progress bar so the founder doesn't have to scroll
+  // through N identical [x] tasks to learn what they need to know:
+  //   "8 PRs · 32/32 tasks done · Ratified Phase 2 · v1.0.0"
+  // The "PRs" count is the number of `## PR N` sections in the
+  // parsed taskList — the natural unit of work for a shipped spec.
+  const prCount = new Set(card.taskList.map((t) => t.section).filter((s) => /^PR \d+/.test(s))).size;
+  const isFullyDone = total > 0 && done === total;
+  const summaryLine = isFullyDone
+    ? `<div class="theia-mono" style="margin-top: 8px;">${prCount} PR${prCount === 1 ? "" : "s"} · ${done}/${total} tasks done · ${escapeHtml(card.status)}${card.phase !== null ? ` Phase ${card.phase}` : ""} · v${escapeHtml(card.version ?? "?")}</div>`
+    : "";
   const body = `
     <section class="theia-section">
       <h2>${escapeHtml(card.title)}</h2>
@@ -37,6 +48,7 @@ export function renderSpecDetail(slug: string, state: ProjectState): string {
         <span class="theia-mono">${done}/${total} tasks</span>
         <span class="theia-progress"><span style="width:${pct}%"></span></span>
       </div>
+      ${summaryLine}
       <p style="margin-top: 16px;">Spec file: ${specPath}</p>
       ${renderTaskList(card.taskList)}
       ${card.unknownReason !== null ? `<div class="theia-warn-banner">${escapeHtml(card.unknownReason)}</div>` : ""}

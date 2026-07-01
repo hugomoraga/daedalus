@@ -39,7 +39,18 @@ function get(server: Server, path: string): Promise<{ status: number; body: stri
   });
 }
 
-const T0 = "2026-06-22T09:00:00.000Z";
+// All event timestamps are computed relative to `now` so the panel's
+// `asOf = new Date().toISOString()` always lands in a coherent relation
+// to the seeded `dueAt`s. The previous version hardcoded "2026-06-22" T0
+// and absolute dueAt strings ("2026-07-01", "2026-06-10"); once wall-clock
+// drifted past 2026-07-01 the 'pending' obligation silently flipped to
+// 'missed' and the test failed with no diagnostic.
+const DAY_MS = 24 * 60 * 60 * 1000;
+const NOW = Date.now();
+const T0 = new Date(NOW - 12 * DAY_MS).toISOString();
+const DUE_PENDING = new Date(NOW + 9 * DAY_MS).toISOString();
+const DUE_MISSED = new Date(NOW - 12 * DAY_MS).toISOString();
+const DUE_MISSED_OTHER = new Date(NOW - 30 * DAY_MS).toISOString();
 
 function obligationEvent(partial: { id: string; type: string; tenantId?: string; dueAt: string; humanName: string; payload?: Record<string, unknown> }) {
   return {
@@ -88,8 +99,8 @@ test("AC-12: Welcome panel renders the 2x3 grid with the 'what needs attention' 
     },
   ]);
   await seedTenant("tenant-0", [
-    obligationEvent({ id: "obl-pending", type: "ObligationDue", dueAt: "2026-07-01T00:00:00.000Z", humanName: "Pending IVA" }),
-    obligationEvent({ id: "obl-missed", type: "ObligationDue", dueAt: "2026-06-10T00:00:00.000Z", humanName: "Missed F22" }),
+    obligationEvent({ id: "obl-pending", type: "ObligationDue", dueAt: DUE_PENDING, humanName: "Pending IVA" }),
+    obligationEvent({ id: "obl-missed", type: "ObligationDue", dueAt: DUE_MISSED, humanName: "Missed F22" }),
   ]);
 
   const { server } = createAtlasServer({ port: 0, deps: buildAtlasDeps() });
@@ -109,7 +120,14 @@ test("AC-12: Welcome panel renders the 2x3 grid with the 'what needs attention' 
     assert.match(res.body, />Last event at</);
     assert.match(res.body, />Total events</);
     // Values
-    assert.match(res.body, /<div[^>]*>2<\/div>/); // Active workflows = 2
+    // Active workflows = "live" slice = status active + status waiting_human
+    // (the panel reads `projectActiveProcesses(...)` which explicitly filters
+    // to LIVE_STATUSES = {active, waiting_human}; see Spec 011 §4.2 / AC-5).
+    // With this seed (2 active + 1 waiting_human) → 3 live workflows.
+    // The "Waiting human" tile below subtracts waiting_human from the count.
+    assert.match(res.body, />Active workflows<\/div>\s*<div[^>]*>3<\/div>/);
+    assert.match(res.body, />Waiting human<\/div>\s*<div[^>]*>1<\/div>/);
+    assert.match(res.body, />Pending obligations<\/div>\s*<div[^>]*>1<\/div>/);
     assert.match(res.body, /stalled at human gate/); // waiting human tone text
     assert.match(res.body, />Missed obligations<\/div>\s*<div[^>]*>1<\/div>/);
     assert.match(res.body, /action required/); // missed tone text
@@ -160,7 +178,7 @@ test("AC-12: Welcome panel tenant isolation — tenant-other's data never leaks 
     obligationEvent({
       id: "tother-obl-missed", type: "ObligationDue",
       tenantId: "tenant-other",
-      dueAt: "2026-06-10T00:00:00.000Z",
+      dueAt: DUE_MISSED_OTHER,
       humanName: "Other tenant's missed",
     }),
   ]);

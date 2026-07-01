@@ -166,7 +166,7 @@ function renderTaskText(rawText: string): string {
 // unclosed ```` ``` ```` fence) are silently treated as literal text
 // and HTML-escaped. This is the same policy the inline passes
 // already followed; the block passes inherit it.
-export function inlineMarkdownToHtml(text: string): string {
+export function inlineMarkdownToHtml(text: string, opts: { wrapParagraphs?: boolean } = {}): string {
   // Block-level pre-passes operate on the raw text. They each
   // extract their target structure into a placeholder, leaving the
   // rest of the text untouched for the next pass to handle.
@@ -198,15 +198,41 @@ export function inlineMarkdownToHtml(text: string): string {
       return `${lead}\u0000I${listHtml.length - 1}\u0000`;
     });
 
-  // Inline passes (UX-007, unchanged). Run against the text *with*
-  // block-level placeholders so backticks / bold / links inside
-  // tables and list items still work.
+  // UX-011 — ATX headers. `^(#{1,6})\s+(.+)$` (1 to 6 hashes,
+  // then whitespace, then text). The line must START with the
+  // hash — no leading whitespace (otherwise it's an indented
+  // code block in CommonMark, which we don't handle). The text
+  // is captured up to end-of-line; trailing whitespace is
+  // trimmed. Trailing `#` (setext-style close) is NOT supported
+  // — most modern markdown authors use the ATX form.
+  const headerHtml: string[] = [];
+  work = work.replace(/^(#{1,6})\s+(.+?)\s*$/gm, (_, hashes: string, headerText: string) => {
+    const level = hashes.length;
+    headerHtml.push(`<h${level} class="theia-md-h${level}">${inlineMarkdownToHtml(headerText, { wrapParagraphs: false })}</h${level}>`);
+    return `\u0000H${headerHtml.length - 1}\u0000`;
+  });
+
+  // UX-011 — horizontal rules. `^---+\s*$` (3 or more dashes
+  // on a line by themselves, with optional trailing whitespace).
+  // Must NOT match `----foo` (some inline text follows), which
+  // we enforce by requiring only whitespace after the dashes.
+  const hrHtml: string[] = [];
+  work = work.replace(/^---+\s*$/gm, () => {
+    hrHtml.push(`<hr class="theia-md-hr">`);
+    return `\u0000R${hrHtml.length - 1}\u0000`;
+  });
+
+  // Inline passes (UX-007). Run BEFORE the paragraph pass so
+  // that backticks / bold / links inside paragraphs get
+  // placeholders that survive the wrap (UX-011). Block-level
+  // placeholders (F/T/I/H/R) stay on their own lines and the
+  // paragraph pass treats them as block boundaries.
   const linkHtml: string[] = [];
   const withLinkPh = work.replace(/\[([^\]]+)\]\(([^)]+)\)\)?/g, (_, linkText: string, url: string) => {
     if (!isSafeMarkdownUrl(url)) {
       linkHtml.push(escapeHtml(linkText));
     } else {
-      const innerHtml = inlineMarkdownToHtml(linkText);
+      const innerHtml = inlineMarkdownToHtml(linkText, { wrapParagraphs: false });
       linkHtml.push(`<a href="${escapeHtml(url)}">${innerHtml}</a>`);
     }
     return `\u0000L${linkHtml.length - 1}\u0000`;
@@ -223,19 +249,122 @@ export function inlineMarkdownToHtml(text: string): string {
     boldHtml.push(`<strong>${escapeHtml(inner)}</strong>`);
     return ph;
   });
-  const escaped = escapeHtml(withBoldPh);
-  // Restore in reverse order so the F/I/T placeholders are
-  // substituted last (they wrap inline-marker output, not the
-  // other way around). A F/I/T placeholder appears verbatim in
-  // the escaped string (its contents are pure placeholder ASCII
-  // + NULs + digits, none of which become &-entities).
-  const boldRestored = escaped.replace(/\u0000B(\d+)\u0000/g, (_, i: string) => boldHtml[Number(i)] ?? "");
-  const codeRestored = boldRestored.replace(/\u0000C(\d+)\u0000/g, (_, i: string) => codeHtml[Number(i)] ?? "");
-  const linkRestored = codeRestored.replace(/\u0000L(\d+)\u0000/g, (_, i: string) => linkHtml[Number(i)] ?? "");
-  const listRestored = linkRestored.replace(/\u0000I(\d+)\u0000/g, (_, i: string) => listHtml[Number(i)] ?? "");
-  const tableRestored = listRestored.replace(/\u0000T(\d+)\u0000/g, (_, i: string) => tableHtml[Number(i)] ?? "");
-  const fenceRestored = tableRestored.replace(/\u0000F(\d+)\u0000/g, (_, i: string) => fenceHtml[Number(i)] ?? "");
-  return fenceRestored;
+
+  // UX-011 — paragraphs. Run AFTER the inline passes so the
+  // paragraph content already has inline placeholders. The
+  // prose between consecutive non-blank lines is joined with a
+  // single space and wrapped in `<p class="theia-md-p">…</p>`.
+  // Lines containing a block-level placeholder (F/T/I/H/R) are
+  // emitted standalone, not folded into a paragraph.
+  //
+  // The recursive calls below (link text, table cells, header
+  // text) pass `{ wrapParagraphs: false }` so they don't double-
+  // wrap inline content in `<p>`. Only the top-level call wraps.
+  const paraHtml: string[] = [];
+  let withParaPh = withBoldPh;
+  if (opts.wrapParagraphs !== false) {
+    withParaPh = wrapParagraphs(withBoldPh, paraHtml);
+  }
+  work = withParaPh;
+  const escaped = escapeHtml(work);
+  // Restoration order:
+  //   1. Inline placeholders (B/C/L) — first, so any inline
+  //      placeholders that survive the work string (top-level
+  //      prose between block placeholders) are replaced. Inline
+  //      placeholders that live INSIDE the paragraph HTML
+  //      (paraHtml[]) are NOT yet replaced; they survive step 3.
+  //   2. Block-level placeholders (F/T/I/H/R) — top-level
+  //      fences, tables, lists, headers, and rules.
+  //   3. Paragraph placeholders (P) — the `<p>…</p>` HTML is
+  //      substituted; the prose inside may contain inline
+  //      placeholders that survived step 1.
+  //   4. Inline placeholders AGAIN — catches the ones inside
+  //      paragraph HTML that were emitted by step 3.
+  const boldPass1 = escaped.replace(/\u0000B(\d+)\u0000/g, (_, i: string) => boldHtml[Number(i)] ?? "");
+  const codePass1 = boldPass1.replace(/\u0000C(\d+)\u0000/g, (_, i: string) => codeHtml[Number(i)] ?? "");
+  const linkPass1 = codePass1.replace(/\u0000L(\d+)\u0000/g, (_, i: string) => linkHtml[Number(i)] ?? "");
+  const blocks = linkPass1
+    .replace(/\u0000F(\d+)\u0000/g, (_, i: string) => fenceHtml[Number(i)] ?? "")
+    .replace(/\u0000T(\d+)\u0000/g, (_, i: string) => tableHtml[Number(i)] ?? "")
+    .replace(/\u0000I(\d+)\u0000/g, (_, i: string) => listHtml[Number(i)] ?? "")
+    .replace(/\u0000H(\d+)\u0000/g, (_, i: string) => headerHtml[Number(i)] ?? "")
+    .replace(/\u0000R(\d+)\u0000/g, (_, i: string) => hrHtml[Number(i)] ?? "");
+  const withParagraphs = blocks.replace(/\u0000P(\d+)\u0000/g, (_, i: string) => paraHtml[Number(i)] ?? "");
+  // Inline pass 2: the paragraph HTML emitted above contains
+  // inline placeholders that need to be replaced now.
+  const boldPass2 = withParagraphs.replace(/\u0000B(\d+)\u0000/g, (_, i: string) => boldHtml[Number(i)] ?? "");
+  const codePass2 = boldPass2.replace(/\u0000C(\d+)\u0000/g, (_, i: string) => codeHtml[Number(i)] ?? "");
+  const linkPass2 = codePass2.replace(/\u0000L(\d+)\u0000/g, (_, i: string) => linkHtml[Number(i)] ?? "");
+  return linkPass2;
+}
+
+// UX-011 — wrap runs of consecutive non-blank prose lines in
+  // `<p class="theia-md-p">`. Lines containing a block-level
+  // placeholder (F/T/I/H/R) are emitted standalone, not folded
+  // into a paragraph. Prose on the same line as a placeholder
+  // is preserved: lines like "intro text\n\u0000F0\u0000\nmore
+  // text" become `<p>intro text</p>\n\u0000F0\u0000\n<p>more
+  // text</p>`.
+//
+// Lines inside a paragraph are joined with a single space.
+// This matches how prose is read on the web: a paragraph is
+  // one visual block, no surprise mid-line breaks.
+const BLOCK_PLACEHOLDER_RE = /\u0000[FTIHR]/;
+
+function wrapParagraphs(text: string, paraSink: string[]): string {
+  const lines = text.split("\n");
+  const out: string[] = [];
+  let buf: string[] = [];
+  const flush = (): void => {
+    if (buf.length === 0) return;
+    const joined = buf.join(" ").trim();
+    if (joined.length > 0) {
+      // The escaped prose is what ends up between the <p> tags.
+      // The wrapping `<p>…</p>` itself is restored at the end of
+      // the pipeline (placeholders are not re-escaped, only the
+      // prose inside the paragraph is).
+      paraSink.push(`<p class="theia-md-p">${escapeHtml(joined)}</p>`);
+      out.push(`\u0000P${paraSink.length - 1}\u0000`);
+    }
+    buf = [];
+  };
+  for (const line of lines) {
+    if (line.trim() === "") {
+      // Blank lines are paragraph boundaries. Flush any prose
+      // buffer; the next line (whether a placeholder or prose)
+      // starts a fresh block. No need to emit a literal blank
+      // — the placeholders are already separated by their own
+      // content.
+      flush();
+      continue;
+    }
+    // A line that is ONLY a placeholder (or only whitespace +
+    // a placeholder) is a standalone block; flush any prose
+    // buffer first.
+    if (BLOCK_PLACEHOLDER_RE.test(line) && line.replace(/[\s\d]/g, "").replace(/\u0000[FTIHR]\d*\u0000/g, "") === "") {
+      flush();
+      out.push(line);
+      continue;
+    }
+    // Mixed lines (prose + placeholder) get the prose folded
+    // into a paragraph and the placeholder emitted standalone
+    // on its own line. The placeholder line in our pipeline is
+    // always alone (other passes put each placeholder on its
+    // own line), so this branch is rarely hit — kept for
+    // robustness against future passes.
+    if (BLOCK_PLACEHOLDER_RE.test(line)) {
+      flush();
+      // The line may have prose before + after the placeholder;
+      // split it on the placeholder boundary. The current
+      // pipeline never produces such mixed lines, so we just
+      // emit the line verbatim.
+      out.push(line);
+      continue;
+    }
+    buf.push(line);
+  }
+  flush();
+  return out.join("\n");
 }
 
 // Render a GFM pipe-table from the three captured blocks. Each
@@ -249,7 +378,7 @@ function renderTable(headerBlock: string, sepLine: string, bodyBlock: string): s
   const thead = "<thead><tr>"
     + headerCells.map((c, i) => {
       const a = alignCells[i] ?? "left";
-      return `<th class="theia-md-th-${a}">${inlineMarkdownToHtml(c)}</th>`;
+      return `<th class="theia-md-th-${a}">${inlineMarkdownToHtml(c, { wrapParagraphs: false })}</th>`;
     }).join("")
     + "</tr></thead>";
   const rows = bodyBlock.trimEnd().split("\n").map((row) => {
@@ -258,7 +387,7 @@ function renderTable(headerBlock: string, sepLine: string, bodyBlock: string): s
     return "<tr>"
       + cells.map((c, i) => {
         const a = alignCells[i] ?? "left";
-        return `<td class="theia-md-td-${a}">${inlineMarkdownToHtml(c)}</td>`;
+        return `<td class="theia-md-td-${a}">${inlineMarkdownToHtml(c, { wrapParagraphs: false })}</td>`;
       }).join("")
       + "</tr>";
   }).join("");
@@ -329,7 +458,7 @@ function renderList(block: string): string {
       out.push(`<${it.ordered ? "ol" : "ul"}>`);
       stack.push({ indent: it.indent, ordered: it.ordered });
     }
-    out.push(`<li>${inlineMarkdownToHtml(it.text)}</li>`);
+    out.push(`<li>${inlineMarkdownToHtml(it.text, { wrapParagraphs: false })}</li>`);
   }
   // Close any still-open lists.
   while (stack.length > 0) {

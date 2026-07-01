@@ -20,5 +20,10 @@ import {
   microLabel,
 } from "../../../../apps/atlas/src/templates/paper.ts";
 
+// UX-008: GitHub owner/repo, single source of truth for all
+// outbound GitHub links (spec detail "Spec file" + code inventory
+// links). Update here if the repo moves.
+export const GITHUB_REPO = "hugomoraga/daedalus";
+
 export { tokens, escapeHtml, pageStyles, card, metric, tag, microLabel };
 export type { Tokens };

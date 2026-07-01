@@ -17,7 +17,7 @@
 
 import type { ProjectState } from "../types.ts";
 import { renderLayout } from "./layout.ts";
-import { escapeHtml, tag } from "./tokens.ts";
+import { escapeHtml, tag, GITHUB_REPO } from "./tokens.ts";
 import { inlineMarkdownToHtml } from "./spec.ts";
 
 export function renderOverview(state: ProjectState): string {
@@ -195,7 +195,15 @@ function renderCodeInventorySection(state: ProjectState): string {
   for (const kind of ["app", "package", "test"] as const) {
     const list = grouped.get(kind) ?? [];
     if (list.length === 0) continue;
-    const items = list.map((e) => `<li><code>${escapeHtml(e.name)}</code></li>`).join("");
+    // UX-008 P1-3: every inventory entry becomes a link to its
+    // directory in the repo. apps/* and packages/* → the dir;
+    // tests/* → the file (matching the spec detail link pattern).
+    const items = list.map((e) => {
+      const href = kind === "test"
+        ? `https://github.com/${GITHUB_REPO}/blob/main/tests/${e.name}`
+        : `https://github.com/${GITHUB_REPO}/tree/main/${kind}s/${e.name}`;
+      return `<li><a href="${escapeHtml(href)}"><code>${escapeHtml(e.name)}</code></a></li>`;
+    }).join("");
     parts.push(`<h3>${kind} (${list.length})</h3><ul>${items}</ul>`);
   }
   return section("Code inventory", parts.join(""), { id: "code-inventory" });

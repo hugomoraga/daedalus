@@ -72,6 +72,21 @@ test("AC-6: code inventory section lists apps + packages", async () => {
   assert.match(html, /package \(/);
 });
 
+// UX-008 P1-3: every code-inventory entry is wrapped in an <a>
+// pointing at its directory in the GitHub repo. apps/ and packages/
+// entries link to the directory; tests/ entries link to the file
+// (matching the spec detail link pattern).
+test("UX-008 P1-3: code inventory entries link to GitHub (apps / packages / tests)", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderOverview(state);
+  // At least one app entry becomes an <a> with a /tree/main/apps/ href.
+  assert.match(html, /href="https:\/\/github\.com\/hugomoraga\/daedalus\/tree\/main\/apps\//);
+  // At least one package entry becomes an <a> with a /tree/main/packages/ href.
+  assert.match(html, /href="https:\/\/github\.com\/hugomoraga\/daedalus\/tree\/main\/packages\//);
+  // Test entries become <a> with /blob/main/tests/ hrefs.
+  assert.match(html, /href="https:\/\/github\.com\/hugomoraga\/daedalus\/blob\/main\/tests\//);
+});
+
 test("AC-7: CLI commands section lists 5 use cases", async () => {
   const { state } = await parseRepo(FIXTURE);
   const html = renderOverview(state);

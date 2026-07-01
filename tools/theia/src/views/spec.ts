@@ -6,12 +6,7 @@
 
 import type { ProjectState, TaskItem } from "../types.ts";
 import { renderLayout } from "./layout.ts";
-import { escapeHtml } from "./tokens.ts";
-
-// GitHub owner/repo. Single source so the spec detail link target
-// stays consistent with the overview / code-inventory targets
-// (UX-008). Update here if the repo moves.
-const GITHUB_REPO = "hugomoraga/daedalus";
+import { escapeHtml, GITHUB_REPO } from "./tokens.ts";
 
 export function renderSpecDetail(slug: string, state: ProjectState): string {
   const card = state.specs.find((s) => s.slug === slug);

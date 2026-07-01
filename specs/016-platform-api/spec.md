@@ -304,18 +304,18 @@ T-01…T-N in `tasks.md` may begin only when **all** of the following hold:
 5. **The `registerApi` hook signature is locked in** (Q5 resolution) so modules can opt in without ambiguity.
 6. **The first consumer is named.** A concrete first caller (a Cloud Run job, an agent, a CI workflow, an integration) is identified, so the v0 surface has a real demand signal. v0 should not be built speculatively.
 
-> **Activation status (2026-07-01, post #115):**
+> **Activation status (2026-07-01, post #119):**
 >
 > | # | Gate | Status |
 > |---|---|---|
-> | 1 | Spec 016 ratified | ✅ Cleared by this PR (#115) |
-> | 2 | [ADR-010](../../governance/decisions/ADR-010-platform-api-driving-adapter.md) accepted | ⏳ Proposed; acceptance tracked in follow-up PR #116 |
-> | 3 | Policy Engine (Spec 009) wired for HTTP | ⏳ Tracked in follow-up PR; until cleared, write routes return `503` per AC-13 |
-> | 4 | CLI use case registry enumerated | ⏳ Tracked in follow-up PR; sets the AC-12 baseline |
-> | 5 | `registerApi(router, ctx) → void` hook signature | ✅ Q5 resolution locks this in spec §11; implementation follow-up tracks module opt-in |
-> | 6 | First consumer named | ⏳ Tracked in follow-up PR |
+> | 1 | Spec 016 ratified | ✅ Cleared by #115 |
+> | 2 | [ADR-010](../../governance/decisions/ADR-010-platform-api-driving-adapter.md) accepted | ✅ Cleared by #116 |
+> | 3 | Policy Engine (Spec 009) wired for HTTP | ⏳ Follow-up PR; until cleared, write routes return `503` per AC-13 |
+> | 4 | CLI use case registry enumerated | ✅ Cleared by #117 (`apps/cli/src/commands/registry.ts` exposes `CLI_HANDLERS` + `CLI_COMMAND_NAMES`; `apps/cli/tests/registry.test.ts` pins the invariants; `apps/cli/src/index.ts` consumes the registry) |
+> | 5 | `registerApi(router, ctx) → void` hook signature | ✅ Q5 resolution locks this in spec §11; module opt-in implementation tracked as a separate PR |
+> | 6 | First consumer named | ✅ Cleared by #119 — [ADR-013](../../governance/decisions/ADR-013-cloud-run-job-first-consumer.md) names **daily-financial-snapshot-job**: a single-tenant (tenant-0), daily-cadence (00:00 UTC), Cloud-Run-job cron that reads the live `FinancialSummary` projection + the last 24h of `FinancialRiskFlagged` events, then writes a `RevenueSnapshotGenerated` via `POST /v1/tenants/tenant-0/commands/revenue/snapshot`. Concrete read+write surface for Phase A and Phase B. |
 >
-> Per the spec's binding language (\"T-01…T-N … may begin only when all of the following hold\"), no implementation tasks are authorized until all six clear. PR #115 closes gate #1 and locks #5; the remaining four are tracked as separate PRs to keep each review scoped.
+> Per the spec's binding language (\"T-01…T-N … may begin only when all of the following hold\"), no implementation tasks are authorized until all six clear. PRs #115, #116, #117, #118, and #119 close gates #1, #2, #4, #5, #6. The remaining open gate is **#3** (Policy-Engine-wired-for-HTTP) — the last gate before T-01 may begin.
 
 ---
 

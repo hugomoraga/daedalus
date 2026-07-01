@@ -147,9 +147,43 @@ export function renderLayout(opts: { title: string; body: string }): string {
     .theia-backlog-affects { margin-top: 4px; }
     .theia-backlog-body { margin-top: 4px; }
     .theia-backlog-body-inner { margin-top: 4px; }
+    /* UX-011 — typography hierarchy. The body content uses the
+       canonical typography trio (Atlas AC-11) and the canonical
+       spacing scale. Headings get display font + 16/8 margins;
+       paragraphs get body font + 8px margin; the horizontal rule
+       is a single hairline. Same rule set works for any prose
+       surface that uses inlineMarkdownToHtml. */
+    .theia-backlog-body-inner {
+      font-family: var(--body);
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--ink);
+    }
     .theia-backlog-body-inner > :first-child { margin-top: 0; }
     .theia-backlog-body-inner > :last-child { margin-bottom: 0; }
-    .theia-backlog-body-inner p { margin: 8px 0; }
+    .theia-backlog-body-inner h1,
+    .theia-backlog-body-inner h2,
+    .theia-backlog-body-inner h3,
+    .theia-backlog-body-inner h4,
+    .theia-backlog-body-inner h5,
+    .theia-backlog-body-inner h6 {
+      font-family: var(--display);
+      font-weight: 500;
+      margin-top: 16px;
+      margin-bottom: 8px;
+    }
+    .theia-backlog-body-inner .theia-md-h1 { font-size: 24px; letter-spacing: -0.02em; }
+    .theia-backlog-body-inner .theia-md-h2 { font-size: 20px; letter-spacing: -0.02em; }
+    .theia-backlog-body-inner .theia-md-h3 { font-size: 16px; }
+    .theia-backlog-body-inner .theia-md-h4 { font-size: 14px; }
+    .theia-backlog-body-inner .theia-md-h5 { font-size: 13px; color: var(--neutral); }
+    .theia-backlog-body-inner .theia-md-h6 { font-size: 12px; color: var(--neutral); }
+    .theia-backlog-body-inner p.theia-md-p { margin: 8px 0; }
+    .theia-backlog-body-inner hr.theia-md-hr {
+      margin: 16px 0;
+      border: none;
+      border-top: 1px solid var(--rule);
+    }
     .theia-backlog-body-inner pre.theia-code-block {
       margin: 8px 0;
       padding: 8px 12px;

@@ -26,12 +26,18 @@ every required field plus the body.
 A fixture entry with an Affects field. Used to verify the
 optional field is captured when present.
 
+### Why
+
 The body exercises **bold**, `inline code`, a
 [link to the spec](specs/001-ratified-p2/spec.md), a fenced
 code block, a bullet list, and a small table so the overview
-view (UX-008 P1-1 + UX-009) can prove the inline + block
-markdown passes render the body correctly and do not leak
-raw `**` / `` ` `` characters.
+view (UX-008 P1-1 + UX-009 + UX-011) can prove the inline +
+block markdown passes render the body correctly and do not
+leak raw `**` / `` ` `` characters.
+
+The block-level markers are wrapped in ATX headers (UX-011)
+so the parser + view tests catch regressions on the heading
+pre-pass.
 
 ```bash
 not ok 213 - AC-6: parseCodeInventory
@@ -47,6 +53,13 @@ Branches cleaned:
 | --- | --- |
 | a | yes |
 | b | no |
+
+---
+
+### Acceptance
+
+Tests stay green; the affected surface (`apps/atlas/src/`)
+keeps its existing visual discipline.
 
 ---
 

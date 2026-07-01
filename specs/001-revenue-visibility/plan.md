@@ -1,10 +1,10 @@
 # Plan — Revenue Visibility v1 (implementation)
 
-**Status:** Draft · implementation plan for [Spec 001](./spec.md), v1 (full slice)
+**Status:** Ratified · implementation plan for [Spec 001](./spec.md), v1 (full slice) — **SHIPPED** in PR #13 (`011-revenue-visibility-v1`, merged `ead20b9`, 2026-06-22). T-01..T-16 ✅, evidence run executed.
 **Goal:** Complete the Revenue Visibility module — the full revenue lifecycle, expenses, snapshots, and a financial summary with margin, runway, and basic state. Validate the alert pattern with tenant-injected thresholds.
 **Conforms to:** [Technical Principles](../../memory/technical-principles.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md)
-**Version:** 0.2.0
-**Last updated:** 2026-06-14
+**Version:** 1.0.0
+**Last updated:** 2026-07-01
 
 > v0 (`@daedalus/revenue-visibility` v0) implemented only the cross-module composition: derive `RevenueEstimateCreated` from `ProposalGenerated` via `followFrom()`. This v1 completes the rest of Spec 001: `confirmed`/`received` lifecycle, expenses, snapshots, financial summary, and alerts.
 

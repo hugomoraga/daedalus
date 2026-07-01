@@ -20,17 +20,20 @@ import { renderLayout } from "./layout.ts";
 import { escapeHtml, tag } from "./tokens.ts";
 
 export function renderOverview(state: ProjectState): string {
+  // Section order is intentional — UX-008 reorders by usefulness for
+  // a founder opening the page (drift first, low-signal catalog last).
+  // No CSS layout change; only the render order and section IDs.
   const body = [
-    renderPhaseTimeline(state),
-    renderSpecGrid(state),
     renderDriftWidget(state),
+    renderSpecGrid(state),
+    renderTestsSection(state),
+    renderBlockersSection(state),
     renderAdrsSection(state),
     renderBacklogSection(state),
+    renderPhaseTimeline(state),
+    renderDiffSection(state),
     renderCodeInventorySection(state),
     renderUseCasesSection(state),
-    renderTestsSection(state),
-    renderDiffSection(state),
-    renderBlockersSection(state),
   ].join("\n");
   return renderLayout({ title: "Overview · Theia", body });
 }
@@ -52,12 +55,13 @@ function renderDriftWidget(state: ProjectState): string {
   return section(
     "Specs needing attention",
     `<ul class="theia-mono">${items}</ul>`,
+    { id: "specs-needing-attention" },
   );
 }
 
 function renderPhaseTimeline(state: ProjectState): string {
   if (state.phases.length === 0) {
-    return section("Phases", "<p class=\"muted\">No roadmap phases detected.</p>");
+    return section("Phases", "<p class=\"muted\">No roadmap phases detected.</p>", { id: "phases" });
   }
   const maxPhase = Math.max(...state.phases.map((p) => p.number));
   const cells: string[] = [];
@@ -70,12 +74,12 @@ function renderPhaseTimeline(state: ProjectState): string {
     const titlePart = phase !== undefined ? `<br><small>${escapeHtml(phase.title)}</small>` : "";
     cells.push(`<a class="${classes.join(" ")}" href="/phases/${n}">Phase ${n}${titlePart}</a>`);
   }
-  return section(`Phases (${state.phases.length})`, `<div style="display:flex; gap:8px;">${cells.join("")}</div>`);
+  return section(`Phases (${state.phases.length})`, `<div style="display:flex; gap:8px;">${cells.join("")}</div>`, { id: "phases" });
 }
 
 function renderSpecGrid(state: ProjectState): string {
   if (state.specs.length === 0) {
-    return section("Specs", "<p class=\"muted\">No specs detected.</p>");
+    return section("Specs", "<p class=\"muted\">No specs detected.</p>", { id: "specs" });
   }
   const sorted = [...state.specs].sort((a, b) => {
     if (a.status !== b.status && a.status === "Ratified" && b.status !== "Ratified") return -1;
@@ -100,12 +104,13 @@ function renderSpecGrid(state: ProjectState): string {
   return section(
     `Specs (${state.specs.length})`,
     `<div class="theia-grid">${cards}</div>`,
+    { id: "specs" },
   );
 }
 
 function renderAdrsSection(state: ProjectState): string {
   if (state.adrs.length === 0) {
-    return section("ADRs", "<p class=\"muted\">No ADRs detected.</p>");
+    return section("ADRs", "<p class=\"muted\">No ADRs detected.</p>", { id: "adrs" });
   }
   const rows = state.adrs.map((a) => {
     const tone = a.status === "Accepted" ? "ok" : a.status === "Superseded" ? "neutral" : "neutral";
@@ -119,6 +124,7 @@ function renderAdrsSection(state: ProjectState): string {
   return section(
     `ADRs (${state.adrs.length})`,
     `<table style="width:100%; border-collapse: collapse;">${rows}</table>`,
+    { id: "adrs" },
   );
 }
 
@@ -129,7 +135,7 @@ function renderAdrsSection(state: ProjectState): string {
 // collapsed `<details>` with the prose body.
 function renderBacklogSection(state: ProjectState): string {
   if (state.backlog.length === 0) {
-    return section("Backlog", "<p class=\"muted\">No backlog detected.</p>");
+    return section("Backlog", "<p class=\"muted\">No backlog detected.</p>", { id: "backlog" });
   }
   // Group by status, preserving a stable in-group order (sorted by id).
   const order: ReadonlyArray<string> = ["open", "in-progress", "wontfix", "done"];
@@ -171,12 +177,12 @@ function renderBacklogSection(state: ProjectState): string {
     parts.push(`<h4 style="margin-top: 16px; margin-bottom: 8px;">${tag(key, tone)} <span class="muted">(${list.length})</span></h4>`);
     parts.push(`<table style="width:100%; border-collapse: collapse;">${rows}</table>`);
   }
-  return section(`Backlog (${state.backlog.length})`, parts.join(""));
+  return section(`Backlog (${state.backlog.length})`, parts.join(""), { id: "backlog" });
 }
 
 function renderCodeInventorySection(state: ProjectState): string {
   if (state.codeInventory.length === 0) {
-    return section("Code", "<p class=\"muted\">No code inventory.</p>");
+    return section("Code", "<p class=\"muted\">No code inventory.</p>", { id: "code" });
   }
   const grouped = new Map<string, typeof state.codeInventory>();
   for (const entry of state.codeInventory) {
@@ -191,15 +197,15 @@ function renderCodeInventorySection(state: ProjectState): string {
     const items = list.map((e) => `<li><code>${escapeHtml(e.name)}</code></li>`).join("");
     parts.push(`<h3>${kind} (${list.length})</h3><ul>${items}</ul>`);
   }
-  return section("Code inventory", parts.join(""));
+  return section("Code inventory", parts.join(""), { id: "code-inventory" });
 }
 
 function renderUseCasesSection(state: ProjectState): string {
   if (state.useCases.length === 0) {
-    return section("CLI commands", "<p class=\"muted\">No commands detected.</p>");
+    return section("CLI commands", "<p class=\"muted\">No commands detected.</p>", { id: "cli-commands" });
   }
   const items = state.useCases.map((u) => `<li><code>${escapeHtml(u.command)}</code></li>`).join("");
-  return section(`CLI commands (${state.useCases.length})`, `<ul>${items}</ul>`);
+  return section(`CLI commands (${state.useCases.length})`, `<ul>${items}</ul>`, { id: "cli-commands" });
 }
 
 function renderTestsSection(state: ProjectState): string {
@@ -208,12 +214,14 @@ function renderTestsSection(state: ProjectState): string {
     return section(
       "Tests",
       `<div class="theia-card theia-mono">running…</div>`,
+      { id: "tests" },
     );
   }
   if (t.total === null) {
     return section(
       "Tests",
       `<div class="theia-warn-banner">tests unavailable: ${escapeHtml(t.reason ?? "unknown")}</div>`,
+      { id: "tests" },
     );
   }
   const ok = t.fail === 0;
@@ -229,6 +237,7 @@ function renderTestsSection(state: ProjectState): string {
       <div class="theia-mono">${t.pass}/${t.total} pass${t.fail !== null && t.fail > 0 ? `, ${t.fail} fail` : ""}</div>
       ${failList}
     </div>`,
+    { id: "tests" },
   );
 }
 
@@ -238,6 +247,7 @@ function renderDiffSection(state: ProjectState): string {
     return section(
       "Diff",
       `<p class="muted">${escapeHtml(d.reason ?? "no diff available")}</p>`,
+      { id: "diff" },
     );
   }
   const commitList = d.commits.length === 0
@@ -250,6 +260,7 @@ function renderDiffSection(state: ProjectState): string {
       <div class="theia-mono">${d.filesChanged} files · +${d.insertions} / -${d.deletions}</div>
       ${commitList}
     </div>`,
+    { id: "diff" },
   );
 }
 
@@ -268,11 +279,15 @@ function renderBlockersSection(state: ProjectState): string {
     const items = state.nextUnlocks.map((u) => `<li><code>${escapeHtml(u.slug)}</code> → would unblock ${u.unlocksCount}</li>`).join("");
     parts.push(`<h3>Next unlocks</h3><ul>${items}</ul>`);
   }
-  return section("Blockers + next unlocks", parts.join(""));
+  return section("Blockers + next unlocks", parts.join(""), { id: "blockers" });
 }
 
-function section(title: string, body: string): string {
-  return `<section class="theia-section">
+function section(title: string, body: string, opts: { id?: string } = {}): string {
+  // UX-008: every section gets a stable id so a future jump-nav
+  // (UX-009+) can deep-link without a layout change; browsers can
+  // already resolve `#specs` / `#tests` / etc. today.
+  const idAttr = opts.id !== undefined ? ` id="${escapeHtml(opts.id)}"` : "";
+  return `<section class="theia-section"${idAttr}>
     <h3>${escapeHtml(title)}</h3>
     ${body}
   </section>`;

@@ -199,16 +199,19 @@ test("AC-4: drift widget lists each (spec, issue) pair when populated", async ()
   assert.match(html, /Unknown status: oops/);
 });
 
-test("AC-4: drift widget renders between Specs and ADRs sections", async () => {
+test("AC-4 + UX-008: drift widget renders before Specs (signal-first order)", async () => {
   const { state } = await parseRepo(FIXTURE);
   state.specs[0]!.conventionIssues = ["tasks.md missing"];
   const html = renderOverview(state);
-  const specsIdx = html.indexOf("Specs (");
   const driftIdx = html.indexOf("Specs needing attention");
+  const specsIdx = html.indexOf("Specs (");
   const adrsIdx = html.indexOf("ADRs (");
   assert.ok(specsIdx !== -1 && driftIdx !== -1 && adrsIdx !== -1);
-  assert.ok(specsIdx < driftIdx, "drift widget should appear after Specs");
-  assert.ok(driftIdx < adrsIdx, "drift widget should appear before ADRs");
+  // UX-008: when a spec needs attention, the drift widget is the
+  // very first signal — it must appear BEFORE the spec grid so a
+  // founder opening the page sees the action item before browsing.
+  assert.ok(driftIdx < specsIdx, "drift widget should appear before Specs");
+  assert.ok(specsIdx < adrsIdx, "Specs should still appear before ADRs");
 });
 
 // ----------------------------------------------------------------------------
@@ -363,8 +366,66 @@ test("UX-006: done tasks render the entire block with strikethrough; the mark st
 });
 
 // ----------------------------------------------------------------------------
-// UX-007 — spec detail polish
+// UX-008 — overview polish
 // ----------------------------------------------------------------------------
+
+test("UX-008: every overview section carries a stable id for deep linking", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderOverview(state);
+  // The founder's-eye order (UX-008): drift → specs → tests → blockers
+  // → adrs → backlog → phases → diff → code → cli. The id="…" lives
+  // on the <section> wrapper.
+  for (const id of [
+    "specs-needing-attention",
+    "specs",
+    "tests",
+    "blockers",
+    "adrs",
+    "backlog",
+    "phases",
+    "diff",
+    "code-inventory",
+    "cli-commands",
+  ]) {
+    assert.match(html, new RegExp(`<section class="theia-section" id="${id}">`));
+  }
+});
+
+test("UX-008: overview section order matches the founder's-eye hierarchy", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  // Inject drift to make sure the widget renders (otherwise it's
+  // hidden by renderDriftWidget's early-return).
+  state.specs[0]!.conventionIssues = ["tasks.md missing"];
+  const html = renderOverview(state);
+  const positions = {
+    drift: html.indexOf("Specs needing attention"),
+    specs: html.indexOf("Specs ("),
+    tests: html.indexOf("Tests"),
+    blockers: html.indexOf("Blockers"),
+    adrs: html.indexOf("ADRs ("),
+    backlog: html.indexOf("Backlog ("),
+    phases: html.indexOf("Phases ("),
+    diff: html.indexOf("Diff ("),
+    code: html.indexOf("Code inventory"),
+    cli: html.indexOf("CLI commands ("),
+  };
+  for (const [k, v] of Object.entries(positions)) {
+    assert.ok(v !== -1, `${k} section must render`);
+  }
+  const ordered = Object.entries(positions).sort((a, b) => a[1] - b[1]).map(([k]) => k);
+  assert.deepEqual(ordered, [
+    "drift",
+    "specs",
+    "tests",
+    "blockers",
+    "adrs",
+    "backlog",
+    "phases",
+    "diff",
+    "code",
+    "cli",
+  ]);
+});
 
 test("UX-007: done task body is dimmed (not struck through); only the id carries strikethrough", async () => {
   const { state } = await parseRepo(FIXTURE);

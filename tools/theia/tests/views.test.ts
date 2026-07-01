@@ -369,6 +369,21 @@ test("UX-006: done tasks render the entire block with strikethrough; the mark st
 // UX-008 — overview polish
 // ----------------------------------------------------------------------------
 
+test("UX-008 P1-1: backlog body runs through the inline-markdown helper", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderOverview(state);
+  // Fixture UX-001 body contains '**bold**' → <strong>.
+  assert.match(html, /<strong>bold<\/strong>/);
+  // Fixture UX-001 body contains '\`inline code\`' → <code>.
+  assert.match(html, /<code>inline code<\/code>/);
+  // Fixture UX-001 body contains '[link to the spec](specs/...)' → <a>.
+  assert.match(html, /<a href="specs\/001-ratified-p2\/spec\.md">link to the spec<\/a>/);
+  // Raw markdown must NOT leak into the rendered HTML.
+  assert.doesNotMatch(html, /\*\*bold\*\*/);
+  assert.doesNotMatch(html, /`inline code`/);
+  assert.doesNotMatch(html, /\[link to the spec\]/);
+});
+
 test("UX-008: every overview section carries a stable id for deep linking", async () => {
   const { state } = await parseRepo(FIXTURE);
   const html = renderOverview(state);

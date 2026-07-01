@@ -26,6 +26,12 @@ every required field plus the body.
 A fixture entry with an Affects field. Used to verify the
 optional field is captured when present.
 
+The body exercises **bold**, `inline code`, and a
+[link to the spec](specs/001-ratified-p2/spec.md) so the
+overview view (UX-008 P1-1) can prove the inline-markdown
+helper renders the body and does not leak raw `**` / `` ` ``
+characters.
+
 ---
 
 ## UX-002 — fixture UX entry (done)

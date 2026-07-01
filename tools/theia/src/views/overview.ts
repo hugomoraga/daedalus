@@ -18,6 +18,7 @@
 import type { ProjectState } from "../types.ts";
 import { renderLayout } from "./layout.ts";
 import { escapeHtml, tag } from "./tokens.ts";
+import { inlineMarkdownToHtml } from "./spec.ts";
 
 export function renderOverview(state: ProjectState): string {
   // Section order is intentional — UX-008 reorders by usefulness for
@@ -163,7 +164,7 @@ function renderBacklogSection(state: ProjectState): string {
     const rows = list.map((b) => {
       const kindTone = b.kind === "bug" ? "alert" : b.kind === "deprecation" ? "alert" : "neutral";
       const body = b.body.length > 0
-        ? `<details style="margin-top: 4px;"><summary class="muted">context</summary><div style="margin-top: 4px;">${escapeHtml(b.body)}</div></details>`
+        ? `<details style="margin-top: 4px;"><summary class="muted">context</summary><div style="margin-top: 4px;">${inlineMarkdownToHtml(b.body)}</div></details>`
         : "";
       const affects = b.affects !== null
         ? `<div class="theia-mono" style="margin-top: 4px;">affects: <code>${escapeHtml(b.affects)}</code></div>`

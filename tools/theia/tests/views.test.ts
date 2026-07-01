@@ -155,6 +155,30 @@ test("UX-008 P2-1: header .brand has a styled wordmark + muted subtitle", async 
   assert.match(html, /\.brand small \{[^}]*color: var\(--neutral\)/);
 });
 
+// UX-008 P3 — accessibility hygiene from ui-ux-pro-max checklist
+// (items aligned with the Daedalus canon).
+test("UX-008 P3-1: hover transitions are declared on interactive elements", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderOverview(state);
+  assert.match(html, /\.theia-card-link[^{]*\{[^}]*transition:/);
+  assert.match(html, /\.theia-phase-cell[^{]*\{[^}]*transition:/);
+  assert.match(html, /\.theia-task-ac[^{]*\{[^}]*transition:/);
+});
+
+test("UX-008 P3-2: keyboard focus is visible (a:focus-visible gets an outline)", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderOverview(state);
+  assert.match(html, /a:focus-visible[^{]*\{[^}]*outline: 2px solid var\(--accent\)/);
+});
+
+test("UX-008 P3-3: prefers-reduced-motion is respected (transitions collapse, animations stop)", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderOverview(state);
+  assert.match(html, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.match(html, /animation-play-state: paused !important/);
+  assert.match(html, /transition-duration: 0\.001ms !important/);
+});
+
 test("spec detail view for an unknown slug renders a 'not found' page", async () => {
   const { state } = await parseRepo(FIXTURE);
   const html = renderSpecDetail("999-does-not-exist", state);

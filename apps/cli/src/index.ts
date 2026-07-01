@@ -11,17 +11,8 @@ import { JsonOpportunityStoreAdapter } from "@daedalus/opportunity-discovery/ada
 import { FilesystemPolicyStore, FilesystemRuleSetLoaderAdapter } from "@daedalus/core/adapters";
 import { defaultTenantId } from "../../../config/tenants/index.ts";
 import { renderHelp } from "./commands/help.ts";
-import { handlers as leadHandlers } from "./commands/lead.ts";
-import { handlers as proposalHandlers } from "./commands/proposal.ts";
-import { handlers as proposalDraftHandlers } from "./commands/proposal-draft.ts";
-import { handlers as valueChainHandlers } from "./commands/value-chain.ts";
-import { handlers as opportunityHandlers } from "./commands/opportunity.ts";
-import { handlers as revenueHandlers } from "./commands/revenue.ts";
-import { handlers as workflowHandlers } from "./commands/workflow.ts";
-import { handlers as eventsHandlers } from "./commands/events.ts";
-import { handlers as rulesHandlers } from "./commands/rules.ts";
-import { handlers as obligationsHandlers } from "./commands/obligations.ts";
-import type { CommandHandler, Deps } from "./commands/types.ts";
+import { CLI_HANDLERS } from "./commands/registry.ts";
+import type { Deps } from "./commands/types.ts";
 
 const DATA_DIR = ".data";
 
@@ -38,21 +29,6 @@ function buildDeps(): Deps {
     actor: "cli",
   };
 }
-
-const HANDLERS = new Map<string, CommandHandler>(
-  [
-    ...leadHandlers,
-    ...proposalHandlers,
-    ...proposalDraftHandlers,
-    ...valueChainHandlers,
-    ...opportunityHandlers,
-    ...revenueHandlers,
-    ...workflowHandlers,
-    ...eventsHandlers,
-    ...rulesHandlers,
-    ...obligationsHandlers,
-  ],
-);
 
 async function main(): Promise<void> {
   const { values, positionals } = parseArgs({
@@ -97,7 +73,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  const handler = HANDLERS.get(command);
+  const handler = CLI_HANDLERS.get(command);
   if (handler === undefined) {
     renderHelp();
     process.exitCode = 1;

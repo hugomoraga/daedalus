@@ -48,22 +48,33 @@ type ObligationEvent = {
 };
 
 // Seed: 1 pending (due in 30d), 1 due-soon (due in 3d), 1 met, 1 missed.
+//
+// Dates are computed relative to `now` so the panel's "Due in next 7 days"
+// section always has something to render regardless of wall-clock drift. The
+// previous version hardcoded absolute timestamps ("2026-06-21", etc.) that
+// only made sense if the test ran within ~7 days of 2026-06-21; the panel
+// reads `new Date().toISOString()` at render time, so the relative offsets
+// are the only time-coherent way to keep this AC deterministic.
+const DAY_MS = 24 * 60 * 60 * 1000;
+const NOW = Date.now();
+const T0 = new Date(NOW - 12 * DAY_MS).toISOString();
+const DUE_PENDING = new Date(NOW + 30 * DAY_MS).toISOString();
+const DUE_SOON = new Date(NOW + 3 * DAY_MS).toISOString();
+const DUE_MISSED = new Date(NOW - 6 * DAY_MS).toISOString();
+const DUE_MISSED_EARLIER = new Date(NOW - 17 * DAY_MS).toISOString();
+
 function complianceEvents(): ObligationEvent[] {
-  const t0 = "2026-06-21T09:00:00.000Z";
-  const duePending = "2026-07-21T00:00:00.000Z";
-  const dueSoon = "2026-06-24T00:00:00.000Z";
-  const dueMissed = "2026-06-15T00:00:00.000Z";
   return [
     // 1. Pending far future
     {
       eventId: "obl-1-due", type: "ObligationDue", tenantId: "tenant-0",
-      occurredAt: t0, actor: "engine", causationId: null, correlationId: "c-1",
+      occurredAt: T0, actor: "engine", causationId: null, correlationId: "c-1",
       payload: {
         obligationId: "obl-iva-monthly",
         obligationHumanName: "Monthly IVA filing",
         triggerEventId: "evt-1",
         triggerEventType: "InvoiceIssued",
-        dueAt: duePending,
+        dueAt: DUE_PENDING,
         ruleSetId: "sii-iva-2026",
         ruleSetVersion: "0.1.0",
         requiredHumanAction: "file",
@@ -72,13 +83,13 @@ function complianceEvents(): ObligationEvent[] {
     // 2. Due-soon + has an evaluation recorded
     {
       eventId: "obl-2-due", type: "ObligationDue", tenantId: "tenant-0",
-      occurredAt: t0, actor: "engine", causationId: null, correlationId: "c-2",
+      occurredAt: T0, actor: "engine", causationId: null, correlationId: "c-2",
       payload: {
         obligationId: "obl-retention-monthly",
         obligationHumanName: "Monthly tax retention",
         triggerEventId: "evt-2",
         triggerEventType: "PaymentReceived",
-        dueAt: dueSoon,
+        dueAt: DUE_SOON,
         ruleSetId: "sii-retention-2026",
         ruleSetVersion: "0.2.0",
         requiredHumanAction: "pay",
@@ -86,7 +97,7 @@ function complianceEvents(): ObligationEvent[] {
     },
     {
       eventId: "obl-2-eval", type: "ObligationEvaluationRecorded", tenantId: "tenant-0",
-      occurredAt: t0, actor: "policy-engine", causationId: "obl-2-due", correlationId: "c-2",
+      occurredAt: T0, actor: "policy-engine", causationId: "obl-2-due", correlationId: "c-2",
       payload: {
         obligationId: "obl-retention-monthly",
         outcome: "escalate",
@@ -99,13 +110,13 @@ function complianceEvents(): ObligationEvent[] {
     // 3. Met (due in past, then met)
     {
       eventId: "obl-3-due", type: "ObligationDue", tenantId: "tenant-0",
-      occurredAt: "2026-06-10T09:00:00.000Z", actor: "engine", causationId: null, correlationId: "c-3",
+      occurredAt: DUE_MISSED_EARLIER, actor: "engine", causationId: null, correlationId: "c-3",
       payload: {
         obligationId: "obl-ppd",
         obligationHumanName: "PPD annual filing",
         triggerEventId: "evt-3",
         triggerEventType: "InvoiceIssued",
-        dueAt: dueMissed,
+        dueAt: DUE_MISSED,
         ruleSetId: "sii-ppd-2026",
         ruleSetVersion: "0.1.0",
         requiredHumanAction: "file",
@@ -113,19 +124,19 @@ function complianceEvents(): ObligationEvent[] {
     },
     {
       eventId: "obl-3-met", type: "ObligationMet", tenantId: "tenant-0",
-      occurredAt: "2026-06-12T09:00:00.000Z", actor: "founder", causationId: "obl-3-due", correlationId: "c-3",
+      occurredAt: new Date(NOW - 4 * DAY_MS).toISOString(), actor: "founder", causationId: "obl-3-due", correlationId: "c-3",
       payload: { obligationId: "obl-ppd" },
     },
     // 4. Missed (due in past, no met event)
     {
       eventId: "obl-4-due", type: "ObligationDue", tenantId: "tenant-0",
-      occurredAt: "2026-05-15T09:00:00.000Z", actor: "engine", causationId: null, correlationId: "c-4",
+      occurredAt: DUE_MISSED_EARLIER, actor: "engine", causationId: null, correlationId: "c-4",
       payload: {
         obligationId: "obl-f22",
         obligationHumanName: "F22 annual return",
         triggerEventId: "evt-4",
         triggerEventType: "InvoiceIssued",
-        dueAt: dueMissed,
+        dueAt: DUE_MISSED,
         ruleSetId: "sii-f22-2026",
         ruleSetVersion: "0.1.0",
         requiredHumanAction: "file",
@@ -205,13 +216,13 @@ test("AC-9 + tenant isolation: tenant-other's compliance never renders tenant-0'
   await seedTenant("tenant-other", [
     {
       eventId: "other-due", type: "ObligationDue", tenantId: "tenant-other",
-      occurredAt: "2026-06-21T09:00:00.000Z", actor: "engine", causationId: null, correlationId: "c-other",
+      occurredAt: new Date(NOW - 12 * DAY_MS).toISOString(), actor: "engine", causationId: null, correlationId: "c-other",
       payload: {
         obligationId: "obl-other-1",
         obligationHumanName: "Other-tenancy obligation",
         triggerEventId: "evt-o-1",
         triggerEventType: "InvoiceIssued",
-        dueAt: "2027-01-01T00:00:00.000Z",
+        dueAt: new Date(NOW + 180 * DAY_MS).toISOString(),
         ruleSetId: "other-rules",
         ruleSetVersion: "0.1.0",
         requiredHumanAction: "review",

@@ -463,6 +463,26 @@ test("UX-008 P1-4: not-fully-done spec detail omits the summary line", async () 
   // The summary line's distinctive phrase ("tasks done") must NOT appear.
   assert.doesNotMatch(html, /tasks done/);
 });
+
+// UX-008 P1-4 — section label adapts. If the spec uses
+// `## PR N` headings (Spec 015 convention), the summary says
+// "N PRs". If the spec uses numeric (`## 1.`) or arbitrary
+// headings (Spec 015 itself is the canonical example), the
+// summary says "N sections".
+test("UX-008 P1-4: section label says 'sections' when headings aren't PR-prefixed", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const card = state.specs.find((s) => s.slug === "001-ratified-p2");
+  assert.ok(card !== undefined);
+  card.tasksDone = card.tasksTotal;
+  card.planDone = card.planTotal;
+  // Replace every task's section with a non-PR prefix.
+  card.taskList = card.taskList.map((t) => ({ ...t, section: `Block ${Math.max(1, Math.floor(Math.random() * 9))}` }));
+  // Dedupe the sections so the count is deterministic.
+  card.taskList = card.taskList.map((t, i) => ({ ...t, section: `Block ${(i % 3) + 1}` }));
+  const html = renderSpecDetail("001-ratified-p2", state);
+  assert.match(html, /sections ·/);
+  assert.doesNotMatch(html, /PRs ·/);
+});
 test("UX-008 P1-2: CLI commands are grouped by colon-prefix", async () => {
   const { state } = await parseRepo(FIXTURE);
   const html = renderOverview(state);

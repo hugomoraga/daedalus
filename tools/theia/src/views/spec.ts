@@ -30,12 +30,20 @@ export function renderSpecDetail(slug: string, state: ProjectState): string {
   // right under the progress bar so the founder doesn't have to scroll
   // through N identical [x] tasks to learn what they need to know:
   //   "8 PRs · 32/32 tasks done · Ratified Phase 2 · v1.0.0"
-  // The "PRs" count is the number of `## PR N` sections in the
-  // parsed taskList — the natural unit of work for a shipped spec.
-  const prCount = new Set(card.taskList.map((t) => t.section).filter((s) => /^PR \d+/.test(s))).size;
+  // The count label adapts: if every section starts with "PR " (the
+  // Spec 015 convention), say "PRs"; otherwise say "sections" (some
+  // specs use `## 1.`, `## 2.` numeric headings — Spec 015 itself is
+  // the canonical example since it's the spec that defines the
+  // convention, not an instance of it).
+  const sections = new Set(card.taskList.map((t) => t.section));
+  const allPrSections = sections.size > 0 && [...sections].every((s) => /^PR \d+/.test(s));
+  const sectionCount = sections.size;
+  const sectionLabel = allPrSections
+    ? `PR${sectionCount === 1 ? "" : "s"}`
+    : `section${sectionCount === 1 ? "" : "s"}`;
   const isFullyDone = total > 0 && done === total;
   const summaryLine = isFullyDone
-    ? `<div class="theia-mono" style="margin-top: 8px;">${prCount} PR${prCount === 1 ? "" : "s"} · ${done}/${total} tasks done · ${escapeHtml(card.status)}${card.phase !== null ? ` Phase ${card.phase}` : ""} · v${escapeHtml(card.version ?? "?")}</div>`
+    ? `<div class="theia-mono" style="margin-top: 8px;">${sectionCount} ${sectionLabel} · ${done}/${total} tasks done · ${escapeHtml(card.status)}${card.phase !== null ? ` Phase ${card.phase}` : ""} · v${escapeHtml(card.version ?? "?")}</div>`
     : "";
   const body = `
     <section class="theia-section">

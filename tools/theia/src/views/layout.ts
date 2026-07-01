@@ -122,6 +122,90 @@ export function renderLayout(opts: { title: string; body: string }): string {
         transition-duration: 0.001ms !important;
       }
     }
+
+    /* UX-009 — Backlog section. The 4-px-tall padding on every
+       row made the section heavy (13 historical done rows × ~3
+       visible lines = 40+ lines of table before the working
+       states). New token-disciplined rules: rows sit on hairline
+       rules (the canonical card-grid pattern from the spec cards),
+       the title cell gets a bit more breathing room, and the
+       collapsed done group carries its own affordance. */
+    .theia-backlog-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .theia-backlog-row td {
+      padding: 8px 12px;
+      vertical-align: top;
+    }
+    .theia-backlog-row + .theia-backlog-row td {
+      border-top: 1px solid var(--rule);
+    }
+    .theia-backlog-id { white-space: nowrap; }
+    .theia-backlog-kind { white-space: nowrap; }
+    .theia-backlog-cell { line-height: 1.5; }
+    .theia-backlog-affects { margin-top: 4px; }
+    .theia-backlog-body { margin-top: 4px; }
+    .theia-backlog-body-inner { margin-top: 4px; }
+    .theia-backlog-body-inner > :first-child { margin-top: 0; }
+    .theia-backlog-body-inner > :last-child { margin-bottom: 0; }
+    .theia-backlog-body-inner p { margin: 8px 0; }
+    .theia-backlog-body-inner pre.theia-code-block {
+      margin: 8px 0;
+      padding: 8px 12px;
+      background: var(--card);
+      border-left: 2px solid var(--neutral);
+      font-size: 12px;
+      overflow-x: auto;
+    }
+    .theia-backlog-body-inner code {
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+    .theia-backlog-body-inner ul,
+    .theia-backlog-body-inner ol {
+      margin: 8px 0;
+      padding-left: 24px;
+    }
+    .theia-backlog-body-inner li { margin: 4px 0; }
+    .theia-backlog-body-inner table.theia-md-table {
+      margin: 8px 0;
+      border-collapse: collapse;
+      width: auto;
+    }
+    .theia-backlog-body-inner .theia-md-th-left,
+    .theia-backlog-body-inner .theia-md-td-left { text-align: left; }
+    .theia-backlog-body-inner .theia-md-th-center,
+    .theia-backlog-body-inner .theia-md-td-center { text-align: center; }
+    .theia-backlog-body-inner .theia-md-th-right,
+    .theia-backlog-body-inner .theia-md-td-right { text-align: right; }
+    .theia-backlog-body-inner .theia-md-table th,
+    .theia-backlog-body-inner .theia-md-table td {
+      padding: 4px 8px;
+      border-bottom: 1px solid var(--rule);
+      font-size: 12px;
+    }
+    .theia-backlog-group-head { margin-top: 16px; margin-bottom: 8px; }
+    .theia-backlog-done { margin-top: 16px; }
+    .theia-backlog-done > summary {
+      cursor: pointer;
+      list-style: none;
+      padding: 4px 0;
+    }
+    .theia-backlog-done > summary::-webkit-details-marker { display: none; }
+    .theia-backlog-done > summary::before {
+      content: "▸ ";
+      color: var(--neutral);
+    }
+    .theia-backlog-done[open] > summary::before { content: "▾ "; }
+    .theia-backlog-done-summary {
+      font-family: var(--display);
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--neutral);
+      font-weight: 500;
+    }
   </style>
 </head>
 <body>

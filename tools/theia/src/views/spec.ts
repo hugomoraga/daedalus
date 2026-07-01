@@ -138,35 +138,72 @@ function renderTaskText(rawText: string): string {
   return `${html}${extras}`;
 }
 
-// Minimal inline-markdown → HTML converter. Handles only the three
-// markers that appear in canonical spec / tasks content: `` `code` ``,
-// `**bold**`, and `[text](url)`. Everything else is HTML-escaped.
+// Markdown → HTML converter for spec summaries, task text, and
+// backlog bodies. Handles block-level markers first (fenced code
+// blocks, GFM tables, bullet/numbered lists) and then the inline
+// markers from UX-007 (`` `code` ``, `**bold**`, `[text](url)`).
+// Everything else is HTML-escaped.
 //
-// Three-pass with placeholders to support nesting:
-//   0. Extract [text](url) → placeholders, store <a>…</a>. The
-//      link text is recursively processed by this same helper so
-//      backticks / bold inside the link render correctly. URLs are
-//      rejected if they use a known-XSS scheme (javascript:,
-//      data:, vbscript:, file:); the text is kept but the href is
-//      omitted.
-//   1. Extract backticked spans → placeholders, store <code>…</code>.
-//   2. Extract `**…**` spans on the modified text → placeholders,
-//      store <strong>…</strong>. Code placeholders inside bold
-//      survive untouched.
-//   3. Escape the remaining text (HTML-safe).
-//   4. Restore bold placeholders → <strong>…</strong>.
-//   5. Restore code placeholders → <code>…</code>.
-//   6. Restore link placeholders → <a>…</a>.
+// Pipeline (each step is a pure transform that returns a string):
 //
-// Unbalanced markers (a lone `` ` `` or a lone `**`, an unclosed
-// `[`, etc.) are silently treated as literal text and HTML-escaped.
+//   0. Fenced code blocks: ```` ```...``` ```` → placeholders,
+//      stored as `<pre><code class="theia-code-block">…</code></pre>`.
+//      The content of the block is HTML-escaped but NOT processed
+//      for inline markdown (the whole point of a code block).
+//   1. Tables: GFM pipe-tables (header | sep | rows) → placeholders,
+//      stored as `<table class="theia-md-table">`. Cells run through
+//      the inline passes (so **bold** and `code` inside a cell work).
+//   2. Lists: lines that start with `- `, `* `, or `\d+. ` → placeholders,
+//      stored as `<ul>` or `<ol>`. Inline passes run per item.
+//   3. Links: [text](url) → placeholders, stored as `<a href>`.
+//      URL safety guard (no javascript:/data:/vbscript:/file:).
+//   4. Inline code: `…` → placeholders, stored as `<code>`.
+//   5. Bold: **…** → placeholders, stored as `<strong>`.
+//   6. HTML-escape the remaining text.
+//   7-10. Restore placeholders in reverse order.
+//
+// Unbalanced markers (a lone `` ` `` or `**`, an unclosed `[`, an
+// unclosed ```` ``` ```` fence) are silently treated as literal text
+// and HTML-escaped. This is the same policy the inline passes
+// already followed; the block passes inherit it.
 export function inlineMarkdownToHtml(text: string): string {
+  // Block-level pre-passes operate on the raw text. They each
+  // extract their target structure into a placeholder, leaving the
+  // rest of the text untouched for the next pass to handle.
+  const fenceHtml: string[] = [];
+  let work = text.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (_, lang: string, body: string) => {
+    // lang is the optional language hint; we drop it (the token
+    // linter would reject per-language class names). Indentation
+    // inside the block is preserved as-is so the rendered <pre>
+    // looks like the source.
+    const escaped = escapeHtml(body.replace(/\n$/, ""));
+    fenceHtml.push(`<pre class="theia-code-block"><code>${escaped}</code></pre>`);
+    return `\u0000F${fenceHtml.length - 1}\u0000`;
+  });
+
+  const tableHtml: string[] = [];
+  work = work.replace(/(^|\n)((?:\|[^\n]*\n)+)(\|[ \t]*:?-+:?[ \t]*(?:\|[ \t]*:?-+:?[ \t]*)*\|?[ \t]*\n)((?:\|[^\n]*\n?)+)/g,
+    (_, lead: string, headerBlock: string, sepLine: string, bodyBlock: string) => {
+      const table = renderTable(headerBlock, sepLine, bodyBlock);
+      tableHtml.push(table);
+      const ph = `${lead}\u0000T${tableHtml.length - 1}\u0000`;
+      return ph;
+    });
+
+  const listHtml: string[] = [];
+  work = work.replace(/(^|\n)((?:[ ]{0,6}(?:[-*]|\d+\.)[ \t]+[^\n]+\n?)+)/g,
+    (_, lead: string, block: string) => {
+      const list = renderList(block);
+      listHtml.push(list);
+      return `${lead}\u0000I${listHtml.length - 1}\u0000`;
+    });
+
+  // Inline passes (UX-007, unchanged). Run against the text *with*
+  // block-level placeholders so backticks / bold / links inside
+  // tables and list items still work.
   const linkHtml: string[] = [];
-  const withLinkPh = text.replace(/\[([^\]]+)\]\(([^)]+)\)\)?/g, (_, linkText: string, url: string) => {
+  const withLinkPh = work.replace(/\[([^\]]+)\]\(([^)]+)\)\)?/g, (_, linkText: string, url: string) => {
     if (!isSafeMarkdownUrl(url)) {
-      // Reject the link: keep just the text, drop the brackets +
-      // parens entirely. The dangerous URL is silently discarded
-      // so it can't leak into the rendered HTML.
       linkHtml.push(escapeHtml(linkText));
     } else {
       const innerHtml = inlineMarkdownToHtml(linkText);
@@ -187,10 +224,119 @@ export function inlineMarkdownToHtml(text: string): string {
     return ph;
   });
   const escaped = escapeHtml(withBoldPh);
+  // Restore in reverse order so the F/I/T placeholders are
+  // substituted last (they wrap inline-marker output, not the
+  // other way around). A F/I/T placeholder appears verbatim in
+  // the escaped string (its contents are pure placeholder ASCII
+  // + NULs + digits, none of which become &-entities).
   const boldRestored = escaped.replace(/\u0000B(\d+)\u0000/g, (_, i: string) => boldHtml[Number(i)] ?? "");
   const codeRestored = boldRestored.replace(/\u0000C(\d+)\u0000/g, (_, i: string) => codeHtml[Number(i)] ?? "");
   const linkRestored = codeRestored.replace(/\u0000L(\d+)\u0000/g, (_, i: string) => linkHtml[Number(i)] ?? "");
-  return linkRestored;
+  const listRestored = linkRestored.replace(/\u0000I(\d+)\u0000/g, (_, i: string) => listHtml[Number(i)] ?? "");
+  const tableRestored = listRestored.replace(/\u0000T(\d+)\u0000/g, (_, i: string) => tableHtml[Number(i)] ?? "");
+  const fenceRestored = tableRestored.replace(/\u0000F(\d+)\u0000/g, (_, i: string) => fenceHtml[Number(i)] ?? "");
+  return fenceRestored;
+}
+
+// Render a GFM pipe-table from the three captured blocks. Each
+// cell runs through inlineMarkdownToHtml so **bold** and `code`
+// inside a cell work. Alignment from the separator row is emitted
+// as a CSS class on the cells (token-disciplined: no inline
+// styles).
+function renderTable(headerBlock: string, sepLine: string, bodyBlock: string): string {
+  const headerCells = splitRow(headerBlock);
+  const alignCells = parseAlignment(sepLine);
+  const thead = "<thead><tr>"
+    + headerCells.map((c, i) => {
+      const a = alignCells[i] ?? "left";
+      return `<th class="theia-md-th-${a}">${inlineMarkdownToHtml(c)}</th>`;
+    }).join("")
+    + "</tr></thead>";
+  const rows = bodyBlock.trimEnd().split("\n").map((row) => {
+    if (row.trim() === "") return "";
+    const cells = splitRow(row);
+    return "<tr>"
+      + cells.map((c, i) => {
+        const a = alignCells[i] ?? "left";
+        return `<td class="theia-md-td-${a}">${inlineMarkdownToHtml(c)}</td>`;
+      }).join("")
+      + "</tr>";
+  }).join("");
+  return `<table class="theia-md-table">${thead}<tbody>${rows}</tbody></table>`;
+}
+
+function splitRow(line: string): string[] {
+  // A row looks like '| a | b | c |'. We split on '|' and trim each
+  // cell. The leading and trailing empty cells (from the |'s at the
+  // row edges) are dropped.
+  const trimmed = line.replace(/^\n|\n$/g, "");
+  const inner = trimmed.startsWith("|") ? trimmed.slice(1) : trimmed;
+  const inner2 = inner.endsWith("|") ? inner.slice(0, -1) : inner;
+  return inner2.split("|").map((c) => c.trim());
+}
+
+function parseAlignment(sepLine: string): Array<"left" | "center" | "right"> {
+  const cells = splitRow(sepLine);
+  return cells.map((c) => {
+    const left = c.startsWith(":");
+    const right = c.endsWith(":");
+    if (left && right) return "center" as const;
+    if (right) return "right" as const;
+    return "left" as const;
+  });
+}
+
+// Render a list block (a run of consecutive list-item lines,
+// optionally indented) as nested <ul>/<ol> with inline-marker
+// processing per item. Two-space indent per nesting level, up to
+// three levels deep.
+//
+// We track an explicit "open list stack" of {indent, ordered}
+// pairs. When the next item is at a higher indent than the
+// current stack top, we open a new list inside the previous
+// item. When the next item is at a lower indent, we close lists
+// until the stack top matches (or is below) the new indent.
+function renderList(block: string): string {
+  const lines = block.split("\n");
+  // Drop the trailing empty line (the regex match always leaves
+  // one) so we don't render an empty list.
+  if (lines.length > 0 && lines[lines.length - 1] === "") lines.pop();
+  const items: Array<{ indent: number; ordered: boolean; text: string }> = [];
+  for (const line of lines) {
+    const m = /^([ ]{0,6})([-*]|\d+\.)[ \t]+(.*)$/.exec(line);
+    if (m === null) continue;
+    const indent = m[1]!.length;
+    const marker = m[2]!;
+    const ordered = /\d+\./.test(marker);
+    items.push({ indent, ordered, text: m[3]! });
+  }
+  if (items.length === 0) return "";
+  const out: string[] = [];
+  const stack: Array<{ indent: number; ordered: boolean }> = [];
+  for (const it of items) {
+    // Pop while the stack top has an indent STRICTLY GREATER than
+    // the current item's indent (we're stepping out to a less-
+    // indented level). Equal indent means the new item is a
+    // sibling — we keep the list open.
+    while (stack.length > 0 && stack[stack.length - 1]!.indent > it.indent) {
+      const top = stack.pop()!;
+      out.push(`</${top.ordered ? "ol" : "ul"}>`);
+    }
+    // If the new indent is greater than the current stack top
+    // (or stack is empty), we open a new list. For a sibling at
+    // the same indent, the existing list is reused.
+    if (stack.length === 0 || stack[stack.length - 1]!.indent < it.indent) {
+      out.push(`<${it.ordered ? "ol" : "ul"}>`);
+      stack.push({ indent: it.indent, ordered: it.ordered });
+    }
+    out.push(`<li>${inlineMarkdownToHtml(it.text)}</li>`);
+  }
+  // Close any still-open lists.
+  while (stack.length > 0) {
+    const top = stack.pop()!;
+    out.push(`</${top.ordered ? "ol" : "ul"}>`);
+  }
+  return out.join("");
 }
 
 // Defense-in-depth: only allow URL schemes that can't carry script.

@@ -280,12 +280,19 @@ test("UX-004: overview renders the Backlog section with the fixture's 3 items", 
 test("UX-004: backlog section is grouped by status (open / in-progress / done)", async () => {
   const { state } = await parseRepo(FIXTURE);
   const html = renderOverview(state);
-  // The view wraps each status in <h4> with a status badge; the count
-  // appears as <span class="muted">(N)</span> just after. Check both
-  // pieces independently.
-  for (const status of ["open", "in-progress", "done"]) {
+  // UX-009: the "done" group is wrapped in a <details> (collapsed
+  // by default); the working states stay as <h4>. Each still
+  // carries the status badge + a <span class="muted">(N)</span>
+  // count, so the visual contract is unchanged for the open /
+  // in-progress groups.
+  for (const status of ["open", "in-progress"]) {
     assert.match(html, new RegExp(`<h4[^>]*>[^<]*<span[^>]*>${status}</span>[^<]*<span class="muted">\\(1\\)</span></h4>`));
   }
+  // Done: inside a <details><summary> wrapper, also carrying the
+  // count + an explicit "show N done" affordance.
+  assert.match(html, /<details class="theia-backlog-done"/);
+  assert.match(html, /<summary class="theia-backlog-done-summary">/);
+  assert.match(html, /show 1 done/);
 });
 
 test("UX-004: each backlog row carries the id, kind, title, and (when present) the affects file", async () => {
@@ -677,6 +684,55 @@ test("UX-008 P1-5: blockers section still renders when there ARE blockers", asyn
   const html = renderOverview(state);
   assert.match(html, /Blockers \+ next unlocks/);
   assert.match(html, /Blocked \(1\)/);
+});
+
+// UX-009: the "done" group in the Backlog section is collapsed by
+// default (13 of 14 live entries are done; the founder opens the
+// page looking for what to do next, not the history). The
+// working states (open / in-progress / wontfix) stay visible.
+test("UX-009: backlog 'done' group is collapsed by default", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  // Fixture ships one of each: BUG-001 (done), UX-001 (in-progress),
+  // UX-002 (done). Force a third "done" so the wrap-in-details
+  // branch is exercised with more than one item.
+  state.backlog.push({ id: "UX-099", title: "another done", status: "done", kind: "follow-up", source: "fixture", affects: null, body: "" });
+  const html = renderOverview(state);
+  // The "done" group is wrapped in <details> WITHOUT the `open`
+  // attribute → collapsed.
+  assert.match(html, /<details class="theia-backlog-done">/);
+  assert.doesNotMatch(html, /<details class="theia-backlog-done" open>/);
+  // The summary carries an explicit "show N done" affordance.
+  const doneCount = state.backlog.filter((b) => b.status === "done").length;
+  assert.match(html, new RegExp(`show ${doneCount} done`));
+  // The open / in-progress groups are NOT wrapped in <details>.
+  assert.doesNotMatch(html, /<details class="theia-backlog-(open|in-progress)"/);
+});
+
+test("UX-009: renderOverview({ showDone: true }) opens the done group", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderOverview(state, { showDone: true });
+  assert.match(html, /<details class="theia-backlog-done" open>/);
+});
+
+test("UX-009: renderOverview({ showDone: undefined }) defaults to collapsed", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderOverview(state);
+  assert.match(html, /<details class="theia-backlog-done">/);
+  assert.doesNotMatch(html, /<details class="theia-backlog-done" open>/);
+});
+
+test("UX-009: backlog rows use the new compact classes", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderOverview(state);
+  // Each row has the .theia-backlog-row class instead of the old
+  // inline padding style. The class lets layout.ts control the
+  // padding uniformly (4px 8px → 8px 12px) and the hairline top
+  // border.
+  assert.match(html, /<tr class="theia-backlog-row">/);
+  // The body <details> uses the .theia-backlog-body class.
+  assert.match(html, /<details class="theia-backlog-body">/);
+  // The "affects" line is wrapped in a class instead of inline margin.
+  assert.match(html, /class="theia-mono theia-backlog-affects"/);
 });
 
 test("UX-007: done task body is dimmed (not struck through); only the id carries strikethrough", async () => {

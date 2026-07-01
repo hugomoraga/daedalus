@@ -955,3 +955,137 @@ audit + UX-008 entry body):
 - Color tone parity on phase-cell (currently solid `--accent`
   when active; consider an outline-only variant if the founder
   prefers quieter).
+
+## UX-009 — Backlog section: hide done by default, fix markdown rendering, compact rows
+
+**Status:** in-progress
+**Kind:** follow-up
+**Source:** founder observation on 2026-07-01 ("la sección de backlog se ve mal" while reviewing the UX-008 merge at http://127.0.0.1:8789/)
+**Affects:** tools/theia/src/views/overview.ts, tools/theia/src/views/spec.ts, tools/theia/tests/views.test.ts, tools/theia/tests/inline-markdown.test.ts, tools/theia/tests/fixtures/repo-typical/docs/backlog.md
+
+### Why
+
+The Theia backlog section (`/`, the section under `<h3>Backlog (N)</h3>`)
+has three visible problems that show up the moment you scroll past the
+spec grid:
+
+1. **Done entries dominate the page.** 13 of 14 backlog entries are
+   `done` (historical). The founder opens the page looking for *what to
+   do next* and instead scrolls past 13 rows of historical context.
+   UX-009 hides the `done` group behind a `<details>` summary by
+   default; the working states (`open`, `in-progress`, `wontfix`) stay
+   visible.
+
+2. **Markdown rendering is incomplete.** `inlineMarkdownToHtml` (UX-007)
+   handles only inline backticks, bold, and links. The backlog bodies
+   routinely use **fenced code blocks** (`` ``` ... ``` ``),
+   **tables** (`| col | col |`), and **lists** (`- item`). These render
+   as literal characters or, worse, as one big inline `<code>` (the
+   triple-backtick case in BUG-001 and TEST-001 bodies). UX-009 adds
+   three pre-passes for the block-level markers so the bodies render
+   the way the author wrote them. Spec 012 §7 forbids external markdown
+   libraries (zero runtime deps); the helper grows in place.
+
+3. **Each row is ~3-4 lines tall** with `padding: 4px 8px` and the
+   "affects" line below the title. 14 rows × 4 lines = ~60 lines
+   before the user reaches the end of the section. UX-009 tightens
+   the row to a denser card-like layout and trims the visual noise.
+
+### Scope (one PR, three concerns separated as commits)
+
+**Concern 1 — hide done by default (overview.ts).** The render loop
+already groups by status in a fixed order
+(`open` → `in-progress` → `wontfix` → `done`); UX-009 wraps the
+`done` group's `<h4>` + `<table>` in a single `<details>` element
+whose summary reads "Show N done entries". The three working-state
+groups render unchanged. The `<details>` is **open by default** when
+the URL carries `?show=done` so a deep link from a steward review
+can still land on the full view. Net change: ~20 lines in
+`renderBacklogSection`, no view contract change.
+
+**Concern 2 — block-level markdown in the inline helper (spec.ts).**
+`inlineMarkdownToHtml` grows three pre-passes, all of which use the
+same placeholder mechanism as the existing passes so nesting still
+works:
+
+  - **Fenced code blocks** `` ```lang\n...\n``` `` →
+    `<pre><code class="theia-code-block">…</code></pre>`. Indentation
+    inside the block is preserved; HTML is escaped per line; the
+    language hint is dropped (token-disciplined — no extra class per
+    language). Unbalanced `` ``` `` is treated as literal text (same
+    policy as unbalanced `**`).
+  - **Tables** `| h1 | h2 |\n| --- | --- |\n| a | b |` →
+    `<table class="theia-md-table"><thead>…</thead><tbody>…</tbody></table>`.
+    Header row detected by the separator line (`| --- |`). Cells
+    run through the existing inline passes (so `**bold**` and
+    `` `code` `` inside a cell work). GFM-style alignment
+    (`:---:`) is parsed and emitted as `text-align` on the cell
+    (token-disciplined via a CSS class, not an inline style).
+  - **Lists** lines that start with `- `, `* `, or a digit followed
+    by `. ` → `<ul>` or `<ol>`. Nested lists (2-space indent) are
+    supported up to three levels. Empty lines separate list blocks
+    from prose. Inline passes run on each item's text.
+
+The new passes run *before* the existing link/code/bold passes so
+that the inline helpers don't have to know about block structure.
+Safe-URL guard for links (UX-007) is unchanged.
+
+**Concern 3 — compact row layout (layout.ts).** Add three
+token-disciplined rules:
+
+  - `.theia-backlog-row td` padding `8px 12px` (was `4px 8px`); the
+    row gets a hairline top border (`var(--rule)`) instead of the
+    default `<table>` border.
+  - `.theia-backlog-row .theia-md-table` margin `8px 0` and a
+    smaller mono font for cells; padding `4px 8px`.
+  - `.theia-backlog-row pre.theia-code-block` margin `8px 0`,
+    background `var(--card)`, padding `8px 12px`, border-left
+    `2px solid var(--neutral)` (the canonical "code block" rule
+    the rest of the platform uses).
+
+The `padding: 4px 8px` on backlog rows was the only place in Theia
+that used that 4-px-tall padding; the spec cards use 16px, the
+phase cells use 8px, the AC pills use 4px-on-8px. The new 8/12 sits
+between the spec card and the AC pill, which is correct for a
+table row.
+
+### Out of scope
+
+- **Re-grouping the backlog** by kind (`bug` / `follow-up` / `churn`)
+  instead of by status. The current `open` → `in-progress` →
+  `wontfix` → `done` order is the right working-state order. A
+  per-kind view would be a follow-up if the founder wants it.
+- **Per-row action buttons** ("Edit", "Mark done", "Reopen").
+  Read-only by Spec 012 §7.
+- **Inline editing of the body** — same reason.
+- **A real markdown parser** (`marked`, `markdown-it`, …). Spec 012
+  §7 forbids it; the block-level passes cover the cases that
+  actually appear in backlog bodies (verified against the 14
+  existing entries + the fixture).
+- **Inline HTML in backlog bodies** — the helper still HTML-escapes
+  everything outside the placeholder slots. The body is not a
+  trusted surface; this stays strict.
+
+### Acceptance
+
+- `npm test` → 384 + N pass, where N is the new tests for the
+  three block-level passes + the filter behavior.
+- Token linter (AC-11) and no-platform-imports linter (AC-15)
+  both green. The new CSS rules are token-disciplined; the new
+  HTML uses no raw colors or fonts.
+- Live `curl http://127.0.0.1:8789/`:
+  - The Backlog section shows `open` / `in-progress` / `wontfix`
+    rows expanded.
+  - The `done` group is collapsed behind a "Show 13 done
+    entries" summary.
+  - The BUG-001 body's code block (`` ```not ok 213…``` ``) renders
+    as a `<pre><code>` block (not as one big inline `<code>`).
+  - The CHORE-004 body's pipe-table renders as a real `<table>`
+    (not as literal pipes).
+  - The CHORE-002 body's bullet list (`- daedalus-athena-…`) renders
+    as a real `<ul><li>` (not as literal `-` characters).
+  - The TEST-001 body's prose, including `` `code` `` spans, still
+    renders correctly (no regression on the existing inline
+    passes).
+- Deep link `?show=done` opens the `done` group for reviewers
+  who want the full view.

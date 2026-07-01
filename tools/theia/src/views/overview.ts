@@ -20,17 +20,22 @@ import { renderLayout } from "./layout.ts";
 import { escapeHtml, tag, GITHUB_REPO } from "./tokens.ts";
 import { inlineMarkdownToHtml } from "./spec.ts";
 
-export function renderOverview(state: ProjectState): string {
+export function renderOverview(state: ProjectState, opts: { showDone?: boolean } = {}): string {
   // Section order is intentional — UX-008 reorders by usefulness for
   // a founder opening the page (drift first, low-signal catalog last).
   // No CSS layout change; only the render order and section IDs.
+  //
+  // UX-009: `opts.showDone` opens the "done" group in the Backlog
+  // section so a deep link from a steward review can still see the
+  // full view. Default: collapsed (the working states are the
+  // signal; done is the noise).
   const body = [
     renderDriftWidget(state),
     renderSpecGrid(state),
     renderTestsSection(state),
     renderBlockersSection(state),
     renderAdrsSection(state),
-    renderBacklogSection(state),
+    renderBacklogSection(state, { showDone: opts.showDone === true }),
     renderPhaseTimeline(state),
     renderDiffSection(state),
     renderCodeInventorySection(state),
@@ -134,7 +139,7 @@ function renderAdrsSection(state: ProjectState): string {
 // working states first, then the closed ones. Each row carries the
 // `id` (mono), `kind` badge, the title (escaped), and an optional
 // collapsed `<details>` with the prose body.
-function renderBacklogSection(state: ProjectState): string {
+function renderBacklogSection(state: ProjectState, opts: { showDone?: boolean } = {}): string {
   if (state.backlog.length === 0) {
     return section("Backlog", "<p class=\"muted\">No backlog detected.</p>", { id: "backlog" });
   }
@@ -152,6 +157,11 @@ function renderBacklogSection(state: ProjectState): string {
     list.sort((a, b) => a.id.localeCompare(b.id));
   }
   // Render: ordered groups first, then any unknown status at the end.
+  // UX-009: the "done" group is collapsed by default — 13 of 14
+  // entries are done in the live repo, and the founder opens the
+  // page looking for *what to do next*, not the history. The
+  // working states (open, in-progress, wontfix) stay visible. A
+  // deep link with `?show=done` opens it for steward review.
   const groupKeys = [
     ...order.filter((k) => groups.has(k)),
     ...[...groups.keys()].filter((k) => !order.includes(k)),
@@ -164,19 +174,30 @@ function renderBacklogSection(state: ProjectState): string {
     const rows = list.map((b) => {
       const kindTone = b.kind === "bug" ? "alert" : b.kind === "deprecation" ? "alert" : "neutral";
       const body = b.body.length > 0
-        ? `<details style="margin-top: 4px;"><summary class="muted">context</summary><div style="margin-top: 4px;">${inlineMarkdownToHtml(b.body)}</div></details>`
+        ? `<details class="theia-backlog-body"><summary class="muted">context</summary><div class="theia-backlog-body-inner">${inlineMarkdownToHtml(b.body)}</div></details>`
         : "";
       const affects = b.affects !== null
-        ? `<div class="theia-mono" style="margin-top: 4px;">affects: <code>${escapeHtml(b.affects)}</code></div>`
+        ? `<div class="theia-mono theia-backlog-affects">affects: <code>${escapeHtml(b.affects)}</code></div>`
         : "";
-      return `<tr>
-        <td style="padding: 4px 8px;" class="theia-mono">${tag(b.id, "neutral")}</td>
-        <td style="padding: 4px 8px;">${tag(b.kind, kindTone)}</td>
-        <td style="padding: 4px 8px;">${escapeHtml(b.title)}${affects}${body}</td>
+      return `<tr class="theia-backlog-row">
+        <td class="theia-mono theia-backlog-id">${tag(b.id, "neutral")}</td>
+        <td class="theia-backlog-kind">${tag(b.kind, kindTone)}</td>
+        <td class="theia-backlog-cell">${escapeHtml(b.title)}${affects}${body}</td>
       </tr>`;
     }).join("");
-    parts.push(`<h4 style="margin-top: 16px; margin-bottom: 8px;">${tag(key, tone)} <span class="muted">(${list.length})</span></h4>`);
-    parts.push(`<table style="width:100%; border-collapse: collapse;">${rows}</table>`);
+    const headerHtml = `<h4 class="theia-backlog-group-head">${tag(key, tone)} <span class="muted">(${list.length})</span></h4>`;
+    const tableHtml = `<table class="theia-backlog-table">${rows}</table>`;
+    if (key === "done") {
+      // Collapsed by default; open when `?show=done` is on the URL.
+      const openAttr = opts.showDone === true ? " open" : "";
+      parts.push(`<details class="theia-backlog-done"${openAttr}>`
+        + `<summary class="theia-backlog-done-summary">${tag(key, tone)} <span class="muted">(${list.length})</span> — show ${list.length} done</summary>`
+        + tableHtml
+        + `</details>`);
+    } else {
+      parts.push(headerHtml);
+      parts.push(tableHtml);
+    }
   }
   return section(`Backlog (${state.backlog.length})`, parts.join(""), { id: "backlog" });
 }

@@ -1,10 +1,10 @@
 # Spec 016 — Platform API
 
-**Status:** Draft
+**Status:** Ratified · **v0 BUILD AUTHORIZED subject to §13 activation gates** (parallel [ADR-010](../../governance/decisions/ADR-010-platform-api-driving-adapter.md) Proposed; spec §11 Q1–Q12 closed 2026-06-22; activation status 1/6 — spec ratification)
 **Type:** Driving adapter — programmatic HTTP surface for the Daedalus Core and modules
 **Owner:** Stewards
-**Version:** 0.2.0 (open questions resolved)
-**Last updated:** 2026-06-22
+**Version:** 1.0.0
+**Last updated:** 2026-07-01
 
 > **Revision note (v0.2.0).** All 12 open questions in §11 resolved by the steward on 2026-06-22. Summary of resolutions:
 > - **Q1 (auth):** API keys per-tenant via `Authorization: Bearer <key>`. v0.
@@ -303,6 +303,19 @@ T-01…T-N in `tasks.md` may begin only when **all** of the following hold:
 4. **The CLI use case registry is enumerated** (the set of `case "..."` entries in `apps/cli/src/index.ts`) and a parity test baseline exists, so AC-12 has a known shape.
 5. **The `registerApi` hook signature is locked in** (Q5 resolution) so modules can opt in without ambiguity.
 6. **The first consumer is named.** A concrete first caller (a Cloud Run job, an agent, a CI workflow, an integration) is identified, so the v0 surface has a real demand signal. v0 should not be built speculatively.
+
+> **Activation status (2026-07-01, post #115):**
+>
+> | # | Gate | Status |
+> |---|---|---|
+> | 1 | Spec 016 ratified | ✅ Cleared by this PR (#115) |
+> | 2 | [ADR-010](../../governance/decisions/ADR-010-platform-api-driving-adapter.md) accepted | ⏳ Proposed; acceptance tracked in follow-up PR #116 |
+> | 3 | Policy Engine (Spec 009) wired for HTTP | ⏳ Tracked in follow-up PR; until cleared, write routes return `503` per AC-13 |
+> | 4 | CLI use case registry enumerated | ⏳ Tracked in follow-up PR; sets the AC-12 baseline |
+> | 5 | `registerApi(router, ctx) → void` hook signature | ✅ Q5 resolution locks this in spec §11; implementation follow-up tracks module opt-in |
+> | 6 | First consumer named | ⏳ Tracked in follow-up PR |
+>
+> Per the spec's binding language (\"T-01…T-N … may begin only when all of the following hold\"), no implementation tasks are authorized until all six clear. PR #115 closes gate #1 and locks #5; the remaining four are tracked as separate PRs to keep each review scoped.
 
 ---
 

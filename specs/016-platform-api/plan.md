@@ -1,12 +1,12 @@
 # Plan — Platform API
 
-**Status:** Draft (planning; build not authorized) · companion to [Spec 016 v0.2.0](./spec.md)
+**Status:** Ratified · implementation plan for [Spec 016 v1.0.0](./spec.md) — **companion to the Ratified spec; build authorization still gated on spec §13 activation criteria**
 **Goal:** Build the Platform API as a programmatic driving adapter parallel to `apps/cli/` and `apps/atlas/`. Same use cases as the CLI, exposed over HTTP. Multi-tenant by construction, authenticated, governed by policy. Zero external runtime dependencies. Designed for 12-factor / Cloud Run.
 **Conforms to:** [Conventions](../../tools/theia/CONVENTIONS.md), [Technical Principles](../../memory/technical-principles.md), [ADR-003](../../governance/decisions/ADR-003-modular-monorepo.md), [ADR-004](../../governance/decisions/ADR-004-export-discipline-and-lineage.md), [ADR-005](../../governance/decisions/ADR-005-atlas-driving-adapter.md) (parallels), [Spec 009](../../specs/009-policy-engine/spec.md), [Spec 011](../../specs/011-workflow-engine-projections/spec.md)
-**Version:** 0.1.0
-**Last updated:** 2026-06-22
+**Version:** 1.0.0
+**Last updated:** 2026-07-01
 
-> **Build authorization.** Pre-conditions are **not** yet satisfied. Per [Spec 016 §13](../../specs/016-platform-api/spec.md), the build is gated on: (1) Spec 016 ratification, (2) parallel ADR-010 (or equivalent) accepted, (3) Policy Engine (Spec 009) wired to evaluate HTTP requests, (4) CLI use case registry enumerated, (5) `registerApi` hook signature locked, (6) first consumer named. Until all six clear, the plan below is **forward-planning**, not a build authorization. The plan expands into task-grade detail when the gates clear.
+> **Build authorization.** Spec 016 is Ratified (gate #1 cleared in #115). The remaining five activation gates per [Spec 016 §13](../../specs/016-platform-api/spec.md) — ADR-010 acceptance (#2), Policy Engine wired for HTTP (#3), CLI use case registry enumerated (#4), first consumer named (#6), and `registerApi` hook implementation follow-up (#5) — are tracked as separate PRs. Until all six clear, the plan below is forward-planning architecture that will become task-grade T-NN as the gates clear.
 
 > **Task ID convention.** This is a single-package spec (`apps/api/`); the canonical task prefix is **`T-NN`** (no module namespace). When implementation starts, `tasks.md` follows the [Spec 015](../../specs/015-spec-file-convention/spec.md) format — one checkbox per task, each tagged with a spec AC (`(AC-N)`).
 

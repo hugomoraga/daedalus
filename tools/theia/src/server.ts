@@ -107,10 +107,19 @@ async function handle(
     respondJson(res, 200, { status: "ok", tests: latestTests() });
     return;
   }
-  if (url === "/" || url === "/index.html") {
+  // Strip the query string for routing — `?show=done` should
+  // still land on the overview route. The original URL (with the
+  // query string) is kept for the showDone check below.
+  const pathOnly = url.split("?", 1)[0] ?? url;
+  if (pathOnly === "/" || pathOnly === "/index.html") {
+    // UX-009: `?show=done` opens the collapsed "done" group in the
+    // Backlog section. Default: collapsed. The flag is read from
+    // the raw URL so the server doesn't have to import `URL` just
+    // for query-string parsing on the index path.
+    const showDone = /[?&]show=done(?:&|$)/.test(url);
     // Inject the latest test snapshot into the rendered state.
     const snapshot: ProjectState = { ...state(), tests: latestTests() };
-    respondText(res, 200, renderOverview(snapshot), "text/html; charset=utf-8");
+    respondText(res, 200, renderOverview(snapshot, { showDone }), "text/html; charset=utf-8");
     return;
   }
   const specMatch = /^\/specs\/([^/?#]+)\/?$/.exec(url);

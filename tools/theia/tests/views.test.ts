@@ -12,6 +12,7 @@ import { parseRepo } from "../src/parser.ts";
 import { renderOverview } from "../src/views/overview.ts";
 import { renderSpecDetail } from "../src/views/spec.ts";
 import { renderPhaseDetail } from "../src/views/phase.ts";
+import type { ProjectState } from "../src/types.ts";
 
 const FIXTURE = fileURLToPath(new URL("./fixtures/repo-typical", import.meta.url));
 
@@ -369,18 +370,79 @@ test("UX-006: done tasks render the entire block with strikethrough; the mark st
 // UX-008 — overview polish
 // ----------------------------------------------------------------------------
 
+test("AC-7: CLI commands section lists 5 use cases", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderOverview(state);
+  assert.match(html, /CLI commands \(5\)/);
+  for (const cmd of ["alpha:create", "beta:list", "gamma:delete", "delta:status", "epsilon:run"]) {
+    const re = new RegExp(cmd);
+    assert.match(html, re);
+  }
+});
+
+// UX-008 P1-2: CLI commands are grouped by their colon-prefix so a
+// founder scanning the section can find a command by domain
+// (revenue:*, proposal:*, lead:*, ...) without scrolling a flat
+// alphabetised list.
+test("UX-008 P1-2: CLI commands are grouped by colon-prefix", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderOverview(state);
+  // Fixture ships one command per prefix — alpha, beta, gamma, delta,
+  // epsilon — so each gets its own <h4> with a count.
+  for (const prefix of ["alpha:", "beta:", "gamma:", "delta:", "epsilon:"]) {
+    assert.match(html, new RegExp(`<h4[^>]*>${prefix.replace(/[.*+?^\${}()|[\\]\\\\]/g, "\\\\$&")} <span class="muted">\\(1\\)</span></h4>`));
+  }
+  // The total count is preserved.
+  assert.match(html, /CLI commands \(5\)/);
+  // Commands themselves still render as <code> entries.
+  assert.match(html, /<code>alpha:create<\/code>/);
+  assert.match(html, /<code>epsilon:run<\/code>/);
+});
+
+test("UX-008 P1-2: CLI commands with no colon prefix land in 'other'", async () => {
+  // Hand-build a state with one prefix-less command so the 'other'
+  // bucket is exercised.
+  const state = {
+    specs: [],
+    adrs: [],
+    backlog: [],
+    codeInventory: [],
+    useCases: [
+      { command: "version" },
+      { command: "help" },
+      { command: "revenue:create" },
+    ],
+    phases: [],
+    activePhase: 0,
+    blockers: [],
+    nextUnlocks: [],
+    tests: { running: false, pass: 0, fail: 0, total: 0, failingNames: [], reason: null },
+    diff: { available: false, reason: "no git", branch: null, commits: [], filesChanged: 0, insertions: 0, deletions: 0 },
+  } as unknown as ProjectState;
+  const html = renderOverview(state);
+  // 'revenue' appears as a prefix group (sorted first).
+  assert.match(html, /<h4[^>]*>revenue: <span class="muted">\(1\)<\/span><\/h4>/);
+  // 'other' bucket trails.
+  const otherIdx = html.indexOf(">other <");
+  assert.ok(otherIdx !== -1, "expected 'other' bucket for prefix-less commands");
+  assert.match(html, /<code>version<\/code>/);
+  assert.match(html, /<code>help<\/code>/);
+});
+
+// UX-008 P1-1: backlog body runs through the inline-markdown helper
+// (consistent with the spec detail page since UX-007).
 test("UX-008 P1-1: backlog body runs through the inline-markdown helper", async () => {
   const { state } = await parseRepo(FIXTURE);
   const html = renderOverview(state);
   // Fixture UX-001 body contains '**bold**' → <strong>.
   assert.match(html, /<strong>bold<\/strong>/);
-  // Fixture UX-001 body contains '\`inline code\`' → <code>.
+  // Fixture UX-001 body contains '`inline code`' → <code>.
   assert.match(html, /<code>inline code<\/code>/);
   // Fixture UX-001 body contains '[link to the spec](specs/...)' → <a>.
   assert.match(html, /<a href="specs\/001-ratified-p2\/spec\.md">link to the spec<\/a>/);
   // Raw markdown must NOT leak into the rendered HTML.
   assert.doesNotMatch(html, /\*\*bold\*\*/);
-  assert.doesNotMatch(html, /`inline code`/);
+  assert.doesNotMatch(html, new RegExp("`inline code`"));
   assert.doesNotMatch(html, /\[link to the spec\]/);
 });
 

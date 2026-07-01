@@ -205,8 +205,33 @@ function renderUseCasesSection(state: ProjectState): string {
   if (state.useCases.length === 0) {
     return section("CLI commands", "<p class=\"muted\">No commands detected.</p>", { id: "cli-commands" });
   }
-  const items = state.useCases.map((u) => `<li><code>${escapeHtml(u.command)}</code></li>`).join("");
-  return section(`CLI commands (${state.useCases.length})`, `<ul>${items}</ul>`, { id: "cli-commands" });
+  // UX-008 P1-2: group CLI commands by their colon-prefix (e.g.
+  // "revenue:*", "proposal:*", "lead:*"). Each group renders under
+  // an <h4> with the prefix label and a count. Empty groups are
+  // skipped. Prefixes are sorted alphabetically for stability; the
+  // "no-prefix" bucket (commands like "version") trails at the end.
+  const groups = new Map<string, string[]>();
+  for (const u of state.useCases) {
+    const idx = u.command.indexOf(":");
+    const prefix = idx !== -1 ? u.command.slice(0, idx) : "_other";
+    const list = groups.get(prefix) ?? [];
+    list.push(u.command);
+    groups.set(prefix, list);
+  }
+  const sortedPrefixes = [...groups.keys()].sort((a, b) => {
+    if (a === "_other") return 1;
+    if (b === "_other") return -1;
+    return a.localeCompare(b);
+  });
+  const parts: string[] = [];
+  for (const prefix of sortedPrefixes) {
+    const cmds = groups.get(prefix) ?? [];
+    const label = prefix === "_other" ? "other" : `${prefix}:`;
+    const items = cmds.map((c) => `<li><code>${escapeHtml(c)}</code></li>`).join("");
+    parts.push(`<h4 style="margin-top: 16px; margin-bottom: 8px;">${escapeHtml(label)} <span class="muted">(${cmds.length})</span></h4>`);
+    parts.push(`<ul>${items}</ul>`);
+  }
+  return section(`CLI commands (${state.useCases.length})`, parts.join(""), { id: "cli-commands" });
 }
 
 function renderTestsSection(state: ProjectState): string {

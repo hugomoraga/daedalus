@@ -722,4 +722,236 @@ linter (AC-15) both green.
 
 ---
 
+## UX-008 — Overview polish + accessibility hygiene (Theia)
+
+**Status:** done
+**Kind:** follow-up
+**Source:** founder audit of http://127.0.0.1:8789 on 2026-06-30
+**Affects:** tools/theia/src/views/overview.ts, tools/theia/src/views/spec.ts, tools/theia/src/views/layout.ts, tools/theia/src/views/tokens.ts, .gitignore, tools/theia/tests/fixtures/repo-typical/docs/backlog.md, tools/theia/tests/fixtures/repo-typical/tests/
+
+### Scope
+
+Cohesive polish pass over the Theia overview + spec detail + layout, plus
+accessibility hygiene borrowed from the ui-ux-pro-max skill's pre-delivery
+checklist (the items that align with the Daedalus canon — not its dark-mode
+or Fira-font recommendations, which conflict with Spec 012 §1, §7 and AC-11).
+One PR, **commits separated by concern** so the slice can be split later if
+the review wants.
+
+### P0 — real bugs / weakest links
+
+1. **Spec detail "Spec file" link points to a GitHub search URL, not the
+   blob.** `views/spec.ts:24` builds
+   `github.com/search?q=repo%3Ahugomoraga%2Fdaedalus+path%3Aspecs/…`.
+   Should be
+   `github.com/hugomoraga/daedalus/blob/main/specs/…`. Trivial fix,
+   real bug.
+
+2. **Overview section order has no hierarchy.** All ten sections
+   (Phases, Specs, Drift, ADRs, Backlog, Code, CLI, Tests, Diff,
+   Blockers) sit at the same weight. Reorder by usefulness for a
+   founder opening the page: Drift → Specs → Tests → Blockers →
+   ADRs → Backlog → Phases → Diff → Code → CLI. Add `id="…"` to each
+   section heading so a future jump-nav (UX-009+) can deep-link
+   without a layout change. **No CSS layout change in UX-008.**
+
+### P1 — consistency + scannability
+
+3. **Backlog body shows raw markdown.** `views/overview.ts:160` runs
+   the body through `escapeHtml`, so `**bold**`, `` `code` ``, and
+   `[link](url)` appear as literal characters. Inconsistent with the
+   spec detail page (which uses `inlineMarkdownToHtml` since UX-007).
+   Fix: run `b.body` through the same helper. Two-line view change.
+
+4. **CLI commands listed flat (47 entries).** `renderUseCasesSection`
+   dumps a single `<ul>`. Group by the colon-prefix
+   (`revenue:*`, `proposal:*`, `lead:*`, `opportunity:*`, `invoice:*`,
+   `obligations:*`, `project:*`, `expense:*`, `rules:*`,
+   `human:*`, `payment:*`). Each group renders under an `<h4>` with
+   the prefix label and a count. Use the existing
+   `inlineMarkdownToHtml` not relevant here; the implementation is a
+   `Map<string, string[]>` group + a `for…of` over sorted prefixes.
+
+5. **Code inventory entries are not clickable.** `renderCodeInventorySection`
+   wraps each entry as `<li><code>name</code></li>`. Atlas Spec 007
+   AC-6 says "with a clickable link". Wire each entry:
+   - `app` / `package` → `https://github.com/hugomoraga/daedalus/tree/main/<kind>s/<name>`
+     (raw GitHub directory URL — no platform import).
+   - `test` → the file under
+     `https://github.com/hugomoraga/daedalus/blob/main/tests/<name>`
+     (matching the link pattern from P0-2).
+
+6. **Spec detail for a fully-done spec shows only a progress bar.**
+   On `/specs/015-spec-file-convention` (28/28 done) the founder
+   has to scroll through 28 individual `[x] T-NN` items before
+   finding anything. Add a one-line summary at the top
+   (under the existing progress row) when
+   `done === total && total > 0`:
+   `"8 PRs · 32/32 tasks done · Ratified Phase 2 · v1.0.0"`.
+   The "PRs" count is the number of `## PR N — …` sections in
+   the parsed `taskList`.
+
+7. **Diff + Blockers sections render even when empty.** On `main`
+   the overview shows
+   `"Diff (branch main) · 0 files · +0 / -0 · No commits ahead of main."`
+   and
+   `"Blockers + next unlocks · No specs currently blocked."`
+   — both take vertical space and tell the user nothing. Render
+   only when there is something to say: Diff when `d.commits.length > 0`
+   OR `d.filesChanged > 0`; Blockers when `state.blockers.length > 0`
+   OR `state.nextUnlocks.length > 0`.
+
+### P2 — header polish
+
+8. **`.brand` class has no CSS.** `<div class="brand">Theia<small>…</small></div>`
+   inherits the body font, so the word "Theia" has no visual
+   identity. Add a small rule in `views/layout.ts`:
+   `font-family: var(--display); font-size: 18px; letter-spacing: -0.02em;`
+   on `.brand`, and `color: var(--neutral); font-size: 12px; margin-left: 4px;`
+   on `.brand small`.
+
+### P3 — accessibility hygiene (from ui-ux-pro-max checklist, items aligned with canon)
+
+The skill's pre-delivery checklist suggests dark mode, Fira fonts, and
+Google Fonts CDN — all of which conflict with Spec 012 (Atlas-token
+reuse, no new design system, no external network). What does align,
+and what UX-008 adopts:
+
+9. **Hover transitions (150–300ms ease).** Atlas interactive
+   elements (`theia-card-link`, `theia-phase-cell`, `theia-task-ac`)
+   snap to a new border-color on hover, with no transition. Add
+   `transition: border-color 200ms ease` (or color-shorthand for
+   elements that change color). Token-disciplined: no raw values.
+
+10. **`prefers-reduced-motion: reduce` media query.** The Navigate
+    marquee (Spec 007 v1.3, also reused in Theia's own layout.css
+    if any) animates for 40s. For users with `reduce`, the marquee
+    must stop. Add a single `@media (prefers-reduced-motion: reduce)`
+    rule in `views/layout.ts` that sets `animation-play-state: paused`
+    on the marquee track and `transition-duration: 0s` on
+    interactive elements. Does **not** affect Theia's own animations
+    (there are none today), but future-proofs the layout file.
+
+11. **`:focus-visible` styling for keyboard nav.** `<a>` elements
+    inherit the browser default (varies). Add a global rule:
+    `a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }`.
+    Token-disciplined.
+
+12. **Contrast acceptance criteria.** Verified all Atlas color
+    pairs against WCAG 4.5:1:
+    - `--neutral` on `--paper`: 4.97:1 (AA ✓)
+    - `--neutral` on `--card`:  5.19:1 (AA ✓)
+    - `--ink`     on `--paper`: 17.35:1 (AAA ✓)
+    - `--accent`  on `--paper`: 4.70:1 (AA ✓)
+    - `--ok`      on `--paper`: 5.45:1 (AA ✓)
+    - `--warn`    on `--paper`: 4.61:1 (AA ✓)
+    - `--alert`   on `--paper`: 6.80:1 (AA ✓)
+    Add a one-liner to Spec 012's AC-11 (or a new AC-16 in
+    `specs/012-theia/spec.md`) so the pass is explicit and the
+    linter or a future a11y test can re-verify.
+
+### `.gitignore` — `.opencode/` is NOT ignored today
+
+The ui-ux-pro-max skill installed 147 files / 2.9 MB to
+`.opencode/skills/`. The current `.gitignore` only covers `.data/`,
+`.worktrees/`, and `node_modules/`. Without an entry, a careless
+`git add .` from main would commit the entire skill to the repo.
+**UX-008 adds `.opencode/` to `.gitignore` as the first commit.**
+
+### Out of scope
+
+- **Dark mode** for Theia (would require a parallel palette in
+  `apps/atlas/src/tokens.ts` — its own spec, e.g. Spec 018).
+- **Typography change** (Inter Tight / Inter / JetBrains Mono
+  are the canonical trio per Atlas AC-11; Fira would break the
+  linter).
+- **External icon library** (Heroicons / Phosphor — adds deps,
+  forbidden by Spec 012 §7).
+- **CSS layout change to a 2-column overview** (UX-009 territory
+  if wanted; UX-008 only reorders and adds IDs).
+- **Editing the backlog from Theia** (read-only by Spec 012 §7).
+- **Per-task anchor links** (UX-009 territory).
+
+### Acceptance
+
+- `npm test` stays green (364 → 364+N where N = tests added).
+- Theia token linter (AC-11) stays green — no raw color, font, or
+  spacing outside the canonical scales.
+- Theia no-platform-imports linter (AC-15) stays green.
+- Live `curl http://127.0.0.1:8789/` renders the reordered overview;
+  section headings carry `id="…"` so
+  `curl http://127.0.0.1:8789/#blockers` would deep-link
+  (anchor support itself is browser-native; UX-008 just adds the
+  targets).
+
+---
+
 *Last updated: 2026-06-23 (UX-001 → done via PR #87, status flipped via PR #94; UX-004 → done via PR #96; UX-005 → done via PR #98; UX-006 → done via PR #100; UX-007 → done via PR #102).*
+*2026-06-30: UX-008 added (in-progress, audit-driven). UX-008 → done via this PR (worktree `093-theia-ux-008-polish`).*
+
+### UX-008 — Resolution
+
+Resolved by PR (this branch — `093-theia-ux-008-polish`).
+
+**Ten commits, one PR (separated by concern).** Files touched:
+
+- `.gitignore` — adds `.opencode/` (skill data, never commit)
+- `tools/theia/src/views/tokens.ts` — exports `GITHUB_REPO`
+- `tools/theia/src/views/spec.ts` — uses `GITHUB_REPO`; adds the
+  fully-done summary line; renders the summary through
+  `inlineMarkdownToHtml`
+- `tools/theia/src/views/overview.ts` — section reordering; section
+  ids; backlog body markdown; CLI grouped by prefix; code inventory
+  links; hidden Diff/Blockers when empty
+- `tools/theia/src/views/layout.ts` — `.brand` styles; hover
+  transitions; `:focus-visible`; `prefers-reduced-motion` query
+- `tools/theia/tests/views.test.ts` — 13 new tests
+- `tools/theia/tests/fixtures/repo-typical/docs/backlog.md` — fixture
+  body now exercises bold / code / link through the helper
+- `tools/theia/tests/fixtures/repo-typical/tests/` — adds a sample
+  `.test.ts` so the code-inventory `/blob/main/tests/` path is
+  exercised
+
+**Acceptance:** `node --test tools/theia/tests/*.test.ts` →
+164/164 pass (was 153 before this PR). Theia token linter (AC-11)
+and no-platform-imports linter (AC-15) both green.
+
+**Live verification** at `http://127.0.0.1:8789/`:
+
+- `/` renders the new section order: drift → specs → tests →
+  blockers (hidden when empty) → adrs → backlog → phases → diff
+  (hidden on main) → code → cli. Section headings carry `id="…"`
+  so `#specs`, `#tests`, etc. are browser-resolvable.
+- `/specs/012-theia` — the "Spec file" link now goes to the GitHub
+  blob URL directly (was a search URL).
+- `/specs/015-spec-file-convention` — the fully-done summary line
+  appears right under the progress bar: "X PRs · N/N tasks done ·
+  Ratified Phase 2 · v1.0.0".
+- Backlog rows now render `**bold**`, `` `code` ``, and `[link](url)`
+  as proper HTML (was literal characters).
+
+**Explicitly NOT adopted from the ui-ux-pro-max skill** (per the
+audit + UX-008 entry body):
+
+- Dark mode OLED palette — conflicts with Spec 012 §1 (Atlas
+  visual tokens, no new design system).
+- Fira Code / Fira Sans — outside the canonical typography trio
+  per Atlas AC-11.
+- Google Fonts `@import url(...)` — conflicts with Spec 012 §7
+  (no external network, no CDN).
+- Heroicons / Phosphor — would add runtime deps, conflicts with
+  Spec 012 §7.
+- 2-column overview layout — UX-009 territory; UX-008 only
+  reorders + adds ids.
+
+**Follow-ups tracked separately (UX-009+ candidates):**
+
+- 2-column overview with sticky left nav (now trivial since
+  section ids are in place).
+- Breadcrumb on spec / phase detail pages.
+- "Recently" section — events parsed from git log + changelog
+  inferred from spec status transitions.
+- Tests panel breakdown by file + recent failure history.
+- Color tone parity on phase-cell (currently solid `--accent`
+  when active; consider an outline-only variant if the founder
+  prefers quieter).

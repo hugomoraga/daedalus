@@ -1,11 +1,11 @@
 # Spec 001 — Revenue Visibility (Module)
 
-**Status:** Draft · Phase 0 (specification only — no implementation)
+**Status:** Ratified · **v0+v1 SHIPPED** (full slice — PR #13 `011-revenue-visibility-v1`, T-01..T-16 ✅, `tests/revenue-visibility-v1.test.ts` green; spec body §12 Q1–Q5 closed in Plan 001 §0, Q6 deliberately unresolved)
 **Type:** Module specification (reusable capability over tenant-scoped data)
 **Owner:** Stewards
 **Tenant of origin:** [Tenant 0 — Founder Profile](../../blueprints/tenants/tenant-0-founder-profile.md)
-**Version:** 0.1.0
-**Last updated:** 2026-06-13
+**Version:** 1.0.0
+**Last updated:** 2026-07-01
 
 > **Method.** Spec-first (Constitution, Principle 8). This document defines *what* Revenue Visibility must do and *why*, not *how*. No code, no API, no database schema, no UI, no bank/tax/SII integration, no real data. Conceptual domain language only.
 
@@ -210,21 +210,33 @@ Rule **logic** is generic (Module). Rule **thresholds** are tenant-configured (T
 
 ## 12. Open questions
 
-- **Q1 — Snapshot trigger.** Manual-only, or also scheduled (e.g. monthly)? Scheduling implies a workflow dependency (Phase 2).
-- **Q2 — Confirmed vs. received as the runway basis.** Does "available balance" for runway use `received` only, or `confirmed + received`? Conservative = `received` only. *Recommendation: received-only; flag for founder.*
-- **Q3 — Runway formula.** Exact definition of "average net burn" (trailing period length? include one-off expenses?). **Blocks build.**
-- **Q4 — Currency.** Single currency assumed. Confirm Tenant 0's currency and whether multi-currency is ever needed (if yes, it's a future spec, not this one).
-- **Q5 — Expected-revenue probability.** Should `expected` items be weighted by a win-probability, or counted at face value? Face value is simpler (Simplicity First); weighting is a future enhancement.
-- **Q6 — Where does this sit relative to a future Finance & Compliance context?** If that Core context is later created, does Revenue Visibility stay a module over it, or fold in? *Deliberately deferred — do not resolve now.*
+> **Status (2026-07-01):** all questions resolved in [Plan 001 §0](./plan.md#0-spec-001-open-questions--resolutions-for-v1) during v1 build (PR #13, merged 2026-06-22). Q6 deliberately unresolved per the spec.
+
+- **Q1 — Snapshot trigger.** **Resolved (Plan 001 §0):** manual-only in v1; scheduled snapshots require Phase 2 (Workflow Engine) and are out of scope for Spec 001.
+- **Q2 — Confirmed vs. received as the runway basis.** **Resolved (Plan 001 §0):** runway uses **received-only** revenue as "available balance" (conservative; spec recommendation). Recorded in `FinancialSummary`.
+- **Q3 — Runway formula.** **Resolved (Plan 001 §0):** `runway_months = received_total / max(net_burn_per_month, 1)` where `net_burn = expenses / months_in_window` over the trailing period supplied by the tenant (default 3 months). One-off expenses included (Simplicity First). No longer blocks build.
+- **Q4 — Currency.** **Resolved (Plan 001 §0):** single tenant currency, currently configured as `"CLP"` in `config/tenants/tenant-0.ts`. Multi-currency, if ever needed, is a future spec (not Spec 001).
+- **Q5 — Expected-revenue probability.** **Resolved (Plan 001 §0):** face value, no weighting. Simplicity First. Weighting is a future enhancement.
+- **Q6 — Where does this sit relative to a future Finance & Compliance context?** **Deliberately unresolved.** Per the spec, do not resolve now. The Tax & Compliance Guard ([Spec 004](../004-tax-compliance-guard/spec.md)) shipped (v1.0) as a separate module, so the question remains open in case a future Core `Finance & Compliance` bounded context is created.
 
 ---
 
-## 13. Out of scope for Phase 0 (what comes next, not now)
+## 13. Out of scope (binding for v1; supersedes the original Phase 0 framing)
 
-- Implementation of any kind (Phase 1+ per [Roadmap](../../docs/roadmap.md): Revenue Visibility v0 is a Phase 1 projection-only milestone).
-- Tax & Compliance Guard (explicitly deferred; do not begin).
-- Integrations (bank, tax authority, accounting software).
-- This spec does not authorize building anything — it authorizes the *next* step: review and ratification, then a Phase 1 implementation spec.
+> **Status (2026-07-01):** v1 shipped (PR #13). The "Phase 0 (no implementation)" framing of the original draft is retired; this section is the current binding list of what Spec 001 does NOT cover, regardless of version.
+
+- **Not** official/statutory accounting or a system of record for compliance (carried over from §10).
+- **Not** definitive tax calculation (no VAT/IVA, no income tax, no withholdings) — Tax & Compliance Guard ([Spec 004](../004-tax-compliance-guard/spec.md)) shipped separately; this spec does not absorb it.
+- **No** SII or any tax-authority integration.
+- **No** bank or payment-processor integration; no real banking data.
+- **No** full double-entry bookkeeping, chart of accounts, or ledgers.
+- **No** multi-currency math (single tenant currency; Q4 closed).
+- **No** scheduled snapshots (Phase 2 / Workflow Engine dependency; Q1 closed).
+- **No** probability weighting on `expected` items (Q5 closed; face value).
+- **Not** a replacement for an accountant; outputs are *indicative*, labeled *approximate*.
+- The Tax & Compliance Guard ([Spec 004](../004-tax-compliance-guard/spec.md)) is a separate Module; this spec does not redefine obligation or compliance concerns.
+- The Core `Finance & Compliance` context, if ever created, is a future ADR; this spec does not pre-decide how Revenue Visibility would fold or stay (Q6 deliberately unresolved).
+- Integrations (bank, tax authority, accounting software) are a future spec, not this one.
 
 ---
 

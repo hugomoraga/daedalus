@@ -1,0 +1,103 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Daedalus Platform API",
+    "version": "0.0.0",
+    "description": "Programmatic driving adapter for the Daedalus Core and modules. Per Spec 016. v0 ships read paths + health checks; write paths land in Phase B gated on the Policy Engine (Spec 009) being able to evaluate HTTP-shaped requests."
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Same-origin. Cloud Run jobs and CI callers point at the deployed URL."
+    }
+  ],
+  "components": {
+    "schemas": {
+      "ApiError": {
+        "type": "object",
+        "required": ["error", "message", "requestId"],
+        "properties": {
+          "error": {
+            "type": "string",
+            "enum": ["bad_request", "unauthorized", "forbidden", "not_found", "conflict", "unprocessable", "rate_limited", "internal", "service_unavailable"]
+          },
+          "message": { "type": "string" },
+          "requestId": { "type": "string", "format": "uuid" }
+        }
+      },
+      "HealthStatus": {
+        "type": "object",
+        "required": ["status", "version"],
+        "properties": {
+          "status": { "type": "string", "enum": ["ok"] },
+          "version": { "type": "string" }
+        }
+      },
+      "ReadyStatus": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": { "type": "string", "enum": ["ready", "unready"] }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/healthz": {
+      "get": {
+        "summary": "Liveness probe",
+        "description": "Returns 200 immediately when the Node process is up. Anonymous (no auth required). Per Spec 016 AC-6.",
+        "responses": {
+          "200": {
+            "description": "Process is up",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HealthStatus" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/readyz": {
+      "get": {
+        "summary": "Readiness probe",
+        "description": "Returns 200 if the event store is reachable and projections can be computed, otherwise 503. Anonymous. Per Spec 016 AC-6.",
+        "responses": {
+          "200": {
+            "description": "Ready to serve",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReadyStatus" }
+              }
+            }
+          },
+          "503": {
+            "description": "Not ready",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openapi.json": {
+      "get": {
+        "summary": "OpenAPI 3.1 document",
+        "description": "Hand-written (per Spec 016 Q4) and validated in CI (per AC-7). Anonymous.",
+        "responses": {
+          "200": {
+            "description": "The OpenAPI document itself (this document, circular reference).",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

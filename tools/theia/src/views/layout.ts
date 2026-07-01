@@ -69,6 +69,59 @@ export function renderLayout(opts: { title: string; body: string }): string {
       text-decoration: none;
     }
     .theia-section-ref-wrap { margin-left: 4px; }
+    /* UX-008 P2-1: the .brand wordmark + subtitle had no CSS so
+       "Theia" inherited the body font and had no visual identity.
+       The wordmark uses the display trio at 18px with a tighter
+       letter-spacing; the <small> subtitle is muted + 12px so it
+       reads as a label, not a sibling word. */
+    .brand {
+      font-family: var(--display);
+      font-size: 18px;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+    }
+    .brand small {
+      color: var(--neutral);
+      font-size: 12px;
+      font-family: var(--body);
+      letter-spacing: 0;
+      margin-left: 8px;
+    }
+
+    /* UX-008 P3-1 — hover transitions (150–300ms ease). Atlas
+       interactive elements snap to a new border-color on hover
+       with no transition. Smooth transitions make the page feel
+       calmer without changing the final state. Token-disciplined:
+       only color / border-color / background-color / box-shadow —
+       no width/height/margin shifts. */
+    a, .theia-card-link, .theia-phase-cell, .theia-task-ac, .theia-section-ref, .navigate-card {
+      transition: color 200ms ease, border-color 200ms ease, background-color 200ms ease, box-shadow 200ms ease;
+    }
+
+    /* UX-008 P3-2 — keyboard navigation focus visible. Browser
+       defaults vary; without an explicit rule, keyboard users on
+       some browsers get no visible focus indicator on links.
+       :focus-visible (not :focus) so mouse clicks don't paint the
+       ring. Outline + offset keeps the ring inside the layout
+       box. */
+    a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* UX-008 P3-3 — respect prefers-reduced-motion. Theia itself
+       has no animations today, but layout.ts is the shared shell
+       (the Navigate marquee lives here when Atlas-style panels
+       are embedded). Future-proof: stop every animation + collapse
+       every transition when the user has asked for less motion. */
+    @media (prefers-reduced-motion: reduce) {
+      .navigate-track { animation-play-state: paused !important; }
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
   </style>
 </head>
 <body>

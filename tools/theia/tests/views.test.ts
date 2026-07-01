@@ -12,6 +12,7 @@ import { parseRepo } from "../src/parser.ts";
 import { renderOverview } from "../src/views/overview.ts";
 import { renderSpecDetail } from "../src/views/spec.ts";
 import { renderPhaseDetail } from "../src/views/phase.ts";
+import type { ProjectState } from "../src/types.ts";
 
 const FIXTURE = fileURLToPath(new URL("./fixtures/repo-typical", import.meta.url));
 
@@ -71,6 +72,21 @@ test("AC-6: code inventory section lists apps + packages", async () => {
   assert.match(html, /package \(/);
 });
 
+// UX-008 P1-3: every code-inventory entry is wrapped in an <a>
+// pointing at its directory in the GitHub repo. apps/ and packages/
+// entries link to the directory; tests/ entries link to the file
+// (matching the spec detail link pattern).
+test("UX-008 P1-3: code inventory entries link to GitHub (apps / packages / tests)", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderOverview(state);
+  // At least one app entry becomes an <a> with a /tree/main/apps/ href.
+  assert.match(html, /href="https:\/\/github\.com\/hugomoraga\/daedalus\/tree\/main\/apps\//);
+  // At least one package entry becomes an <a> with a /tree/main/packages/ href.
+  assert.match(html, /href="https:\/\/github\.com\/hugomoraga\/daedalus\/tree\/main\/packages\//);
+  // Test entries become <a> with /blob/main/tests/ hrefs.
+  assert.match(html, /href="https:\/\/github\.com\/hugomoraga\/daedalus\/blob\/main\/tests\//);
+});
+
 test("AC-7: CLI commands section lists 5 use cases", async () => {
   const { state } = await parseRepo(FIXTURE);
   const html = renderOverview(state);
@@ -113,6 +129,54 @@ test("spec detail view renders the requested spec", async () => {
   assert.match(html, /Phase 2/);
   // Back link.
   assert.match(html, /back to overview/);
+});
+
+// UX-008 P0-2: the "Spec file" link is a direct GitHub blob URL,
+// not a search URL (the latter rendered `github.com/search?q=…`
+// and never landed on the file).
+test("UX-008: spec detail 'Spec file' link points to the GitHub blob URL", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const card = state.specs.find((s) => s.slug === "001-ratified-p2");
+  assert.ok(card !== undefined, "fixture must include 001-ratified-p2");
+  const html = renderSpecDetail("001-ratified-p2", state);
+  // The path is shown verbatim AND as an href.
+  assert.match(html, new RegExp(`href="https://github\\.com/hugomoraga/daedalus/blob/main/${card.links.spec.replace(/\//g, "\\/")}"`));
+  // The old search URL must NOT appear.
+  assert.doesNotMatch(html, /github\.com\/search\?q=/);
+});
+
+// UX-008 P2-1: the .brand wordmark + subtitle had no CSS so
+// "Theia" inherited the body font. The wordmark now uses the
+// display trio at 18px; the <small> subtitle is muted + 12px.
+test("UX-008 P2-1: header .brand has a styled wordmark + muted subtitle", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderOverview(state);
+  assert.match(html, /\.brand \{[^}]*font-family: var\(--display\)/);
+  assert.match(html, /\.brand small \{[^}]*color: var\(--neutral\)/);
+});
+
+// UX-008 P3 — accessibility hygiene from ui-ux-pro-max checklist
+// (items aligned with the Daedalus canon).
+test("UX-008 P3-1: hover transitions are declared on interactive elements", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderOverview(state);
+  assert.match(html, /\.theia-card-link[^{]*\{[^}]*transition:/);
+  assert.match(html, /\.theia-phase-cell[^{]*\{[^}]*transition:/);
+  assert.match(html, /\.theia-task-ac[^{]*\{[^}]*transition:/);
+});
+
+test("UX-008 P3-2: keyboard focus is visible (a:focus-visible gets an outline)", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderOverview(state);
+  assert.match(html, /a:focus-visible[^{]*\{[^}]*outline: 2px solid var\(--accent\)/);
+});
+
+test("UX-008 P3-3: prefers-reduced-motion is respected (transitions collapse, animations stop)", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderOverview(state);
+  assert.match(html, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.match(html, /animation-play-state: paused !important/);
+  assert.match(html, /transition-duration: 0\.001ms !important/);
 });
 
 test("spec detail view for an unknown slug renders a 'not found' page", async () => {
@@ -185,16 +249,19 @@ test("AC-4: drift widget lists each (spec, issue) pair when populated", async ()
   assert.match(html, /Unknown status: oops/);
 });
 
-test("AC-4: drift widget renders between Specs and ADRs sections", async () => {
+test("AC-4 + UX-008: drift widget renders before Specs (signal-first order)", async () => {
   const { state } = await parseRepo(FIXTURE);
   state.specs[0]!.conventionIssues = ["tasks.md missing"];
   const html = renderOverview(state);
-  const specsIdx = html.indexOf("Specs (");
   const driftIdx = html.indexOf("Specs needing attention");
+  const specsIdx = html.indexOf("Specs (");
   const adrsIdx = html.indexOf("ADRs (");
   assert.ok(specsIdx !== -1 && driftIdx !== -1 && adrsIdx !== -1);
-  assert.ok(specsIdx < driftIdx, "drift widget should appear after Specs");
-  assert.ok(driftIdx < adrsIdx, "drift widget should appear before ADRs");
+  // UX-008: when a spec needs attention, the drift widget is the
+  // very first signal — it must appear BEFORE the spec grid so a
+  // founder opening the page sees the action item before browsing.
+  assert.ok(driftIdx < specsIdx, "drift widget should appear before Specs");
+  assert.ok(specsIdx < adrsIdx, "Specs should still appear before ADRs");
 });
 
 // ----------------------------------------------------------------------------
@@ -349,8 +416,268 @@ test("UX-006: done tasks render the entire block with strikethrough; the mark st
 });
 
 // ----------------------------------------------------------------------------
-// UX-007 — spec detail polish
+// UX-008 — overview polish
 // ----------------------------------------------------------------------------
+
+test("AC-7: CLI commands section lists 5 use cases", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderOverview(state);
+  assert.match(html, /CLI commands \(5\)/);
+  for (const cmd of ["alpha:create", "beta:list", "gamma:delete", "delta:status", "epsilon:run"]) {
+    const re = new RegExp(cmd);
+    assert.match(html, re);
+  }
+});
+
+// UX-008 P1-4: when a spec is fully done, the detail page renders
+// a one-line summary so the founder doesn't have to scroll through
+// every [x] task to know "yes, this shipped, 8 PRs in, v1.0.0".
+test("UX-008 P1-4: fully-done spec detail renders a one-line summary", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const card = state.specs.find((s) => s.slug === "001-ratified-p2");
+  assert.ok(card !== undefined, "fixture must include 001-ratified-p2");
+  // The fixture's 001-ratified-p2 ships all tasks done (see
+  // tasks.md / plan.md in repo-typical). Force the count to match
+  // so the summary line renders, regardless of how the fixture is
+  // shaped.
+  card.tasksDone = card.tasksTotal;
+  card.planDone = card.planTotal;
+  const html = renderSpecDetail("001-ratified-p2", state);
+  // The summary line carries the PR count + total + status + version.
+  const sections = new Set(card.taskList.map((t) => t.section).filter((s) => /^PR \d+/.test(s)));
+  const prCount = sections.size;
+  assert.match(html, new RegExp(`${prCount} PR`));
+  assert.match(html, new RegExp(`${card.tasksDone + card.planDone}/${card.tasksTotal + card.planTotal} tasks done`));
+  assert.match(html, new RegExp(`Ratified`));
+  assert.match(html, new RegExp(`Phase ${card.phase}`));
+  assert.match(html, new RegExp(`v${card.version}`));
+});
+
+test("UX-008 P1-4: not-fully-done spec detail omits the summary line", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const card = state.specs.find((s) => s.slug === "001-ratified-p2");
+  assert.ok(card !== undefined, "fixture must include 001-ratified-p2");
+  // Force a pending state — even one undone task disqualifies.
+  card.tasksDone = Math.max(0, card.tasksDone - 1);
+  const html = renderSpecDetail("001-ratified-p2", state);
+  // The summary line's distinctive phrase ("tasks done") must NOT appear.
+  assert.doesNotMatch(html, /tasks done/);
+});
+
+// UX-008 P1-4 — section label adapts. If the spec uses
+// `## PR N` headings (Spec 015 convention), the summary says
+// "N PRs". If the spec uses numeric (`## 1.`) or arbitrary
+// headings (Spec 015 itself is the canonical example), the
+// summary says "N sections".
+test("UX-008 P1-4: section label says 'sections' when headings aren't PR-prefixed", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const card = state.specs.find((s) => s.slug === "001-ratified-p2");
+  assert.ok(card !== undefined);
+  card.tasksDone = card.tasksTotal;
+  card.planDone = card.planTotal;
+  // Replace every task's section with a non-PR prefix.
+  card.taskList = card.taskList.map((t) => ({ ...t, section: `Block ${Math.max(1, Math.floor(Math.random() * 9))}` }));
+  // Dedupe the sections so the count is deterministic.
+  card.taskList = card.taskList.map((t, i) => ({ ...t, section: `Block ${(i % 3) + 1}` }));
+  const html = renderSpecDetail("001-ratified-p2", state);
+  assert.match(html, /sections ·/);
+  assert.doesNotMatch(html, /PRs ·/);
+});
+test("UX-008 P1-2: CLI commands are grouped by colon-prefix", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderOverview(state);
+  // Fixture ships one command per prefix — alpha, beta, gamma, delta,
+  // epsilon — so each gets its own <h4> with a count.
+  for (const prefix of ["alpha:", "beta:", "gamma:", "delta:", "epsilon:"]) {
+    assert.match(html, new RegExp(`<h4[^>]*>${prefix.replace(/[.*+?^\${}()|[\\]\\\\]/g, "\\\\$&")} <span class="muted">\\(1\\)</span></h4>`));
+  }
+  // The total count is preserved.
+  assert.match(html, /CLI commands \(5\)/);
+  // Commands themselves still render as <code> entries.
+  assert.match(html, /<code>alpha:create<\/code>/);
+  assert.match(html, /<code>epsilon:run<\/code>/);
+});
+
+test("UX-008 P1-2: CLI commands with no colon prefix land in 'other'", async () => {
+  // Hand-build a state with one prefix-less command so the 'other'
+  // bucket is exercised.
+  const state = {
+    specs: [],
+    adrs: [],
+    backlog: [],
+    codeInventory: [],
+    useCases: [
+      { command: "version" },
+      { command: "help" },
+      { command: "revenue:create" },
+    ],
+    phases: [],
+    activePhase: 0,
+    blockers: [],
+    nextUnlocks: [],
+    tests: { running: false, pass: 0, fail: 0, total: 0, failingNames: [], reason: null },
+    diff: { available: false, reason: "no git", branch: null, commits: [], filesChanged: 0, insertions: 0, deletions: 0 },
+  } as unknown as ProjectState;
+  const html = renderOverview(state);
+  // 'revenue' appears as a prefix group (sorted first).
+  assert.match(html, /<h4[^>]*>revenue: <span class="muted">\(1\)<\/span><\/h4>/);
+  // 'other' bucket trails.
+  const otherIdx = html.indexOf(">other <");
+  assert.ok(otherIdx !== -1, "expected 'other' bucket for prefix-less commands");
+  assert.match(html, /<code>version<\/code>/);
+  assert.match(html, /<code>help<\/code>/);
+});
+
+// UX-008 P1-1: backlog body runs through the inline-markdown helper
+// (consistent with the spec detail page since UX-007).
+test("UX-008 P1-1: backlog body runs through the inline-markdown helper", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderOverview(state);
+  // Fixture UX-001 body contains '**bold**' → <strong>.
+  assert.match(html, /<strong>bold<\/strong>/);
+  // Fixture UX-001 body contains '`inline code`' → <code>.
+  assert.match(html, /<code>inline code<\/code>/);
+  // Fixture UX-001 body contains '[link to the spec](specs/...)' → <a>.
+  assert.match(html, /<a href="specs\/001-ratified-p2\/spec\.md">link to the spec<\/a>/);
+  // Raw markdown must NOT leak into the rendered HTML.
+  assert.doesNotMatch(html, /\*\*bold\*\*/);
+  assert.doesNotMatch(html, new RegExp("`inline code`"));
+  assert.doesNotMatch(html, /\[link to the spec\]/);
+});
+
+test("UX-008: every overview section carries a stable id for deep linking", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  // UX-008 P1-5: Blockers + Diff are hidden when empty, so inject
+  // a blocker + a commit so the "every section has an id" test sees
+  // every section.
+  state.blockers = [{ blockedSlug: "100-blocked", unblockers: [{ unblockerSlug: "101" }] }];
+  state.diff = {
+    available: true,
+    branch: "feat/test",
+    commits: [{ sha: "abc1234", subject: "test" }],
+    filesChanged: 1,
+    insertions: 1,
+    deletions: 0,
+  };
+  const html = renderOverview(state);
+  // The founder's-eye order (UX-008): drift → specs → tests → blockers
+  // → adrs → backlog → phases → diff → code → cli. The id="…" lives
+  // on the <section> wrapper.
+  for (const id of [
+    "specs",
+    "tests",
+    "blockers",
+    "adrs",
+    "backlog",
+    "phases",
+    "diff",
+    "code-inventory",
+    "cli-commands",
+  ]) {
+    assert.match(html, new RegExp(`<section class="theia-section" id="${id}">`));
+  }
+});
+
+test("UX-008: overview section order matches the founder's-eye hierarchy", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  // Inject drift to make sure the widget renders (otherwise it's
+  // hidden by renderDriftWidget's early-return).
+  state.specs[0]!.conventionIssues = ["tasks.md missing"];
+  // UX-008 P1-5: Blockers + Diff are hidden when empty, so inject
+  // a blocker + a commit so the order test sees every section.
+  state.blockers = [{ blockedSlug: "100-blocked", unblockers: [{ unblockerSlug: "101" }, { unblockerSlug: "102" }] }];
+  state.diff = {
+    available: true,
+    branch: "feat/test",
+    commits: [{ sha: "abcdef0123456789", subject: "test commit for order check" }],
+    filesChanged: 1,
+    insertions: 5,
+    deletions: 2,
+  };
+  const html = renderOverview(state);
+  const positions = {
+    drift: html.indexOf("Specs needing attention"),
+    specs: html.indexOf("Specs ("),
+    tests: html.indexOf("Tests"),
+    blockers: html.indexOf("Blockers"),
+    adrs: html.indexOf("ADRs ("),
+    backlog: html.indexOf("Backlog ("),
+    phases: html.indexOf("Phases ("),
+    diff: html.indexOf("Diff ("),
+    code: html.indexOf("Code inventory"),
+    cli: html.indexOf("CLI commands ("),
+  };
+  for (const [k, v] of Object.entries(positions)) {
+    assert.ok(v !== -1, `${k} section must render`);
+  }
+  const ordered = Object.entries(positions).sort((a, b) => a[1] - b[1]).map(([k]) => k);
+  assert.deepEqual(ordered, [
+    "drift",
+    "specs",
+    "tests",
+    "blockers",
+    "adrs",
+    "backlog",
+    "phases",
+    "diff",
+    "code",
+    "cli",
+  ]);
+});
+
+// UX-008 P1-5: when the diff has nothing to show, the section is
+// hidden entirely (used to render "No commits ahead of main." which
+// took space and said nothing).
+test("UX-008 P1-5: diff section is hidden when on main (no commits ahead)", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  // Fixture's diff state (when available) is empty.
+  state.diff = {
+    available: true,
+    branch: "main",
+    commits: [],
+    filesChanged: 0,
+    insertions: 0,
+    deletions: 0,
+  };
+  const html = renderOverview(state);
+  assert.doesNotMatch(html, /Diff \(/);
+  // The section heading shouldn't appear at all.
+  assert.doesNotMatch(html, /id="diff"/);
+});
+
+test("UX-008 P1-5: diff section is hidden when neither blockers nor unlocks exist", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  state.blockers = [];
+  state.nextUnlocks = [];
+  const html = renderOverview(state);
+  assert.doesNotMatch(html, /Blockers \+ next unlocks/);
+  assert.doesNotMatch(html, /No specs currently blocked/);
+  assert.doesNotMatch(html, /id="blockers"/);
+});
+
+test("UX-008 P1-5: diff section still renders when there ARE commits", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  state.diff = {
+    available: true,
+    branch: "feat/branch",
+    commits: [{ sha: "abc1234", subject: "first commit" }],
+    filesChanged: 2,
+    insertions: 10,
+    deletions: 3,
+  };
+  const html = renderOverview(state);
+  assert.match(html, /Diff \(/);
+  assert.match(html, /abc1234/);
+});
+
+test("UX-008 P1-5: blockers section still renders when there ARE blockers", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  state.blockers = [{ blockedSlug: "100-blocked", unblockers: [{ unblockerSlug: "101" }] }];
+  state.nextUnlocks = [];
+  const html = renderOverview(state);
+  assert.match(html, /Blockers \+ next unlocks/);
+  assert.match(html, /Blocked \(1\)/);
+});
 
 test("UX-007: done task body is dimmed (not struck through); only the id carries strikethrough", async () => {
   const { state } = await parseRepo(FIXTURE);

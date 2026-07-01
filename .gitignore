@@ -8,6 +8,12 @@
 # checkouts, not a tracked folder.
 .worktrees/
 
+# AI agent skills (ui-ux-pro-max, custom skills, etc.). The skill
+# installer drops ~MB of reference data + Python scripts here; it's
+# agent context, not source. Re-installed locally via `uipro init`
+# or the relevant agent CLI per session/worktree.
+.opencode/
+
 # Local environment — real tenant values (currency overrides, jurisdiction
 # profile fields, provenance verifiedBy identity). NEVER commit (PII risk).
 .env

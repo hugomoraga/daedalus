@@ -6,7 +6,7 @@
 
 import type { ProjectState, TaskItem } from "../types.ts";
 import { renderLayout } from "./layout.ts";
-import { escapeHtml } from "./tokens.ts";
+import { escapeHtml, GITHUB_REPO } from "./tokens.ts";
 
 export function renderSpecDetail(slug: string, state: ProjectState): string {
   const card = state.specs.find((s) => s.slug === slug);
@@ -20,9 +20,31 @@ export function renderSpecDetail(slug: string, state: ProjectState): string {
   const done = card.tasksDone + card.planDone;
   const total = card.tasksTotal + card.planTotal;
   const pct = total === 0 ? 0 : Math.round((done / total) * 100);
-  const links = [
-    card.links.spec !== "" ? `<a href="https://github.com/search?q=repo%3Ahugomoraga%2Fdaedalus+path%3A${card.links.spec}">${escapeHtml(card.links.spec)}</a>` : "",
-  ].join("");
+  // The spec's links.spec is a path relative to the repo root
+  // (e.g. "specs/012-theia/spec.md"). Render it as a direct GitHub
+  // blob URL, not a search URL — UX-008.
+  const specPath = card.links.spec !== ""
+    ? `<a href="https://github.com/${GITHUB_REPO}/blob/main/${card.links.spec}">${escapeHtml(card.links.spec)}</a>`
+    : "";
+  // UX-008 P1-4: when a spec is fully done, render a one-line summary
+  // right under the progress bar so the founder doesn't have to scroll
+  // through N identical [x] tasks to learn what they need to know:
+  //   "8 PRs · 32/32 tasks done · Ratified Phase 2 · v1.0.0"
+  // The count label adapts: if every section starts with "PR " (the
+  // Spec 015 convention), say "PRs"; otherwise say "sections" (some
+  // specs use `## 1.`, `## 2.` numeric headings — Spec 015 itself is
+  // the canonical example since it's the spec that defines the
+  // convention, not an instance of it).
+  const sections = new Set(card.taskList.map((t) => t.section));
+  const allPrSections = sections.size > 0 && [...sections].every((s) => /^PR \d+/.test(s));
+  const sectionCount = sections.size;
+  const sectionLabel = allPrSections
+    ? `PR${sectionCount === 1 ? "" : "s"}`
+    : `section${sectionCount === 1 ? "" : "s"}`;
+  const isFullyDone = total > 0 && done === total;
+  const summaryLine = isFullyDone
+    ? `<div class="theia-mono" style="margin-top: 8px;">${sectionCount} ${sectionLabel} · ${done}/${total} tasks done · ${escapeHtml(card.status)}${card.phase !== null ? ` Phase ${card.phase}` : ""} · v${escapeHtml(card.version ?? "?")}</div>`
+    : "";
   const body = `
     <section class="theia-section">
       <h2>${escapeHtml(card.title)}</h2>
@@ -34,7 +56,8 @@ export function renderSpecDetail(slug: string, state: ProjectState): string {
         <span class="theia-mono">${done}/${total} tasks</span>
         <span class="theia-progress"><span style="width:${pct}%"></span></span>
       </div>
-      <p style="margin-top: 16px;">Spec file: ${links}</p>
+      ${summaryLine}
+      <p style="margin-top: 16px;">Spec file: ${specPath}</p>
       ${renderTaskList(card.taskList)}
       ${card.unknownReason !== null ? `<div class="theia-warn-banner">${escapeHtml(card.unknownReason)}</div>` : ""}
       <p style="margin-top: 24px;"><a href="/">← back to overview</a></p>

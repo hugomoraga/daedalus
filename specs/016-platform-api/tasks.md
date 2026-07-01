@@ -1,14 +1,12 @@
 # Tasks — Platform API
 
-**Status:** Draft (planning; build not authorized) · **activation 5/6 cleared (gates #1 #2 #3 #4 #5) · 1 gate remaining (#6 first consumer named, tracked as PR #119 / ADR-013)**
-**Derives from:** [Spec 016 v1.0.0](./spec.md) (Ratified) + [Plan 016 v1.0.0](./plan.md) (Ratified) + [ADR-010](../../governance/decisions/ADR-010-platform-api-driving-adapter.md) (Accepted) + [PR #117 evidence](../../apps/cli/src/commands/registry.ts) (CLI registry enumerated)
+**Status:** Phase A in progress · **activation 6/6 cleared** · **T-01 ✅ shipped in #121** · **T-02–T-04 next**
+**Derives from:** [Spec 016 v1.0.0](./spec.md) (Ratified) + [Plan 016 v1.0.0](./plan.md) (Ratified) + [ADR-010](../../governance/decisions/ADR-010-platform-api-driving-adapter.md) (Accepted) + [ADR-013](../../governance/decisions/ADR-013-cloud-run-job-first-consumer.md) (Accepted) + [PR #117 evidence](../../apps/cli/src/commands/registry.ts) (CLI registry enumerated) + [PR #120 evidence](../../../tests/policy-engine-http-shaped.test.ts) (HTTP-shaped policy action)
 **Conforms to:** [Conventions](../../tools/theia/CONVENTIONS.md), [Technical Principles](../../memory/technical-principles.md)
-**Version:** 0.5.0
+**Version:** 1.1.0
 **Last updated:** 2026-07-01
 
-> Draft — Spec 016 is Ratified, ADR-010 is Accepted, the CLI registry is enumerated, the `registerApi` hook signature is locked, and the first consumer is named as a Cloud Run job (gates #1, #2, #4, #5, #6 cleared by #115, #116, #117, #118, #119). **One gate remains:** Spec 009 wired for HTTP (gate #3). T-01…T-N may not begin per the spec's binding language until all six clear.
->
-> This `tasks.md` exists in canonical Draft form so the Spec 015 linter passes and Theia reports the spec correctly (0 / 0 tasks, Draft status) while planning continues.
+> Phase A T-01 ✅ shipped (PR #121). The remaining Phase A tasks are T-02 (auth + tenant resolver — closes AC-2), T-03 (read paths — closes AC-3, AC-9 reads, AC-12 reads), and T-04 (`registerApi` integration + OpenAPI cross-check — closes the full AC-7). Phase B (writes through Policy Engine) and Phase C (production hardening with `app/service` SIGTERM and rate limiting) are gated on Phase A + the ADR-013 first consumer. Each T-NN is its own PR; the [Plan §2 phase breakdown](../../specs/016-platform-api/plan.md) is the canonical ordering.
 
 ---
 
@@ -25,9 +23,26 @@
 
 ---
 
-## 2. v0 build — Draft
+## 2. v0 build
 
-*(none yet — see Spec 016 spec.md §4 for the v0 route table, §7 for the binding
-constraints, §8 for the 13 acceptance criteria that will become the T-NN task
-source, and §13 for the activation gates above. The first task to land will
-be T-01 — likely `apps/api/` scaffolding — once all six gates clear.)*
+Tasks roll in from [Plan 016 §2](../../specs/016-platform-api/plan.md) (Phase A / B / C). Each T-NN is its own PR; the references below point at the PR that lands each, and the test plan §6 lists the AC each T clears.
+
+### Phase A — read paths only (gated on Spec 016 ratified + ADR-010 accepted; no Policy Engine dependency for reads)
+
+- [x] T-01: `apps/api/` scaffolding. SHIPPED in PR #121. Files: `apps/api/package.json` (`dependencies: {}` per AC-8), `apps/api/src/server.ts` (Node 22 native `http.createServer`; SIGTERM handler; bound 0.0.0.0 with `PORT` env override), `apps/api/src/router.ts` (exact-path dispatch), `apps/api/src/routes/health.ts` (`/healthz` + `/readyz` per AC-6), `apps/api/src/routes/openapi.ts` (`/openapi.json` per AC-7), `apps/api/src/openapi.json` (hand-written OpenAPI 3.1, AC-4 Q4), `apps/api/src/readiness.ts` (event-store-reachable probe, duck-typed vs Core's `EventStorePort` so the package stays dep-less per AC-8), `apps/api/src/errors.ts` (canonical envelope), `apps/api/src/lineage.ts` (`X-Causation-Id` / `X-Correlation-Id` per AC-10), `apps/api/src/cli.ts` (`daedalus-api serve [--port N]`). Tests: `apps/api/tests/api-deps.test.ts` (AC-8), `apps/api/tests/api-health.test.ts` (AC-6), `apps/api/tests/api-openapi.test.ts` (AC-7 slice).
+- [ ] T-02: Auth middleware (env file + per-tenant env var per Q10) + tenant resolver + isolation middleware. Closes AC-2. Tracking as PR #122.
+- [ ] T-03: Read paths: `GET /v1/tenants/:tenantId/events[/:eventId]` + `GET /v1/tenants/:tenantId/projections/:name` + `GET /v1/tenants/:tenantId/obligations` (after Spec 004 module opts in) + `GET /v1/tenants/:tenantId/workflows/instances[/:id]` (after Spec 011 module opts in). Closes AC-3, AC-9 (stateless horizontal scaling for reads), AC-12 (CLI ↔ API parity baseline).
+- [ ] T-04: `registerApi(router, ctx) → void` hook integration + module opt-in walk + OpenAPI cross-validation. Closes AC-1 / AC-12 surface (parity across CLI + API) + AC-7 (full).
+
+### Phase B — write paths (gated on Spec 009 ready to evaluate HTTP requests; closed by #120)
+
+- [ ] T-05: `routes/commands.ts` — `POST /v1/tenants/:tenantId/commands/:useCase` per Q3 (`':' → '/'`). Closes AC-4 (policy-bound writes) + AC-13 readiness (writes still return 503 until policy is wired for HTTP at the application layer — gate #3 verified HTTP *evaluation*, this closes the API-side wiring).
+- [ ] T-06: `policy.ts` — `evaluateAndRecordPolicy` wrapper, lineage propagation into `causationId`/`correlationId` of the resulting `DomainEvent`. Closes AC-10 (lineage headers → event lineage).
+- [ ] T-07: `idempotency.ts` — TTL-based eviction in the in-process store. Closes AC-5, AC-9.
+
+### Phase C — production hardening (gated on first consumer deployed; named by ADR-013)
+
+- [ ] T-08: `ratelimit.ts` — per-tenant token bucket (100 req/s default, env-configurable). Closes Q11 caveat.
+- [ ] T-09: SIGTERM graceful shutdown (configurable timeout, default 30s, env `API_SHUTDOWN_TIMEOUT_MS`). Closes AC-11.
+- [ ] T-10: `/openapi.json` cross-validation against `routes/` at boot. Final AC-7 stricter check.
+- [ ] T-11: `registerApi` opt-in audit (each module documents its `registerApi` hook + integration test). Final AC-12 / AC-1.

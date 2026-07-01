@@ -29,15 +29,22 @@ export function enrich(
 }
 
 // Append a batch of intents for one tenant, all sharing the given lineage.
+// When `actorOverride` is provided, every event in this batch carries
+// `actor = actorOverride` instead of `deps.actor`. This is the seam the
+// Platform API (Spec 016 §8 AC-10) uses to record the API-key principal
+// on PolicyDecisionRecorded events; non-overriding callers keep
+// `deps.actor` semantics unchanged.
 export async function appendIntents(
   deps: CoreDeps,
   tenantId: string,
   intents: EventIntent[],
   lineage: Lineage,
+  actorOverride?: string,
 ): Promise<void> {
+  const actor = actorOverride ?? deps.actor;
   for (const intent of intents) {
     await deps.eventStore.append(
-      enrich(intent, { tenantId, actor: deps.actor, newId: deps.newId, now: deps.now, lineage }),
+      enrich(intent, { tenantId, actor, newId: deps.newId, now: deps.now, lineage }),
     );
   }
 }

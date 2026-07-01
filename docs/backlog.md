@@ -251,6 +251,42 @@ Tracked here as a single observation; not committed to either follow-up without 
 
 ---
 
+## CHORE-004 — local branches left behind by squash-merged PRs
+
+**Status:** done
+**Kind:** churn
+**Source:** session-end audit, 2026-06-30
+**Affects:** local tracking branches (no remote refs)
+**Closed:** 2026-06-30 (PR #104)
+
+A class of leak CHORE-001 and CHORE-003 didn't cover, because at the time no squash-merged PR had yet produced it: **local branches whose commits are not ancestors of `main`, but whose effective content already is.** This happens whenever a PR is merged via GitHub's "Squash and merge" button (now the project default — see PRs #80, #81, #82, #83, #84, #103). The squash creates a new commit on `main` carrying the same content, but the original commits on the head branch are *discarded* from `main`'s history. `git branch -d` correctly refuses to delete the local branch ("not fully merged") even though the content is preserved — only `git branch -D` (with evidence) is safe.
+
+Snapshot at the start of this session (`8e8d195` on `main`, post PR #103 merge):
+
+5 local branches, all with PRs merged and no `origin/<branch>` ref:
+
+| Local branch | PR | Merged | `git diff main <branch> --shortstat` |
+|---|---|---|---|
+| `015-spec-file-convention` | #80 | 2026-06-22T16:30Z | 57 files, +572 / **-4416** |
+| `016-platform-api` | #83 | 2026-06-22T18:39Z | 37 files, +101 / **-2492** |
+| `017-athena-founder-cockpit` | #84 | 2026-06-22T19:03Z | 34 files, +75 / **-2478** |
+| `081-spec-file-convention-impl` | #81 | 2026-06-22T17:30Z | 38 files, +75 / **-3116** |
+| `082-spec015-t28-closure` | #82 | 2026-06-22T18:45Z | 37 files, +74 / **-3115** |
+
+Each branch is **~8 days stale** (last commit 2026-06-22). The high deletion counts are not merge conflicts — they are code that was *added to `main` after* the PR landed (test expansion, parser hardening, Theia UI work — see PRs #85–#103). The branches never rebased; their base has drifted.
+
+**Safety verification (per branch, before delete):**
+
+1. PR status verified as `MERGED` via `gh pr view <n>`.
+2. `git diff main <branch> --numstat` was filtered for files with `+unique` (insertions with no corresponding deletions in the same file): **zero matches across all 5 branches.** Every file that has additions also has deletions, meaning every change is either (a) a partial edit within a file `main` also edited, or (b) an insertion into a file that `main` later expanded. No file is wholly unique to the branch.
+3. Therefore the squash-merged content is provably present in `main`'s working tree (modulo the post-merge drift, which is `main` being *ahead* — never behind).
+
+**Resolution.** All 5 local branches deleted via `git branch -D` after the evidence above. The deletion targets (the *git branches*) are **not the same objects as the spec directories** — `specs/015-spec-file-convention/`, `specs/016-platform-api/`, `specs/017-athena-founder-cockpit/`, etc. live in `main` as tracked files regardless of this cleanup; only the corresponding branch refs (e.g. `015-spec-file-convention`) are gone. Post-cleanup `git branch -a` will show only `main` and the current session's worktree branch plus `origin/main` / `origin/HEAD`. No new spec, plan, ADR, or code file is lost.
+
+**On the follow-ups left open by CHORE-003.** This is now the *third* cleanup wave (CHORE-002 → CHORE-003 → CHORE-004), and the two structural candidates proposed at the end of CHORE-003 (session-end hook + periodic Action) remain unimplemented. Promoting those to committed backlog items is overdue; tracked here as the explicit pointer for whoever picks it up.
+
+---
+
 ## UX-001 — Navigate marquee starts auto-scrolling on load
 
 **Status:** done

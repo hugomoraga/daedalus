@@ -493,12 +493,23 @@ test("UX-008 P1-1: backlog body runs through the inline-markdown helper", async 
 
 test("UX-008: every overview section carries a stable id for deep linking", async () => {
   const { state } = await parseRepo(FIXTURE);
+  // UX-008 P1-5: Blockers + Diff are hidden when empty, so inject
+  // a blocker + a commit so the "every section has an id" test sees
+  // every section.
+  state.blockers = [{ blockedSlug: "100-blocked", unblockers: [{ unblockerSlug: "101" }] }];
+  state.diff = {
+    available: true,
+    branch: "feat/test",
+    commits: [{ sha: "abc1234", subject: "test" }],
+    filesChanged: 1,
+    insertions: 1,
+    deletions: 0,
+  };
   const html = renderOverview(state);
   // The founder's-eye order (UX-008): drift → specs → tests → blockers
   // → adrs → backlog → phases → diff → code → cli. The id="…" lives
   // on the <section> wrapper.
   for (const id of [
-    "specs-needing-attention",
     "specs",
     "tests",
     "blockers",
@@ -518,6 +529,17 @@ test("UX-008: overview section order matches the founder's-eye hierarchy", async
   // Inject drift to make sure the widget renders (otherwise it's
   // hidden by renderDriftWidget's early-return).
   state.specs[0]!.conventionIssues = ["tasks.md missing"];
+  // UX-008 P1-5: Blockers + Diff are hidden when empty, so inject
+  // a blocker + a commit so the order test sees every section.
+  state.blockers = [{ blockedSlug: "100-blocked", unblockers: [{ unblockerSlug: "101" }, { unblockerSlug: "102" }] }];
+  state.diff = {
+    available: true,
+    branch: "feat/test",
+    commits: [{ sha: "abcdef0123456789", subject: "test commit for order check" }],
+    filesChanged: 1,
+    insertions: 5,
+    deletions: 2,
+  };
   const html = renderOverview(state);
   const positions = {
     drift: html.indexOf("Specs needing attention"),
@@ -547,6 +569,60 @@ test("UX-008: overview section order matches the founder's-eye hierarchy", async
     "code",
     "cli",
   ]);
+});
+
+// UX-008 P1-5: when the diff has nothing to show, the section is
+// hidden entirely (used to render "No commits ahead of main." which
+// took space and said nothing).
+test("UX-008 P1-5: diff section is hidden when on main (no commits ahead)", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  // Fixture's diff state (when available) is empty.
+  state.diff = {
+    available: true,
+    branch: "main",
+    commits: [],
+    filesChanged: 0,
+    insertions: 0,
+    deletions: 0,
+  };
+  const html = renderOverview(state);
+  assert.doesNotMatch(html, /Diff \(/);
+  // The section heading shouldn't appear at all.
+  assert.doesNotMatch(html, /id="diff"/);
+});
+
+test("UX-008 P1-5: diff section is hidden when neither blockers nor unlocks exist", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  state.blockers = [];
+  state.nextUnlocks = [];
+  const html = renderOverview(state);
+  assert.doesNotMatch(html, /Blockers \+ next unlocks/);
+  assert.doesNotMatch(html, /No specs currently blocked/);
+  assert.doesNotMatch(html, /id="blockers"/);
+});
+
+test("UX-008 P1-5: diff section still renders when there ARE commits", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  state.diff = {
+    available: true,
+    branch: "feat/branch",
+    commits: [{ sha: "abc1234", subject: "first commit" }],
+    filesChanged: 2,
+    insertions: 10,
+    deletions: 3,
+  };
+  const html = renderOverview(state);
+  assert.match(html, /Diff \(/);
+  assert.match(html, /abc1234/);
+});
+
+test("UX-008 P1-5: blockers section still renders when there ARE blockers", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  state.blockers = [{ blockedSlug: "100-blocked", unblockers: [{ unblockerSlug: "101" }] }];
+  state.nextUnlocks = [];
+  const html = renderOverview(state);
+  assert.match(html, /Blockers \+ next unlocks/);
+  assert.match(html, /Blocked \(1\)/);
 });
 
 test("UX-007: done task body is dimmed (not struck through); only the id carries strikethrough", async () => {

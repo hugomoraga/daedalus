@@ -277,6 +277,12 @@ function renderTestsSection(state: ProjectState): string {
 
 function renderDiffSection(state: ProjectState): string {
   const d = state.diff;
+  // UX-008 P1-5: hide the section entirely when there is nothing
+  // meaningful to say. On `main` the diff parser returns
+  // available=true with commits=[] and filesChanged=0 — that case
+  // used to render "Diff (branch main) · 0 files · +0 / -0 · No
+  // commits ahead of main." which took vertical space and told
+  // the user nothing. Now it renders nothing.
   if (!d.available) {
     return section(
       "Diff",
@@ -284,21 +290,28 @@ function renderDiffSection(state: ProjectState): string {
       { id: "diff" },
     );
   }
-  const commitList = d.commits.length === 0
-    ? "<p class=\"muted\">No commits ahead of main.</p>"
-    : `<ul class="theia-mono">${d.commits.slice(0, 10).map((c) => `<li>${escapeHtml(c.sha.slice(0, 7))} ${escapeHtml(c.subject)}</li>`).join("")}${d.commits.length > 10 ? `<li>… +${d.commits.length - 10} more</li>` : ""}</ul>`;
+  if (d.commits.length === 0 && d.filesChanged === 0) {
+    return "";
+  }
+  const commitList = d.commits.slice(0, 10).map((c) => `<li>${escapeHtml(c.sha.slice(0, 7))} ${escapeHtml(c.subject)}</li>`).join("") + (d.commits.length > 10 ? `<li>… +${d.commits.length - 10} more</li>` : "");
   const branchLabel = d.branch !== null ? `branch <code>${escapeHtml(d.branch)}</code>` : "no branch";
   return section(
     `Diff (${branchLabel})`,
     `<div class="theia-card">
       <div class="theia-mono">${d.filesChanged} files · +${d.insertions} / -${d.deletions}</div>
-      ${commitList}
+      <ul class="theia-mono">${commitList}</ul>
     </div>`,
     { id: "diff" },
   );
 }
 
 function renderBlockersSection(state: ProjectState): string {
+  // UX-008 P1-5: hide the section when there are no blockers AND
+  // no next unlocks. Same rationale as the diff section — "No
+  // specs currently blocked." took space and said nothing.
+  if (state.blockers.length === 0 && state.nextUnlocks.length === 0) {
+    return "";
+  }
   const parts: string[] = [];
   if (state.blockers.length > 0) {
     const items = state.blockers.map((b) => {
@@ -306,8 +319,6 @@ function renderBlockersSection(state: ProjectState): string {
       return `<li><code>${escapeHtml(b.blockedSlug)}</code> blocked by ${unblockers}</li>`;
     }).join("");
     parts.push(`<h3>Blocked (${state.blockers.length})</h3><ul>${items}</ul>`);
-  } else {
-    parts.push(`<p class="muted">No specs currently blocked.</p>`);
   }
   if (state.nextUnlocks.length > 0) {
     const items = state.nextUnlocks.map((u) => `<li><code>${escapeHtml(u.slug)}</code> → would unblock ${u.unlocksCount}</li>`).join("");

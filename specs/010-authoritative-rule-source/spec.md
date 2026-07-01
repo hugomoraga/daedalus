@@ -1,11 +1,11 @@
 # Spec 010 — Authoritative Rule Source (Process + Structure)
 
-**Status:** Ratified · **process + structural pattern** · build authorized
+**Status:** Ratified · **v1 SHIPPED** (process + structural pattern — PR #50, 20 tasks ✅, Spec 004 B3 ✅ Closed, [Spec 013](../013-jurisdiction-model/spec.md) unblocked)
 **Type:** Cross-cutting specification (governance process + Core structural support)
 **Owner:** Stewards + tenant (human accountable)
 **Validation priority:** unblocks Module #4; required before [Spec 013's](../013-jurisdiction-model/spec.md) `RuleProvenance` carries real weight
-**Version:** 1.0.0
-**Last updated:** 2026-06-22
+**Version:** 1.1.0
+**Last updated:** 2026-07-01
 
 > **Method.** Spec-first (Constitution, Principle 8). Upgraded from STUB to Ratified v1.0. The **mechanical** parts (refuse to load rules without provenance; version mismatch; `validateProvenance` + `FilesystemRuleSetLoaderAdapter`) shipped in PR #35 (Spec 013 J-06 / J-10). This v1.0 ratifies the **process** (R1), the **source artifact format** (R2), the **default staleness policy** (R3), and the **conflict resolution rule** (R4), plus four Core events (`RuleSetRegistered`, `RuleSetSuperseded`, `RuleSetStale`, `ObligationCoverageGap`) that surface gaps and supersedes to Module + Tenant. The process is still human; the system can only enforce provenance mechanics and surface gaps. No rule is invented or auto-acquired.
 

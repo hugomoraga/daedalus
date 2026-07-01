@@ -1,11 +1,11 @@
 # Spec 009 — Policy Engine (Phase 3)
 
-**Status:** Ratified · **Phase 3 capability** · platform substrate · build authorized
+**Status:** Ratified · **v1 SHIPPED** (Phase 3 capability, platform substrate — PR #38, T-01..T-20 ✅, 146 tests green, lint `check-policies-have-provenance.mjs` wired into `npm test`)
 **Type:** Core capability specification (platform substrate — not a Module; not a Tenant concern)
 **Owner:** Stewards
 **Validation priority:** Phase 3 (per [Roadmap](../../docs/roadmap.md#phase-3--policy-engine))
-**Version:** 1.0.0
-**Last updated:** 2026-06-21
+**Version:** 1.1.0
+**Last updated:** 2026-07-01
 
 > **Method.** Spec-first (Constitution, Principle 8). This v1.0 ratifies the **mechanism** of the Policy Engine (the substrate). It does **not** ratify any specific policy bundle — those are authored by Modules ([Spec 004 Tax & Compliance Guard](../004-tax-compliance-guard/spec.md) is the first consumer) and reviewed under [Constitution §V](../../memory/constitution.md) (human accountability for policy).
 

@@ -1,10 +1,10 @@
 # Spec 006 — Core Value-Chain Completion
 
-**Status:** Ratified · Phase 1 (implementation)
+**Status:** Ratified · **v0 SHIPPED** (Phase 1 — PR #14, T-01..T-12 ✅, 88 tests green, full `Lead → Payment` end-to-end on the 14-event Core stream, 2 new aggregates `Project` + `Invoice` + 3 internal Core reactors)
 **Type:** Core event/aggregate completion (not a Module — it fills gaps in the generic Core value chain)
 **Owner:** Stewards
-**Version:** 0.1.0
-**Last updated:** 2026-06-14
+**Version:** 1.0.0
+**Last updated:** 2026-07-01
 
 > **Method.** Spec-first (Constitution, Principle 8). Defines *what* the Core must do and *why*, not *how*. Conceptual domain language only — no code, no schema, no API, no UI.
 

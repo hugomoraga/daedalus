@@ -1,9 +1,9 @@
 # ADR-010 — Add the Platform API as a programmatic driving adapter
 
-**Status:** Proposed
-**Date:** 2026-06-22
+**Status:** Accepted
+**Date:** 2026-07-01 (originally proposed 2026-06-22; accepted 2026-07-01 via PR #116, on the back of Spec 016 ratification in PR #115)
 **Deciders:** Stewards
-**Trigger:** [Spec 016 — Platform API](../../specs/016-platform-api/spec.md) drafted (v0.2.0 on branch `016-platform-api`); the platform is moving toward Cloud Run, Agent Runtime (Phase 4), and multi-tenant operations (Phase 5), all of which need programmatic access to the platform's use cases.
+**Trigger:** [Spec 016 — Platform API](../../specs/016-platform-api/spec.md) drafted (v0.2.0 on branch `016-platform-api`, since Ratified in PR #115); the platform is moving toward Cloud Run, Agent Runtime (Phase 4), and multi-tenant operations (Phase 5), all of which need programmatic access to the platform's use cases.
 **Related:** [Constitution](../../memory/constitution.md), [Technical Principles](../../memory/technical-principles.md), [Identity](../../docs/identity.md), [Roadmap](../../docs/roadmap.md), [ADR-002](./ADR-002-adopt-technical-framework.md), [ADR-003](./ADR-003-modular-monorepo.md), [ADR-004](./ADR-004-export-discipline-and-lineage.md), [ADR-005](./ADR-005-atlas-driving-adapter.md) (parallels), [Spec 009](../../specs/009-policy-engine/spec.md), [Spec 011](../../specs/011-workflow-engine-projections/spec.md), [Spec 012](../../specs/012-theia/spec.md), [Spec 016](../../specs/016-platform-api/spec.md)
 
 ---
@@ -109,11 +109,11 @@ This ADR records the architectural decision: **the Platform API is admitted as a
 
 This ADR moves the Platform API into the roadmap only when **all** of the following hold:
 
-1. **[Spec 016](../../specs/016-platform-api/spec.md) is ratified.** *(Pending — currently Draft v0.2.0 on branch `016-platform-api`.)*
-2. **The steward ratifies this ADR explicitly.** *(Pending.)*
-3. **The activation criteria in Spec 016 §13 are reachable.** That is, the Policy Engine (Spec 009) is on a path to be able to evaluate HTTP-shaped requests, the CLI use case registry is enumerable, and a first consumer (Cloud Run / agent / CI / integration) is identified or at least named in the near-term roadmap. *(Pending — activation is not pre-approval of the build; it is a check that the gates are not permanently blocked.)*
+1. **[Spec 016](../../specs/016-platform-api/spec.md) is ratified.** ✅ Cleared in PR #115 (`docs(specs/016): ratify Platform API — gate #1 cleared, 1/6`). Spec 016 is now Ratified v1.0.0; spec §11 Q1–Q12 are closed; spec §13 carries an activation-status table.
+2. **The steward ratifies this ADR explicitly.** ✅ Cleared in this PR (#116). This ADR moves from Proposed → Accepted on 2026-07-01.
+3. **The activation criteria in Spec 016 §13 are reachable.** That is, the Policy Engine (Spec 009) is on a path to be able to evaluate HTTP-shaped requests, the CLI use case registry is enumerable, and a first consumer (Cloud Run / agent / CI / integration) is identified or at least named in the near-term roadmap. ⏳ Reachable, in progress. Pre-PR-#116 snapshot: gates 3 / 4 / 6 (Spec 009 HTTP wiring, CLI registry baseline, first consumer) are pending follow-up PRs; gate 5 (the `registerApi` hook signature) was locked by Spec 016 §11 Q5 in #115 and its module-opt-in implementation tracks as a separate PR.
 
-Once ratified, the T-01…T-N in `specs/016-platform-api/tasks.md` may begin only when the six gates in Spec 016 §13 clear, in order.
+Once ratified, the T-01…T-N in `specs/016-platform-api/tasks.md` may begin only when the six gates in Spec 016 §13 clear, in order. The acceptance of this ADR is **not** pre-approval of the build; it is the architectural authorization that, combined with the spec's gate-driven build start, removes one more dependency from the build's own sequence.
 
 ---
 

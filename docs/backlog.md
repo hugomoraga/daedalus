@@ -1193,3 +1193,147 @@ entries.
     `?show=done` still opens it.
   - The body (block-level markdown from UX-009) still
     renders correctly inside the details.
+
+## UX-011 — Backlog body: ATX headers + paragraph wrapping + horizontal rules
+
+**Status:** in-progress
+**Kind:** follow-up
+**Source:** founder observation on 2026-07-01 ("En el contexto del backlog se ven mal aun. no formateado. el codigo deberia estar con formato codigo.. las letras mas homogeneas y jerarquicas" while reviewing the UX-010 merge at http://127.0.0.1:8789/)
+**Affects:** tools/theia/src/views/spec.ts, tools/theia/src/views/layout.ts, tools/theia/tests/inline-markdown.test.ts, tools/theia/tests/fixtures/repo-typical/docs/backlog.md
+
+### Why
+
+UX-009 added block-level markdown (fenced code blocks, GFM
+tables, lists) to the inline-markdown helper. UX-010
+restructured the backlog section to a card list. Two
+remaining structural gaps showed up in the rendered body:
+
+1. **ATX headers (`#`, `##`, `###`, …) are not handled.**
+   The live UX-009 entry body starts with `### Why The
+   Theia backlog section…` and ends with `### Scope…`,
+   `### Out of scope…`, `### Acceptance…` — every one of
+   these renders as the literal text `### Why …`,
+   `### Scope …`, etc. No hierarchy. The author wrote
+   section markers; the reader sees a wall of prose with
+   hash signs at the start of sentences.
+
+2. **Paragraphs are not wrapped.** Two consecutive non-blank
+   lines render as one text node with `\n` whitespace
+   between them; a blank line ends the block. The CSS for
+   `.theia-backlog-body-inner p` already styles `<p>` with
+   8px margin, but there were no `<p>` tags in the output.
+   Result: prose runs as a wall with no breathing room
+   between blocks. The reader has to scroll past 100+
+   contiguous lines to find anything.
+
+3. **Horizontal rules (`---`) are not handled.** A few
+   backlog bodies use `---` as a divider between the
+   "Resolution" and the "Verification" sections (CHORE-002,
+   CHORE-004, TEST-001). Currently these render as literal
+   `---` strings, breaking the visual flow.
+
+UX-011 adds three pre-passes (ATX headers, paragraphs,
+horizontal rules) and a typography rule set for the body
+content (display font for headings, body font for prose,
+canonical spacing).
+
+### Scope (one PR, three commits)
+
+**Concern 1 — block-level markdown pre-passes (`spec.ts`).**
+`inlineMarkdownToHtml` grows three new pre-passes, all using
+the same `\u0000L…\u0000` placeholder mechanism as the
+existing passes:
+
+  - **ATX headers** `^(#{1,6})\s+(.+)$` → `<h{level} class="theia-md-h{level}">{inline content}</h{level}>`.
+    Levels 1-6 map to `<h1>` through `<h6>`. The header
+    text runs through the inline passes so `**bold**` and
+    `` `code` `` inside a header work.
+  - **Horizontal rules** `^---+\s*$` (3+ dashes on a line
+    by themselves) → `<hr class="theia-md-hr">`. The line
+    must have only dashes and optional trailing whitespace;
+    `----foo` is not a rule.
+  - **Paragraphs** — a new `wrapParagraphs` helper that
+    takes the remaining text (after the existing fenced /
+    table / list / header / hr passes) and wraps each run
+    of consecutive non-blank lines in `<p class="theia-md-p">…</p>`.
+    Lines that contain a block-level placeholder (`\u0000F…\u0000`,
+    `\u0000T…\u0000`, `\u0000I…\u0000`, `\u0000H…\u0000`,
+    `\u0000R…\u0000`) are emitted as standalone elements,
+    not as part of a paragraph. Hard line breaks inside a
+    paragraph are joined with a single space; this matches
+    how prose is read on the web (one paragraph = one
+    visual block, no surprise mid-line breaks).
+
+  The order of passes is: fence → table → list → header →
+  hr → paragraph → inline passes. Block-level placeholders
+  are restored in reverse order at the end (UX-007's pattern),
+  so paragraphs around them render correctly.
+
+**Concern 2 — typography for the body (`layout.ts`).** A new
+rule set pins the body content to the canonical typography
+(Atlas AC-11) and the canonical spacing scale:
+
+  - `.theia-backlog-body-inner` gets `font-family: var(--body); font-size: 14px; line-height: 1.5; color: var(--ink)`.
+  - `.theia-md-h1` … `.theia-md-h6` use `font-family: var(--display); font-weight: 500`. Levels 1-3 get
+    progressively smaller margins (`margin-top: 16px; margin-bottom: 8px`). Levels 4-6 are inline-friendly
+    (`margin: 8px 0`).
+  - `.theia-md-p` already had `margin: 8px 0` from UX-009; the new pass emits `<p>` so the rule applies.
+  - `.theia-md-hr` is a single hairline (`border-top: 1px solid var(--rule); margin: 16px 0;`).
+  - The existing `.theia-backlog-body-inner code`,
+    `.theia-backlog-body-inner pre.theia-code-block`, etc.
+    rules stay — they style code/table/list elements inside
+    paragraphs.
+
+**Concern 3 — fixture body exercises the new passes
+(`tools/theia/tests/fixtures/repo-typical/docs/backlog.md`).**
+The fixture's UX-001 body now includes `### Why` and a
+`---` divider so the parser + view tests catch regressions
+on the new passes. The fixture update is the third commit
+of the PR.
+
+### Out of scope
+
+- **Setext-style headers** (`H1\n=====`, `H2\n-----`).
+  ATX is the dominant style in modern markdown; Setext
+  is rare and adds complexity for minimal value. UX-012+
+  if ever needed.
+- **Footnote references** (`[^1]`). Overkill for backlog
+  bodies; provenance lives in commits.
+- **Reference-style links** (`[text][label]\n\n[label]: url`).
+  Inline `[text](url)` covers 100% of the live backlog.
+- **Markdown inside the title** (the bold-free `Backlog
+  section: hide done…` is the title, not a body, and is
+  not run through the markdown helper).
+- **The "Concern 2 — block-level markdown in the inline
+  helper" / "## Out of scope" / "## Acceptance" patterns
+  in the UX-009 body** — those are markers the author wrote
+  using `**Concern N — …**`. UX-011 doesn't auto-detect
+  them; it lets ATX headers (`###`) do the hierarchy job.
+  The UX-009 body uses `### Why` / `### Scope` /
+  `### Out of scope` / `### Acceptance` for that reason.
+- **Inline HTML in backlog bodies** — the helper still
+  HTML-escapes everything outside the placeholder slots.
+  The body is not a trusted surface.
+
+### Acceptance
+
+- `npm test` → 406 + N pass, where N is the new tests for
+  ATX headers, paragraphs, and horizontal rules.
+- Token linter (AC-11) and no-platform-imports linter
+  (AC-15) both green.
+- Live `curl http://127.0.0.1:8789/?show=done`:
+  - The UX-009 entry body renders `### Why`, `### Scope`,
+    `### Out of scope`, `### Acceptance` as `<h3>` headings
+    with display typography, 16px font, 16px margin-top,
+    8px margin-bottom.
+  - Body prose is wrapped in `<p>` with 8px margin between
+    paragraphs (the wall becomes discrete paragraphs).
+  - `---` dividers render as hairline `<hr>` elements.
+  - Existing block-level markers (fenced code blocks,
+    tables, lists) keep working inside and between
+    paragraphs.
+  - The spec detail page (`/specs/…`) keeps working — the
+    inline-markdown helper is shared, so any improvement
+    applies everywhere, but the spec detail view is much
+    shorter (no headers, no big paragraphs) so the visual
+    delta is mostly in the backlog section.

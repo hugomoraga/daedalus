@@ -1,12 +1,12 @@
 # Spec 002 — Proposal Generation (Module)
 
-**Status:** Ratified · Phase 2 (orchestrated form — build authorized)
+**Status:** Ratified · **v1 SHIPPED** (Phase 2 orchestrated form — PR #32, T-15..T-18 ✅; ATLAS Phase 2 panels T-19 ✅ in Spec 007 / PR #69)
 **Type:** Module specification (reusable capability over tenant-scoped data)
 **Owner:** Stewards
 **Tenant of origin:** [Tenant 0 — Founder Profile](../../blueprints/tenants/tenant-0-founder-profile.md)
 **Validation priority:** #1 (see [Roadmap → Module Validation Sequence](../../docs/roadmap.md))
-**Version:** 1.0.0
-**Last updated:** 2026-06-21
+**Version:** 1.1.0
+**Last updated:** 2026-07-01
 
 > **Method.** Spec-first (Constitution, Principle 8). This document defines *what* Proposal Generation must do and *why*, not *how*. No code, no API, no database schema, no UI, no e-signature, no CRM/email integration, no real data. Conceptual domain language only.
 

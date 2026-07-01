@@ -117,3 +117,145 @@ test("UX-007: empty link text or href keeps the brackets literal", () => {
   assert.equal(inlineMarkdownToHtml("[](url)"), "[](url)");
   assert.equal(inlineMarkdownToHtml("[text]()"), "[text]()");
 });
+
+// ----------------------------------------------------------------------------
+// UX-009 — block-level markers (fenced code, tables, lists)
+// ----------------------------------------------------------------------------
+
+test("UX-009: fenced code block becomes <pre><code class='theia-code-block'>", () => {
+  const input = "```\nnot ok 213 - AC-6: parseCodeInventory\nAssertionError: false == true\n```";
+  const expected = `<pre class="theia-code-block"><code>not ok 213 - AC-6: parseCodeInventory\nAssertionError: false == true</code></pre>`;
+  assert.equal(inlineMarkdownToHtml(input), expected);
+});
+
+test("UX-009: fenced code block with language hint drops the language", () => {
+  // The language hint is dropped — the token linter would reject
+  // per-language class names, and the renderer doesn't need it.
+  const input = "```ts\nconst x: number = 1;\n```";
+  const result = inlineMarkdownToHtml(input);
+  assert.match(result, /^<pre class="theia-code-block"><code>const x: number = 1;<\/code><\/pre>$/);
+});
+
+test("UX-009: fenced code block content is HTML-escaped but NOT inline-processed", () => {
+  // The point of a code block: `code` and **bold** inside are
+  // literal characters, not markers.
+  const input = "```\nuse `foo` for **bold**\n```";
+  const result = inlineMarkdownToHtml(input);
+  assert.match(result, /<pre class="theia-code-block"><code>use `foo` for \*\*bold\*\*<\/code><\/pre>/);
+  assert.doesNotMatch(result, /<strong>/);
+  assert.doesNotMatch(result, /<code>foo<\/code>/);
+});
+
+test("UX-009: text before and after a fenced block survives", () => {
+  const input = "before\n```\nx = 1\n```\nafter";
+  const result = inlineMarkdownToHtml(input);
+  assert.match(result, /^before\n<pre class="theia-code-block"><code>x = 1<\/code><\/pre>\nafter$/);
+});
+
+test("UX-009: GFM pipe-table becomes <table class='theia-md-table'>", () => {
+  const input = "| a | b |\n| --- | --- |\n| 1 | 2 |\n| 3 | 4 |";
+  const result = inlineMarkdownToHtml(input);
+  assert.match(result, /<table class="theia-md-table">/);
+  assert.match(result, /<thead>/);
+  assert.match(result, /<th class="theia-md-th-left">a<\/th>/);
+  assert.match(result, /<th class="theia-md-th-left">b<\/th>/);
+  assert.match(result, /<td class="theia-md-td-left">1<\/td>/);
+  assert.match(result, /<td class="theia-md-td-left">2<\/td>/);
+  assert.match(result, /<td class="theia-md-td-left">3<\/td>/);
+  assert.match(result, /<td class="theia-md-td-left">4<\/td>/);
+});
+
+test("UX-009: pipe-table alignment (right / center) renders as a CSS class", () => {
+  const input = "| left | right | center |\n| :--- | ---: | :---: |\n| a | b | c |";
+  const result = inlineMarkdownToHtml(input);
+  assert.match(result, /<th class="theia-md-th-left">left<\/th>/);
+  assert.match(result, /<th class="theia-md-th-right">right<\/th>/);
+  assert.match(result, /<th class="theia-md-th-center">center<\/th>/);
+  assert.match(result, /<td class="theia-md-td-left">a<\/td>/);
+  assert.match(result, /<td class="theia-md-td-right">b<\/td>/);
+  assert.match(result, /<td class="theia-md-td-center">c<\/td>/);
+});
+
+test("UX-009: pipe-table cells run through the inline passes", () => {
+  const input = "| col |\n| --- |\n| **bold** and `code` |";
+  const result = inlineMarkdownToHtml(input);
+  assert.match(result, /<td class="theia-md-td-left"><strong>bold<\/strong> and <code>code<\/code><\/td>/);
+});
+
+test("UX-009: text before a pipe-table survives", () => {
+  const input = "header line\n| a | b |\n| --- | --- |\n| 1 | 2 |";
+  const result = inlineMarkdownToHtml(input);
+  assert.match(result, /^header line\n<table class="theia-md-table">/);
+});
+
+test("UX-009: bullet list becomes <ul><li>…</li></ul>", () => {
+  const input = "- alpha\n- beta\n- gamma";
+  const result = inlineMarkdownToHtml(input);
+  assert.equal(result, "<ul><li>alpha</li><li>beta</li><li>gamma</li></ul>");
+});
+
+test("UX-009: numbered list becomes <ol><li>…</li></ol>", () => {
+  const input = "1. one\n2. two\n3. three";
+  const result = inlineMarkdownToHtml(input);
+  assert.equal(result, "<ol><li>one</li><li>two</li><li>three</li></ol>");
+});
+
+test("UX-009: list items run through the inline passes", () => {
+  const input = "- a **bold** item\n- another with `code`";
+  const result = inlineMarkdownToHtml(input);
+  assert.equal(result, "<ul><li>a <strong>bold</strong> item</li><li>another with <code>code</code></li></ul>");
+});
+
+test("UX-009: list and prose mix — only the list block becomes <ul>", () => {
+  const input = "intro line\n- item one\n- item two\n\noutro line";
+  const result = inlineMarkdownToHtml(input);
+  // The list replaces its lines (each followed by \n) with a
+  // single block; the blank line that separated list from outro
+  // collapses to one \n in the output (markdown's rule).
+  assert.match(result, /^intro line\n<ul><li>item one<\/li><li>item two<\/li><\/ul>\noutro line$/);
+});
+
+test("UX-009: a single trailing dash is not a list", () => {
+  // One item, no second — the regex needs at least one item but a
+  // single-item list IS a list. Standalone text like "a - b" with
+  // a hyphen in the middle is not a list (the line doesn't start
+  // with "- " or "* "). This test pins that.
+  assert.equal(inlineMarkdownToHtml("a - b"), "a - b");
+  assert.equal(inlineMarkdownToHtml("text - with a dash"), "text - with a dash");
+});
+
+test("UX-009: all block markers combined (the BUG-001 body shape)", () => {
+  // Mirrors the structure of a real backlog body that has code
+  // blocks, lists, tables, and inline markers all in one piece of
+  // prose. The whole point of UX-009.
+  const input = [
+    "**Resolution.** Fixed in PR #88:",
+    "",
+    "```",
+    "not ok 213 - AC-6: parseCodeInventory",
+    "AssertionError: false == true",
+    "```",
+    "",
+    "Branches deleted:",
+    "",
+    "- `origin/087-bug-001`",
+    "- `origin/087-post-086-hygiene`",
+    "",
+    "Status:",
+    "",
+    "| branch | merged |",
+    "| --- | --- |",
+    "| a | yes |",
+    "| b | no |",
+  ].join("\n");
+  const result = inlineMarkdownToHtml(input);
+  // Bold + intro survives
+  assert.match(result, /<strong>Resolution\.<\/strong> Fixed in PR #88:/);
+  // Code block renders as <pre>, not as inline <code>
+  assert.match(result, /<pre class="theia-code-block"><code>not ok 213/);
+  // List renders as <ul>
+  assert.match(result, /<ul><li><code>origin\/087-bug-001<\/code><\/li><li><code>origin\/087-post-086-hygiene<\/code><\/li><\/ul>/);
+  // Table renders as <table>
+  assert.match(result, /<table class="theia-md-table">/);
+  assert.match(result, /<td class="theia-md-td-left">a<\/td>/);
+});

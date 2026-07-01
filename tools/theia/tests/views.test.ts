@@ -145,6 +145,16 @@ test("UX-008: spec detail 'Spec file' link points to the GitHub blob URL", async
   assert.doesNotMatch(html, /github\.com\/search\?q=/);
 });
 
+// UX-008 P2-1: the .brand wordmark + subtitle had no CSS so
+// "Theia" inherited the body font. The wordmark now uses the
+// display trio at 18px; the <small> subtitle is muted + 12px.
+test("UX-008 P2-1: header .brand has a styled wordmark + muted subtitle", async () => {
+  const { state } = await parseRepo(FIXTURE);
+  const html = renderOverview(state);
+  assert.match(html, /\.brand \{[^}]*font-family: var\(--display\)/);
+  assert.match(html, /\.brand small \{[^}]*color: var\(--neutral\)/);
+});
+
 test("spec detail view for an unknown slug renders a 'not found' page", async () => {
   const { state } = await parseRepo(FIXTURE);
   const html = renderSpecDetail("999-does-not-exist", state);

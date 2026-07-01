@@ -69,6 +69,24 @@ export function renderLayout(opts: { title: string; body: string }): string {
       text-decoration: none;
     }
     .theia-section-ref-wrap { margin-left: 4px; }
+    /* UX-008 P2-1: the .brand wordmark + subtitle had no CSS so
+       "Theia" inherited the body font and had no visual identity.
+       The wordmark uses the display trio at 18px with a tighter
+       letter-spacing; the <small> subtitle is muted + 12px so it
+       reads as a label, not a sibling word. */
+    .brand {
+      font-family: var(--display);
+      font-size: 18px;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+    }
+    .brand small {
+      color: var(--neutral);
+      font-size: 12px;
+      font-family: var(--body);
+      letter-spacing: 0;
+      margin-left: 8px;
+    }
   </style>
 </head>
 <body>

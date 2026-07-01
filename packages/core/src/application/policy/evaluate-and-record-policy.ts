@@ -67,6 +67,14 @@ export async function evaluateAndRecordPolicy(
       },
     ],
     lineage,
+    // Per Spec 016 §8 AC-10 ("and the `actor` reflects the API key's
+    // principal"), the emitted PolicyDecisionRecorded carries the
+    // *caller's* actor (`input.actor`) not the host-process actor
+    // (`deps.actor`). The default evaluator's lineage flow uses
+    // `deps.actor` for the host case (CLI/test); policy evaluation
+    // explicitly carries the principal through so audit trails can
+    // reconstruct *who triggered* the decision, not *which process*.
+    input.actor,
   );
   const after = await deps.eventStore.readStream(input.tenantId);
   const event = after[after.length - 1];

@@ -62,6 +62,7 @@ git worktree remove /Users/hu/daedalus/.worktrees/atlas-spec-ratify
 
 ## Related
 
+- [Optional web research with Parallel](parallel-research.md) — per-session OpenCode setup for steward-authorized research before specs or ADRs.
 - [ADR-008 — Worktree-per-session](../governance/decisions/ADR-008-worktree-per-session.md) — the decision and rationale (amended 2026-06-22 to move worktrees in-repo).
 - [AGENTS.md §Git & collaboration protocol](../AGENTS.md) — the binding rules.
 - [tools/scripts/new-session.sh](../tools/scripts/new-session.sh) — the bootstrap.
